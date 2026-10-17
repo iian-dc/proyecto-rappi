@@ -31,12 +31,13 @@ body{background:#fff;color:#111;min-height:100vh}
 .banner-text h2{color:white;font-size:15.5px;font-weight:800;line-height:1.15}
 .banner-text p{color:rgba(255,255,255,0.92);font-size:11px;margin-top:3px;line-height:1.3;font-weight:500}
 .banner-text .btn-mini{margin-top:8px;background:white;color:#111;padding:6px 12px;border-radius:999px;font-weight:800;font-size:10.5px;display:inline-block;width:fit-content}
+/* CATEGORIAS 3D MINIMALISTAS CORREGIDAS QUE COINCIDEN */
 .categories{padding:12px 0 12px 16px;display:flex;gap:11px;overflow-x:auto;scrollbar-width:none}
 .categories::-webkit-scrollbar{display:none}
 .cat-item{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;min-width:64px;flex-shrink:0}
 .cat-icon{width:60px;height:60px;background:linear-gradient(180deg,#FFFFFF 0%,#F3F4F6 100%);border-radius:18px;display:flex;align-items:center;justify-content:center;border:1px solid #EDEEF0;box-shadow:0 3px 10px rgba(0,0,0,0.06), inset 0 1px 0 #fff;transition:all 0.2s}
 .cat-item.active .cat-icon{border-color:#D5000F;background:linear-gradient(180deg,#FFF1F2 0%,#FFE4E6 100%);box-shadow:0 6px 16px rgba(213,0,15,0.18);transform:translateY(-1px)}
-.icon-3d{width:38px;height:38px;object-fit:contain}
+.icon-3d{width:40px;height:40px;object-fit:contain;filter:drop-shadow(0 3px 4px rgba(0,0,0,0.12))}
 .cat-item span{font-size:11px;font-weight:600;color:#222}
 .section-title{padding:8px 16px;display:flex;justify-content:space-between;align-items:center}
 .section-title h3{font-size:16px;font-weight:800}
@@ -53,7 +54,9 @@ body{background:#fff;color:#111;min-height:100vh}
 .rating{margin-top:4px;display:flex;gap:4px;align-items:center;font-size:11px;font-weight:600}
 .tags{margin-top:5px;display:flex;gap:6px;flex-wrap:wrap}
 .tag{font-size:10px;padding:3px 8px;background:#F3F4F6;border-radius:999px;color:#555;font-weight:600}
-.rest-bottom{margin-top:5px;display:flex;gap:6px;font-size:11px;color:#555;font-weight:600;align-items:center}
+.rest-bottom{margin-top:6px;display:flex;gap:8px;font-size:11px;color:#555;font-weight:600;align-items:center;flex-wrap:wrap}
+.rest-bottom .moto{width:16px;height:16px;flex-shrink:0}
+.distancia{color:#00C950;font-weight:800;text-shadow:0 0 6px rgba(0,201,80,0.35);background:#E6F9ED;padding:2px 6px;border-radius:999px;font-size:10px;border:1px solid #B5ECC5}
 .no-ubi{height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
 .no-ubi h2{font-size:20px;font-weight:800;margin-top:14px}
 .no-ubi p{font-size:14px;color:#666;margin-top:8px;max-width:280px;line-height:1.4}
@@ -96,15 +99,15 @@ body{background:#fff;color:#111;min-height:100vh}
 </div>
 
 <div class="categories" id="categorias">
-  <div class="cat-item active" data-cat="todos"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/10733/10733184.png"></div><span>Todos</span></div>
-  <div class="cat-item" data-cat="burgers"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/3075/3075977.png"></div><span>Burger</span></div>
-  <div class="cat-item" data-cat="pizzas"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/3132/3132693.png"></div><span>Pizza</span></div>
-  <div class="cat-item" data-cat="alitas"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/1046/1046784.png"></div><span>Alitas</span></div>
-  <div class="cat-item" data-cat="tacos"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/3480/3480823.png"></div><span>Tacos</span></div>
-  <div class="cat-item" data-cat="hotdog"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/4672/4672586.png"></div><span>Hot Dog</span></div>
+  <div class="cat-item active" data-cat="todos"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/10486/10486474.png" alt="Todos"></div><span>Todos</span></div>
+  <div class="cat-item" data-cat="burgers"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/3075/3075977.png" alt="Burger"></div><span>Burger</span></div>
+  <div class="cat-item" data-cat="pizzas"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/3132/3132693.png" alt="Pizza"></div><span>Pizza</span></div>
+  <div class="cat-item" data-cat="alitas"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/1046/1046784.png" alt="Alitas"></div><span>Alitas</span></div>
+  <div class="cat-item" data-cat="tacos"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/3480/3480823.png" alt="Tacos"></div><span>Tacos</span></div>
+  <div class="cat-item" data-cat="hotdog"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/4672/4672586.png" alt="Hot Dog"></div><span>Hot Dog</span></div>
 </div>
 
-<div class="section-title"><h3>Restaurantes cerca de ti</h3><a href="#" id="verTodos">Ver todos</a></div>
+<div class="section-title"><h3>Restaurantes cerca de ti</h3><a href="vertodos.html" id="verTodos">Ver todos</a></div>
 <div class="restaurants" id="listaRestaurantes"></div>
 </div>
 
@@ -169,7 +172,6 @@ let aliadosData = [];
 const listaEl = document.getElementById('listaRestaurantes');
 const searchResult = document.getElementById('searchResult');
 
-// ESTRUCTURA FINAL ORGANIZADA POR CATEGORIAS
 const estructuraNueva = {
   burgers: {
     la_catrina_burger: {
@@ -177,15 +179,15 @@ const estructuraNueva = {
       categoria: "burgers",
       logo: "https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=300&h=300&fit=crop",
       portada: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=800&h=400&fit=crop",
-      descripcion: "Las mejores burgers artesanales de Dolores Hidalgo",
+      descripcion: "Las mejores burgers artesanales",
       telefono: "4181001122",
-      ubicacion: "Calle Hidalgo 45, Centro, Dolores Hidalgo, Guanajuato",
+      ubicacion: "Calle Hidalgo 45, Centro, Dolores Hidalgo",
       rating: 4.8, reseñas: "1.2k",
-      tiempoEntrega: "15-25 min", costoEnvio: 35,
+      tiempoEntrega: "15-25 min", costoEnvio: 10,
+      distancia: "180 m",
       abierto: true, activo: true,
       menu: {
-        clasica: { nombre:"Catrina Clásica", descripcion:"Carne 180g, cheddar, lechuga, tomate", precio:95, imagen:"https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400", disponible:true },
-        doble_bbq: { nombre:"Doble Carne BBQ", descripcion:"Doble carne, tocino, aros cebolla, BBQ", precio:145, imagen:"https://images.unsplash.com/photo-1593246049226-ded77bf38872?w=400", disponible:true }
+        clasica: { nombre:"Catrina Clásica", descripcion:"Carne 180g, cheddar", precio:95, imagen:"https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400", disponible:true }
       }
     }
   },
@@ -195,15 +197,15 @@ const estructuraNueva = {
       categoria: "pizzas",
       logo: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&h=300&fit=crop",
       portada: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&h=400&fit=crop",
-      descripcion: "Pizzas a la leña estilo italiano",
+      descripcion: "Pizzas a la leña",
       telefono: "4181001133",
-      ubicacion: "Av. Norte 12, Centro, Dolores Hidalgo, Guanajuato",
+      ubicacion: "Av. Norte 12, Centro, Dolores Hidalgo",
       rating: 4.9, reseñas: "856",
-      tiempoEntrega: "20-30 min", costoEnvio: 40,
+      tiempoEntrega: "20-30 min", costoEnvio: 10,
+      distancia: "220 m",
       abierto: true, activo: true,
       menu: {
-        pepperoni: { nombre:"Pizza Pepperoni", descripcion:"Pepperoni premium, mozzarella, pomodoro", precio:165, imagen:"https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400", disponible:true },
-        hawaiana: { nombre:"Pizza Hawaiana", descripcion:"Jamón ahumado, piña, extra queso", precio:155, imagen:"https://images.unsplash.com/photo-1595708684082-a1735871821?w=400", disponible:true }
+        pepperoni: { nombre:"Pizza Pepperoni", descripcion:"Pepperoni premium", precio:165, imagen:"https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400", disponible:true }
       }
     }
   },
@@ -213,15 +215,15 @@ const estructuraNueva = {
       categoria: "alitas",
       logo: "https://images.unsplash.com/photo-1527477396000-e27163dd9a8d?w=300&h=300&fit=crop",
       portada: "https://images.unsplash.com/photo-1527477396000-e27163dd9a8d?w=800&h=400&fit=crop",
-      descripcion: "Alitas crujientes, boneless y salsas artesanales",
+      descripcion: "Alitas crujientes y boneless",
       telefono: "4181001144",
-      ubicacion: "Calle Guanajuato 88, Dolores Hidalgo, Guanajuato",
+      ubicacion: "Calle Guanajuato 88, Dolores Hidalgo",
       rating: 4.7, reseñas: "642",
-      tiempoEntrega: "25-35 min", costoEnvio: 35,
+      tiempoEntrega: "25-35 min", costoEnvio: 10,
+      distancia: "180 m",
       abierto: true, activo: true,
       menu: {
-        bbq_10: { nombre:"10 Alitas BBQ", descripcion:"10 piezas BBQ y ranch", precio:135, imagen:"https://images.unsplash.com/photo-1527477396000-e27163dd9a8d?w=400", disponible:true },
-        mango: { nombre:"Boneless Mango Habanero", descripcion:"250g mango habanero de la casa", precio:155, imagen:"https://images.unsplash.com/photo-1567620832903-9fc6debc209f?w=400", disponible:true }
+        bbq_10: { nombre:"10 Alitas BBQ", descripcion:"10 piezas BBQ", precio:135, imagen:"https://images.unsplash.com/photo-1527477396000-e27163dd9a8d?w=400", disponible:true }
       }
     }
   },
@@ -236,11 +238,7 @@ function aplanarDatos(dataPorCategoria){
     if(val && typeof val === 'object'){
       Object.keys(val).forEach(key=>{
         const r = val[key];
-        if(r && r.nombre){
-          r.id = key;
-          if(!r.categoria) r.categoria = cat;
-          lista.push(r);
-        }
+        if(r && r.nombre){ r.id = key; if(!r.categoria) r.categoria = cat; lista.push(r); }
       });
     }
   });
@@ -261,7 +259,12 @@ function renderAliados(filtroCat="todos", busqueda=""){
         <div class="rest-top"><div class="rest-name">${a.nombre}</div><div class="badge badge-open"><div class="dot"></div>${a.abierto?'Abierto':'Cerrado'}</div></div>
         <div class="rating"><svg class="i" viewBox="0 0 24 24" fill="#FFB800"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> ${a.rating} <span style="color:#777">(${a.reseñas})</span></div>
         <div class="tags"><div class="tag">${a.categoria}</div></div>
-        <div class="rest-bottom"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><path d="M15 17.5h-4"/><path d="M2 8h12v6"/><path d="M14 8l4 3v3"/></svg> ${a.tiempoEntrega} · $${a.costoEnvio} envío</div>
+        <div class="rest-bottom">
+          <svg class="moto" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><path d="M15 17.5h-4"/><path d="M2 8h12v6"/><path d="M14 8l4 3v3"/></svg> ${a.tiempoEntrega}
+          <span>·</span>
+          <svg class="moto" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><path d="M15 17.5h-4"/><path d="M2 8h12v6"/><path d="M14 8l4 3v3"/></svg> $${a.costoEnvio}
+          <span class="distancia">${a.distancia || '180 m'}</span>
+        </div>
       </div>
     </div>`;
   });
@@ -276,33 +279,20 @@ function renderSearchDropdown(text){
 }
 window.ir=(cat,id)=>{ localStorage.setItem('doloya_aliadoSeleccionado',JSON.stringify({cat,id})); location.href=`aliado.html?cat=${cat}&id=${id}`; }
 
-// DETECTAR SI LA BASE ESTA DESORGANIZADA Y ORGANIZARLA
 onValue(ref(db,'doloya_aliados'), async snap=>{
   const v=snap.val();
   if(!v){
-    console.log("Base vacía, creando estructura organizada...");
-    for(const cat in estructuraNueva){
-      for(const restId in estructuraNueva[cat]){
-        await set(ref(db, `doloya_aliados/${cat}/${restId}`), estructuraNueva[cat][restId]);
-      }
-    }
+    for(const cat in estructuraNueva){ for(const restId in estructuraNueva[cat]){ await set(ref(db, `doloya_aliados/${cat}/${restId}`), estructuraNueva[cat][restId]); } }
     aliadosData=aplanarDatos(estructuraNueva);
     renderAliados();
     return;
   }
-  // Si detecta formato viejo (tiene burger_001 o no tiene subcarpetas burgers/pizzas)
   const keys = Object.keys(v);
-  const esFormatoViejo = keys.some(k=>k.includes('_001') || k.includes('burger_') || k.includes('pizza_') || (v[k] && v[k].nombre && !v[k].burgers));
+  const esFormatoViejo = keys.some(k=>k.includes('_001') || (v[k] && v[k].nombre && !v[k].burgers && !v.burgers));
   const tieneCategorias = v.burgers || v.pizzas || v.alitas;
-  
   if(esFormatoViejo && !tieneCategorias){
-    console.log("Detectada estructura vieja, borrando y organizando...");
     await remove(ref(db,'doloya_aliados'));
-    for(const cat in estructuraNueva){
-      for(const restId in estructuraNueva[cat]){
-        await set(ref(db, `doloya_aliados/${cat}/${restId}`), estructuraNueva[cat][restId]);
-      }
-    }
+    for(const cat in estructuraNueva){ for(const restId in estructuraNueva[cat]){ await set(ref(db, `doloya_aliados/${cat}/${restId}`), estructuraNueva[cat][restId]); } }
     aliadosData=aplanarDatos(estructuraNueva);
     renderAliados();
   } else {
@@ -325,7 +315,6 @@ document.querySelectorAll('.cat-item').forEach(el=>{
     renderAliados(el.dataset.cat, buscador.value);
   });
 });
-document.getElementById('verTodos').addEventListener('click',e=>{e.preventDefault();document.querySelectorAll('.cat-item').forEach(x=>x.classList.remove('active'));document.querySelector('[data-cat="todos"]').classList.add('active');renderAliados('todos','');buscador.value='';});
 </script>
 </body>
 </html>
