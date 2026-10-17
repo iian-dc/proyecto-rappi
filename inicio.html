@@ -8,27 +8,34 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
 body{background:#fff;color:#111;min-height:100vh}
-.header{padding:14px 16px 10px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:10}
+.header{padding:14px 16px 8px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:10}
 .header-left{display:flex;align-items:center;gap:10px}
-.logo-d{width:48px;height:48px;background:#D5000F;border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:28px;font-style:italic;transform:skew(-6deg)}
-.ubi-label{font-size:11px;color:#666;font-weight:500}
-.ubi-city{font-size:12px;font-weight:700;display:flex;align-items:center;gap:4px;color:#111;max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.search-wrap{padding:0 16px 14px 16px;position:relative}
-.search{width:100%;height:46px;background:#F3F4F6;border-radius:999px;border:1.5px solid #E5E7EB;display:flex;align-items:center;padding:0 14px;gap:10px}
+.logo-d{width:44px;height:44px;background:#D5000F;border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:26px;font-style:italic;transform:skew(-6deg);flex-shrink:0}
+.ubi-label{font-size:10px;color:#888;font-weight:600;letter-spacing:0.3px;text-transform:uppercase}
+.ubi-city{font-size:12.5px;font-weight:700;display:flex;align-items:flex-start;gap:5px;color:#111;max-width:260px;line-height:1.25}
+.ubi-city #txtUbi{white-space:normal;overflow:visible;text-overflow:clip;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.loc-icon{width:16px;height:16px;flex-shrink:0;margin-top:1px;color:#D5000F}
+
+.search-wrap{padding:0 16px 12px 16px;position:relative}
+.search{width:100%;height:44px;background:#F3F4F6;border-radius:999px;border:1.5px solid #E5E7EB;display:flex;align-items:center;padding:0 14px;gap:10px}
 .search input{flex:1;border:none;background:transparent;outline:none;font-size:14px;font-weight:500}
-.search-result{position:absolute;top:52px;left:16px;right:16px;background:white;border:1px solid #EEE;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.1);z-index:20;max-height:220px;overflow-y:auto;display:none}
+.search-result{position:absolute;top:50px;left:16px;right:16px;background:white;border:1px solid #EEE;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.1);z-index:20;max-height:220px;overflow-y:auto;display:none}
 .search-item{padding:10px 14px;display:flex;gap:10px;align-items:center;cursor:pointer;border-bottom:1px solid #F5F5F5}
 .search-item:last-child{border:none}
 .search-item img{width:36px;height:36px;border-radius:8px;object-fit:cover;background:#111}
 .search-item b{font-size:13px}
-.banners{padding:0 16px;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+
+/* BANNERS MAS PEQUEÑOS Y ELEGANTES - CORREGIDO */
+.banners{padding:0 16px;display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .banners::-webkit-scrollbar{display:none}
-.banner{scroll-snap-align:start;min-width:92%;height:150px;border-radius:18px;background:linear-gradient(100deg,#D5000F 0%,#A8000C 100%);position:relative;overflow:hidden;display:flex;flex-shrink:0}
-.banner-text{padding:16px;width:58%;z-index:2}
-.banner-text h2{color:white;font-size:22px;font-weight:800;line-height:1.1}
-.banner-text p{color:rgba(255,255,255,0.9);font-size:12px;margin-top:4px;line-height:1.3}
-.banner-text .btn-mini{margin-top:10px;background:#FFE24C;color:#111;padding:7px 14px;border-radius:999px;font-weight:800;font-size:12px;display:inline-block}
-.banner-img{position:absolute;right:-10px;bottom:-10px;width:55%;height:100%;object-fit:cover}
+.banner{scroll-snap-align:start;min-width:88%;height:118px;border-radius:16px;background:#D5000F;position:relative;overflow:hidden;display:flex;flex-shrink:0;box-shadow:0 4px 12px rgba(213,0,15,0.18)}
+.banner-gradient{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.15) 60%,rgba(0,0,0,0) 100%);z-index:1}
+.banner-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.banner-text{position:relative;z-index:2;padding:14px 16px;width:62%;display:flex;flex-direction:column;justify-content:center}
+.banner-text h2{color:white;font-size:16px;font-weight:800;line-height:1.15;text-shadow:0 1px 2px rgba(0,0,0,0.2)}
+.banner-text p{color:rgba(255,255,255,0.92);font-size:11px;margin-top:3px;line-height:1.3;font-weight:500}
+.banner-text .btn-mini{margin-top:8px;background:white;color:#111;padding:6px 12px;border-radius:999px;font-weight:800;font-size:10.5px;display:inline-block;width:fit-content;box-shadow:0 2px 6px rgba(0,0,0,0.15)}
+
 .categories{padding:12px 0 12px 16px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .categories::-webkit-scrollbar{display:none}
 .cat-item{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;min-width:62px;flex-shrink:0}
@@ -65,7 +72,10 @@ body{background:#fff;color:#111;min-height:100vh}
     <div class="logo-d">D</div>
     <div>
       <div class="ubi-label">Tu ubicación</div>
-      <div class="ubi-city"><span style="color:#D5000F">📍</span><span id="txtUbi">Obteniendo ubicación...</span></div>
+      <div class="ubi-city">
+        <svg class="loc-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        <span id="txtUbi">Obteniendo ubicación...</span>
+      </div>
     </div>
   </div>
 </div>
@@ -81,12 +91,19 @@ body{background:#fff;color:#111;min-height:100vh}
 
 <div class="banners">
   <div class="banner">
-    <div class="banner-text"><h2>Tu antojo,<br>en minutos</h2><p>Restaurantes, comida<br>y mucho más.</p><div class="btn-mini">Pide ahora</div></div>
-    <img class="banner-img" src="https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?auto=format&fit=crop&w=400&q=80">
+    <img class="banner-bg" src="https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?auto=format&fit=crop&w=600&q=80">
+    <div class="banner-gradient"></div>
+    <div class="banner-text"><h2>Tu antojo,<br>en minutos</h2><p>Restaurantes y más cerca de ti</p><div class="btn-mini">Pide ahora</div></div>
   </div>
-  <div class="banner" style="background:linear-gradient(100deg,#111 0%,#333 100%)">
-    <div class="banner-text"><h2>Promo del<br>día 🔥</h2><p>Envío gratis en<br>pedidos + $150</p><div class="btn-mini">Ver promos</div></div>
-    <img class="banner-img" src="https://images.unsplash.com/photo-1593246049226-ded77bf38872?auto=format&fit=crop&w=400&q=80">
+  <div class="banner" style="background:#111">
+    <img class="banner-bg" src="https://images.unsplash.com/photo-1593246049226-ded77bf38872?auto=format&fit=crop&w=600&q=80" style="opacity:0.7">
+    <div class="banner-gradient"></div>
+    <div class="banner-text"><h2>Promo del día</h2><p>Envío gratis +$150</p><div class="btn-mini">Ver promos</div></div>
+  </div>
+  <div class="banner" style="background:#FF6B00">
+    <img class="banner-bg" src="https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=600&q=80" style="opacity:0.6">
+    <div class="banner-gradient"></div>
+    <div class="banner-text"><h2>Nuevos aliados</h2><p>Descubre lo mejor de Dolores</p><div class="btn-mini">Explorar</div></div>
   </div>
 </div>
 
@@ -145,14 +162,12 @@ async function obtenerDireccionReal(){
     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
     const data = await res.json();
     const addr = data.address;
-    
     const calle = addr.road || addr.street || addr.footway || "";
     const numero = addr.house_number || "";
     const colonia = addr.suburb || addr.neighbourhood || addr.residential || "";
     const municipio = addr.city || addr.town || addr.village || addr.municipality || addr.county || "";
     const estado = addr.state || "";
     
-    // CONSTRUIR DIRECCION COMPLETA REAL
     let partes = [];
     if(calle) partes.push(`${calle} ${numero}`.trim());
     if(colonia) partes.push(colonia);
@@ -161,12 +176,10 @@ async function obtenerDireccionReal(){
     
     const direccionCompleta = partes.join(', ');
     
-    // MOSTRAR DIRECCION COMPLETA ARRIBA - CORREGIDO
     document.getElementById('txtUbi').textContent = direccionCompleta || data.display_name;
     document.getElementById('debugUbi').textContent = data.display_name;
 
     cliente.direccionReal = data.display_name;
-    cliente.calle = calle;
     cliente.municipio = municipio;
     cliente.estado = estado;
     cliente.direccionCompleta = direccionCompleta;
@@ -183,7 +196,7 @@ async function obtenerDireccionReal(){
     console.error(e);
     const dentroRango = lat>=20.90 && lat<=21.45 && lng>=-101.25 && lng<=-100.55;
     document.getElementById('txtUbi').textContent = dentroRango ? "Dolores Hidalgo, Guanajuato" : `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-    document.getElementById('debugUbi').textContent = `Lat: ${lat}, Lng: ${lng} - Error reverse`;
+    document.getElementById('debugUbi').textContent = `Lat: ${lat}, Lng: ${lng}`;
     if(!dentroRango){
       document.getElementById('contenidoDolores').style.display='none';
       document.getElementById('noDolores').style.display='flex';
