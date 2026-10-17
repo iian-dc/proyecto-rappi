@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Aliado - DoloYa</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
+body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
+.portada-wrap{position:relative;width:100%;height:280px;overflow:hidden;background:#111}
+.portada-wrap img{width:100%;height:100%;object-fit:cover}
+.portada-fade{position:absolute;bottom:0;left:0;right:0;height:120px;background:linear-gradient(0deg,rgba(255,255,255,1) 0%,rgba(255,255,255,0.85) 30%,rgba(255,255,255,0) 100%);z-index:1}
+.top-bar{position:absolute;top:0;left:0;right:0;padding:16px;display:flex;justify-content:space-between;align-items:flex-start;z-index:3}
+.btn-back{width:42px;height:42px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.15);cursor:pointer;border:none}
+.badge-abierto{position:absolute;top:16px;right:16px;background:rgba(0,0,0,0.6);border:1.5px solid #00FF6A;color:white;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px;backdrop-filter:blur(6px);box-shadow:0 0 12px rgba(0,255,106,0.4);z-index:3}
+.badge-abierto .dot-green{width:10px;height:10px;background:#00FF6A;border-radius:50%;box-shadow:0 0 8px #00FF6A}
+.top-actions{position:absolute;top:66px;right:16px;display:flex;gap:10px;z-index:3}
+.action-circle{width:42px;height:42px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.15);cursor:pointer;border:none}
+.logo-float{position:absolute;bottom:-42px;left:50%;transform:translateX(-50%);width:110px;height:110px;border-radius:50%;background:white;border:4px solid white;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,0.18);z-index:4;display:flex;align-items:center;justify-content:center}
+.logo-float img{width:100%;height:100%;object-fit:cover}
+.logo-float .inicial{width:100%;height:100%;background:#6B0F2A;color:white;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:28px}
+.nombre-wrap{margin-top:50px;text-align:center;padding:0 16px}
+.nombre-wrap h1{font-size:28px;font-weight:900;letter-spacing:-0.5px}
+.info-bar{margin-top:12px;padding:0 16px;display:flex;align-items:center;gap:10px;overflow-x:auto;scrollbar-width:none;white-space:nowrap;font-size:13px;font-weight:600;color:#222}
+.info-bar::-webkit-scrollbar{display:none}
+.info-bar .sep{width:1px;height:18px;background:#DDD;flex-shrink:0}
+.info-item{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.info-item .icon-small{width:18px;height:18px}
+.tabs{margin-top:16px;padding:0 16px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:10px 18px;border-radius:999px;border:1.5px solid #E5E7EB;background:white;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0}
+.tab.active{background:#E30613;color:white;border-color:#E30613;box-shadow:0 4px 12px rgba(227,6,19,0.25)}
+.menu-title{padding:18px 16px 10px 16px;font-size:18px;font-weight:800}
+.productos{padding:0 16px;display:flex;flex-direction:column;gap:12px}
+.prod-card{display:flex;gap:12px;padding:10px;border:1.5px solid #EEE;border-radius:16px;background:white;align-items:center}
+.prod-img{width:92px;height:72px;border-radius:12px;object-fit:cover;flex-shrink:0;background:#F3F4F6}
+.prod-info{flex:1;min-width:0}
+.prod-name{font-size:14px;font-weight:800;line-height:1.2}
+.prod-desc{font-size:11.5px;color:#6B7280;margin-top:3px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.prod-price{margin-top:6px;font-size:15px;font-weight:800}
+.btn-add{width:36px;height:36px;background:#E30613;border-radius:50%;border:none;color:white;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 3px 10px rgba(227,6,19,0.25)}
+.loading{text-align:center;padding:40px;color:#999}
+</style>
+</head>
+<body>
+
+<div id="loading" class="loading">Cargando restaurante...</div>
+
+<div id="contenido" style="display:none">
+  <div class="portada-wrap">
+    <img id="imgPortada" src="">
+    <div class="portada-fade"></div>
+    <div class="top-bar">
+      <button class="btn-back" onclick="history.back()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>
+    </div>
+    <div class="badge-abierto"><div class="dot-green"></div><span id="txtAbierto">ABIERTO</span></div>
+    <div class="top-actions">
+      <button class="action-circle" id="btnFav"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+      <button class="action-circle" id="btnShare"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98"/><path d="M15.41 6.51l-6.82 3.98"/></svg></button>
+    </div>
+    <div class="logo-float"><img id="imgLogo" src="" style="display:none"><div id="logoInicial" class="inicial">S</div></div>
+  </div>
+
+  <div class="nombre-wrap"><h1 id="txtNombre">Santillos</h1></div>
+
+  <div class="info-bar">
+    <div class="info-item"><svg class="icon-small" viewBox="0 0 24 24" fill="#E30613"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> <b id="txtRating">4.8</b> <span style="color:#6B7280;font-weight:500" id="txtReseñas">(1.2k reseñas)</span></div>
+    <div class="sep"></div>
+    <div class="info-item"><svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 2v7c0 1.1-.9 2-2 2h-4a2 2 0 0 1-2-2V2"/><path d="M15 2v20"/></svg> <span id="txtCategoria">Comida rápida</span></div>
+    <div class="sep"></div>
+    <div class="info-item"><svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8"><path d="M5 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M19 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M8 17h5l2-5h3.5"/><path d="M13 12l2-3h2"/></svg> <span><b id="txtEnvio">$15 mxn</b> <span style="font-size:11px;color:#6B7280;display:block;line-height:1">(envío)</span></span></div>
+    <div class="sep"></div>
+    <div class="info-item"><svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <span id="txtDistancia">180 metros</span></div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div class="menu-title">Menú</div>
+  <div class="productos" id="listaProductos"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
+  authDomain: "doloya-aliados.firebaseapp.com",
+  databaseURL: "https://doloya-aliados-default-rtdb.firebaseio.com",
+  projectId: "doloya-aliados",
+  storageBucket: "doloya-aliados.firebasestorage.app",
+  messagingSenderId: "122314467740",
+  appId: "1:122314467740:web:9947a0a9560557e3a00059"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const params = new URLSearchParams(window.location.search);
+let cat = params.get('cat');
+let id = params.get('id');
+
+if(!cat || !id){
+  const guardado = localStorage.getItem('doloya_aliadoSeleccionado');
+  if(guardado){ const j=JSON.parse(guardado); cat=j.cat; id=j.id; }
+}
+
+if(!cat || !id){ document.getElementById('loading').textContent='Restaurante no encontrado'; }
+else {
+  onValue(ref(db, `doloya_aliados/${cat}/${id}`), snap=>{
+    const data = snap.val();
+    if(!data){ document.getElementById('loading').textContent='Restaurante no encontrado'; return; }
+    document.getElementById('loading').style.display='none';
+    document.getElementById('contenido').style.display='block';
+
+    // Datos principales
+    document.getElementById('imgPortada').src = data.portada || data.logo;
+    if(data.logo){ document.getElementById('imgLogo').src=data.logo; document.getElementById('imgLogo').style.display='block'; document.getElementById('logoInicial').style.display='none'; }
+    else { document.getElementById('logoInicial').textContent=data.nombre?data.nombre[0].toUpperCase():'S'; }
+    document.getElementById('txtNombre').textContent=data.nombre||'Santillos';
+    document.getElementById('txtRating').textContent=data.rating||'4.8';
+    document.getElementById('txtReseñas').textContent=`(${data.reseñas||'1.2k'} reseñas)`;
+    document.getElementById('txtCategoria').textContent=data.categoria||'Comida rápida';
+    document.getElementById('txtEnvio').textContent=`$${data.costoEnvio||15} mxn`;
+    document.getElementById('txtDistancia').textContent=data.distancia||'180 metros';
+    document.getElementById('txtAbierto').textContent=data.abierto?'ABIERTO':'CERRADO';
+
+    // Menu agrupado por categorias
+    const menu = data.menu || {};
+    const categorias = [...new Set(Object.values(menu).map(m=>m.categoria || m.tipo || 'Combos'))];
+    const tabsList = categorias.length>0?categorias:['Combos','Salchipapas','Desgranados','Bebidas'];
+    const tabsEl=document.getElementById('tabs');
+    tabsEl.innerHTML='';
+    tabsList.forEach((c,i)=>{
+      const btn=document.createElement('button');
+      btn.className='tab'+(i===0?' active':'');
+      btn.textContent=c;
+      btn.onclick=()=>{
+        document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+        btn.classList.add('active');
+        filtrarProductos(c);
+      };
+      tabsEl.appendChild(btn);
+    });
+
+    let productosArray = Object.values(menu).map(p=>({...p, categoria: p.categoria||p.tipo||tabsList[0]}));
+    if(productosArray.length===0){
+      productosArray=[
+        {nombre:'Combo individual', descripcion:'Hamburguesa, papas y bebida.', precio:120, imagen:'https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400', categoria:'Combos'},
+        {nombre:'Combo doble', descripcion:'Doble carne, queso, papas y bebida.', precio:140, imagen:'https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400', categoria:'Combos'},
+        {nombre:'Combo triple', descripcion:'Triple carne, queso, papas y bebida.', precio:260, imagen:'https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400', categoria:'Combos'},
+        {nombre:'Combo familiar', descripcion:'4 hamburguesas, papas grandes y 4 bebidas.', precio:480, imagen:'https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400', categoria:'Combos'}
+      ];
+    }
+
+    function renderProductos(lista){
+      const cont=document.getElementById('listaProductos');
+      cont.innerHTML='';
+      lista.forEach(p=>{
+        cont.innerHTML+=`
+        <div class="prod-card">
+          <img class="prod-img" src="${p.imagen||p.img||'https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400'}">
+          <div class="prod-info">
+            <div class="prod-name">${p.nombre}</div>
+            <div class="prod-desc">${p.descripcion||''}</div>
+            <div class="prod-price">$${p.precio}</div>
+          </div>
+          <button class="btn-add" onclick="addCarrito('${p.nombre}', ${p.precio})">+</button>
+        </div>`;
+      });
+    }
+
+    window.filtrarProductos=(catFiltro)=>{
+      const fil=productosArray.filter(p=>p.categoria.toLowerCase()===catFiltro.toLowerCase());
+      renderProductos(fil.length>0?fil:productosArray.filter(p=>p.categoria===tabsList[0]));
+    }
+
+    renderProductos(productosArray.filter(p=>p.categoria===tabsList[0]));
+
+    window.addCarrito=(nombre, precio)=>{
+      let carrito=JSON.parse(localStorage.getItem('doloya_carrito')||'[]');
+      carrito.push({nombre, precio, restaurante:id, categoria:cat});
+      localStorage.setItem('doloya_carrito', JSON.stringify(carrito));
+      alert(`${nombre} agregado - $${precio}`);
+    }
+  });
+}
+
+document.getElementById('btnShare').onclick=()=>{
+  if(navigator.share){ navigator.share({title: document.getElementById('txtNombre').textContent, url: window.location.href}); }
+  else { navigator.clipboard.writeText(window.location.href); alert('Link copiado'); }
+}
+</script>
+</body>
+</html>
