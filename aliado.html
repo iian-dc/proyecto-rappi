@@ -43,22 +43,18 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
 .prod-name{font-size:14px;font-weight:800;line-height:1.2}
 .prod-desc{font-size:11.5px;color:#6B7280;margin-top:3px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .prod-price{margin-top:6px;font-size:15px;font-weight:800}
-/* BOTONES CANTIDAD */
 .btn-add{width:38px;height:38px;background:#E30613;border-radius:50%;border:none;color:white;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 3px 10px rgba(227,6,19,0.25);align-self:center}
 .qty-controls{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .qty-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid #E5E7EB;background:white;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .qty-btn.mas{background:#E30613;border-color:#E30613;color:white}
 .qty-num{font-size:14px;font-weight:800;min-width:18px;text-align:center}
-
-/* CARRITO FIJO ABAJO ENCIMA DE TODO */
 .carrito-bar{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1.5px solid #EEE;box-shadow:0 -6px 20px rgba(0,0,0,0.1);padding:12px 16px;display:none;z-index:999;align-items:center;justify-content:space-between;gap:12px}
 .carrito-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
 .imagenes-stack{display:flex;align-items:center}
-.img-carrito{width:38px;height:38px;border-radius:10px;object-fit:cover;border:2px solid white;margin-left:-8px;box-shadow:0 1px 4px rgba(0,0,0,0.15)}
-.img-carrito:first-child{margin-left:0}
-.badge-cant{position:absolute;top:-6px;right:-6px;background:#E30613;color:white;font-size:10px;font-weight:800;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white}
 .img-wrap{position:relative;margin-left:-8px}
 .img-wrap:first-child{margin-left:0}
+.img-carrito{width:38px;height:38px;border-radius:10px;object-fit:cover;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.15)}
+.badge-cant{position:absolute;top:-6px;right:-6px;background:#E30613;color:white;font-size:10px;font-weight:800;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white}
 .carrito-info{display:flex;flex-direction:column;min-width:0}
 .carrito-info b{font-size:13px;font-weight:800}
 .carrito-info span{font-size:11.5px;color:#6B7280}
@@ -93,7 +89,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
   <div class="productos" id="listaProductos"></div>
 </div>
 
-<!-- BARRA CARRITO FIJA ABAJO -->
 <div class="carrito-bar" id="carritoBar">
   <div class="carrito-left">
     <div class="imagenes-stack" id="imagenesCarrito"></div>
@@ -121,26 +116,36 @@ const db = getDatabase(app);
 const params = new URLSearchParams(window.location.search);
 let cat = params.get('cat');
 let id = params.get('id');
+let nombreRestauranteGlobal = '';
 if(!cat || !id){
   const guardado = localStorage.getItem('doloya_aliadoSeleccionado');
   if(guardado){ const j=JSON.parse(guardado); cat=j.cat; id=j.id; }
 }
 
+let ipCliente = null;
 let ipKey = null;
+let ubicacionGPS = {lat:null,lng:null};
 let carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
-let productosArrayGlobal = [];
 
-async function obtenerIP(){
+async function obtenerIPyGPS(){
   try{
     const r = await fetch('https://api.ipify.org?format=json');
     const d = await r.json();
+    ipCliente = d.ip;
     ipKey = d.ip.replace(/\./g,'_');
     verificarLike();
   }catch(e){
     let devId = localStorage.getItem('doloya_device_id');
     if(!devId){ devId='dev_'+Math.random().toString(36).slice(2); localStorage.setItem('doloya_device_id', devId); }
+    ipCliente = devId;
     ipKey = devId;
     verificarLike();
+  }
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(pos=>{
+      ubicacionGPS.lat = pos.coords.latitude;
+      ubicacionGPS.lng = pos.coords.longitude;
+    });
   }
 }
 function verificarLike(){
@@ -150,7 +155,7 @@ function verificarLike(){
   });
 }
 async function toggleLike(){
-  if(!ipKey){ obtenerIP(); return; }
+  if(!ipKey){ obtenerIPyGPS(); return; }
   const likeRef = ref(db, `doloya_likes/${cat}_${id}/${ipKey}`);
   const countRef = ref(db, `doloya_aliados/${cat}/${id}/likes`);
   const snap = await get(likeRef);
@@ -163,7 +168,6 @@ async function toggleLike(){
     await set(likeRef, {fecha: Date.now()});
     await runTransaction(countRef, (curr)=> (curr||0)+1 );
     btn.classList.add('liked');
-    btn.animate([{transform:'scale(1)'},{transform:'scale(1.3)'},{transform:'scale(1)'}],{duration:300});
   }
 }
 function calcularValoracion(likes){
@@ -172,11 +176,38 @@ function calcularValoracion(likes){
   return valor.toFixed(1);
 }
 
-// CARRITO LOGICA NUEVA
+// CARRITO CON FIREBASE + CORRECCION BUG MENOS
 function guardarCarrito(){
   localStorage.setItem('doloya_carrito_v2', JSON.stringify(carrito));
   renderBarraCarrito();
+  guardarCarritoFirebase();
 }
+
+function guardarCarritoFirebase(){
+  if(!cat || !id || !ipKey) return;
+  const total = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
+  const dataCarrito = {
+    restauranteId: id,
+    restauranteCat: cat,
+    restauranteNombre: nombreRestauranteGlobal,
+    productos: carrito,
+    total: total,
+    cantidadTotal: carrito.reduce((s,i)=>s+i.cantidad,0),
+    ip: ipCliente,
+    ubicacion: ubicacionGPS,
+    fecha: Date.now()
+  };
+  // carpeta nueva carrito que pediste
+  set(ref(db, `carrito/${cat}_${id}_${ipKey}`), dataCarrito);
+  // tambien dentro de aliado para que el restaurante lo vea
+  if(carrito.length>0){
+    set(ref(db, `doloya_aliados/${cat}/${id}/carritos/${ipKey}`), dataCarrito);
+  }else{
+    set(ref(db, `doloya_aliados/${cat}/${id}/carritos/${ipKey}`), null);
+    set(ref(db, `carrito/${cat}_${id}_${ipKey}`), null);
+  }
+}
+
 function addProducto(nombre, precio, imagen){
   const existe = carrito.find(p=>p.nombre===nombre);
   if(existe){ existe.cantidad++; }
@@ -184,10 +215,10 @@ function addProducto(nombre, precio, imagen){
   guardarCarrito();
 }
 function restarProducto(nombre){
-  const existe = carrito.find(p=>p.nombre===nombre);
-  if(!existe) return;
-  existe.cantidad--;
-  if(existe.cantidad<=0){ carrito = carrito.filter(p=>p.nombre!==nombre); }
+  const idx = carrito.findIndex(p=>p.nombre===nombre);
+  if(idx===-1) return;
+  carrito[idx].cantidad--;
+  if(carrito[idx].cantidad<=0){ carrito.splice(idx,1); }
   guardarCarrito();
 }
 function getCantidad(nombre){
@@ -196,33 +227,43 @@ function getCantidad(nombre){
 }
 function renderBarraCarrito(){
   const bar = document.getElementById('carritoBar');
-  if(carrito.length===0){ bar.style.display='none'; return; }
-  bar.style.display='flex';
+  if(carrito.length===0){ bar.style.display='none'; }
+  else{ bar.style.display='flex'; }
   const contImg = document.getElementById('imagenesCarrito');
-  contImg.innerHTML='';
-  carrito.forEach(item=>{
-    contImg.innerHTML+=`<div class="img-wrap"><img class="img-carrito" src="${item.imagen}"><div class="badge-cant">${item.cantidad}</div></div>`;
-  });
+  if(contImg){
+    contImg.innerHTML='';
+    carrito.forEach(item=>{
+      contImg.innerHTML+=`<div class="img-wrap"><img class="img-carrito" src="${item.imagen}"><div class="badge-cant">${item.cantidad}</div></div>`;
+    });
+  }
   const totalProductos = carrito.reduce((s,i)=>s+i.cantidad,0);
   const totalPrecio = carrito.reduce((s,i)=>s+(i.precio*i.cantidad),0);
-  document.getElementById('carritoTexto').textContent = totalProductos===1?`1 producto`:`${totalProductos} productos`;
-  document.getElementById('carritoPrecio').textContent = `$${totalPrecio}`;
-  // actualizar botones qty visibles
-  productosArrayGlobal.forEach(p=>{
-    const cant = getCantidad(p.nombre);
-    const elAdd = document.getElementById(`add-${p.idUnico}`);
-    const elQty = document.getElementById(`qty-${p.idUnico}`);
-    const elNum = document.getElementById(`num-${p.idUnico}`);
-    if(elAdd && elQty){
-      if(cant>0){ elAdd.style.display='none'; elQty.style.display='flex'; if(elNum) elNum.textContent=cant; }
-      else{ elAdd.style.display='flex'; elQty.style.display='none'; }
+  const txt = document.getElementById('carritoTexto');
+  const prc = document.getElementById('carritoPrecio');
+  if(txt) txt.textContent = totalProductos===1?`1 producto`:`${totalProductos} productos`;
+  if(prc) prc.textContent = `$${totalPrecio}`;
+  // CORRECCION BUG: actualizar todos los botones visibles por nombre
+  document.querySelectorAll('.prod-card').forEach(card=>{
+    const nombre = card.querySelector('.prod-name')?.textContent;
+    if(!nombre) return;
+    const cant = getCantidad(nombre);
+    const addBtn = card.querySelector('.btn-add');
+    const qtyDiv = card.querySelector('.qty-controls');
+    const numSpan = card.querySelector('.qty-num');
+    if(cant>0){
+      if(addBtn) addBtn.style.display='none';
+      if(qtyDiv) qtyDiv.style.display='flex';
+      if(numSpan) numSpan.textContent=cant;
+    }else{
+      if(addBtn) addBtn.style.display='flex';
+      if(qtyDiv) qtyDiv.style.display='none';
     }
   });
 }
 
 if(!cat || !id){ document.getElementById('loading').textContent='Restaurante no encontrado'; }
 else {
-  obtenerIP();
+  obtenerIPyGPS();
   renderBarraCarrito();
   onValue(ref(db, `doloya_aliados/${cat}/${id}`), snap=>{
     const data = snap.val();
@@ -231,6 +272,7 @@ else {
     document.getElementById('contenido').style.display='block';
     document.getElementById('imgPortada').src = data.portada || data.logo || '';
     if(data.logo){ document.getElementById('imgLogo').src=data.logo; document.getElementById('imgLogo').style.display='block'; document.getElementById('logoInicial').style.display='none'; }
+    nombreRestauranteGlobal = data.nombre||'';
     document.getElementById('txtNombre').textContent=data.nombre||'Pizzería Nonna Mia';
     document.getElementById('txtEntrega').textContent=data.tiempoEntrega||'12 min';
     document.getElementById('txtEnvio').textContent=`$${data.costoEnvio||'10.00'}`;
@@ -254,14 +296,13 @@ else {
       };
       tabsEl.appendChild(btn);
     });
-    let productosArray = Object.values(menu).map((p, idx)=>({...p, categoria: p.categoria||p.tipo||tabsList[0], idUnico: p.nombre.replace(/\s/g,'_')+'_'+idx, imagenFinal: p.imagen||p.img||'https://via.placeholder.com/150'}));
+    let productosArray = Object.values(menu).map(p=>({...p, categoria: p.categoria||p.tipo||tabsList[0], imagenFinal: p.imagen||p.img||'https://via.placeholder.com/150'}));
     if(productosArray.length===0){
       productosArray=[
-        {nombre:'Catrina Clásica', descripcion:'Pepperoni premium', precio:165, imagenFinal:'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400', categoria:'Combos', idUnico:'catrina_0'},
-        {nombre:'Doble Carne BBQ', descripcion:'Doble carne', precio:145, imagenFinal:'https://images.unsplash.com/photo-1550547660-d9450f859349?w=400', categoria:'Combos', idUnico:'doble_1'}
+        {nombre:'Catrina Clásica', descripcion:'Pepperoni premium', precio:165, imagenFinal:'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400', categoria:'Combos'},
+        {nombre:'Doble Carne BBQ', descripcion:'Doble carne', precio:145, imagenFinal:'https://images.unsplash.com/photo-1550547660-d9450f859349?w=400', categoria:'Combos'}
       ];
     }
-    productosArrayGlobal = productosArray;
 
     function renderProductos(lista){
       const cont=document.getElementById('listaProductos');
@@ -276,11 +317,11 @@ else {
             <div class="prod-desc">${p.descripcion||''}</div>
             <div class="prod-price">$${p.precio}</div>
           </div>
-          <button class="btn-add" id="add-${p.idUnico}" style="${cant>0?'display:none':''}" onclick="handleAdd('${p.nombre}', ${p.precio}, '${p.imagenFinal}')">+</button>
-          <div class="qty-controls" id="qty-${p.idUnico}" style="${cant>0?'display:flex':'display:none'}">
-            <button class="qty-btn" onclick="handleRestar('${p.nombre}')">−</button>
-            <span class="qty-num" id="num-${p.idUnico}">${cant}</span>
-            <button class="qty-btn mas" onclick="handleAdd('${p.nombre}', ${p.precio}, '${p.imagenFinal}')">+</button>
+          <button class="btn-add" style="${cant>0?'display:none':'display:flex'}" onclick="handleAdd('${p.nombre.replace(/'/g,"\\'")}', ${p.precio}, '${p.imagenFinal}')">+</button>
+          <div class="qty-controls" style="${cant>0?'display:flex':'display:none'}">
+            <button class="qty-btn" onclick="handleRestar('${p.nombre.replace(/'/g,"\\'")}')">−</button>
+            <span class="qty-num">${cant}</span>
+            <button class="qty-btn mas" onclick="handleAdd('${p.nombre.replace(/'/g,"\\'")}', ${p.precio}, '${p.imagenFinal}')">+</button>
           </div>
         </div>`;
       });
@@ -299,7 +340,8 @@ window.handleRestar=(nombre)=>{ restarProducto(nombre); }
 document.getElementById('btnLike').onclick=toggleLike;
 document.getElementById('btnVerCarrito').onclick=()=>{
   if(carrito.length===0) return;
-  alert(`Carrito: ${carrito.map(c=>`${c.nombre} x${c.cantidad}`).join(', ')} - Total $${carrito.reduce((s,i)=>s+i.precio*i.cantidad,0)}`);
+  // ya esta guardado en Firebase carrito, ahora pasar a pedidos si quieres
+  alert(`Carrito guardado en Firebase: carrito/${cat}_${id}_${ipKey} con ${carrito.length} productos`);
 }
 </script>
 </body>
