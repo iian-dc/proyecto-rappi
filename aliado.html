@@ -13,16 +13,24 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
 .portada-fade{position:absolute;bottom:0;left:0;right:0;height:160px;background:linear-gradient(0deg,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0.45) 40%,rgba(0,0,0,0) 100%);z-index:1}
 .top-bar{position:absolute;top:0;left:0;right:0;padding:16px;display:flex;justify-content:space-between;align-items:flex-start;z-index:3}
 .btn-back{width:42px;height:42px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.15);cursor:pointer;border:none}
-.badge-abierto{position:absolute;top:16px;right:16px;background:rgba(0,0,0,0.65);border:1.5px solid #00FF6A;color:white;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px;backdrop-filter:blur(6px);box-shadow:0 0 14px rgba(0,255,106,0.5);z-index:3;animation:zoomActivo 1.8s ease-in-out infinite}
+
+/* CONTENEDOR ARRIBA DERECHA CON CORAZON + ABIERTO */
+.top-right{position:absolute;top:16px;right:16px;display:flex;align-items:center;gap:10px;z-index:3}
+.btn-heart{width:42px;height:42px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(0,0,0,0.18);cursor:pointer;border:none;transition:all 0.2s}
+.btn-heart svg{transition:all 0.2s}
+.btn-heart.liked{background:#FFE4E6;border:1px solid #FF2D55}
+.btn-heart.liked svg{fill:#FF2D55;stroke:#FF2D55;transform:scale(1.15)}
+.badge-abierto{background:rgba(0,0,0,0.65);border:1.5px solid #00FF6A;color:white;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px;backdrop-filter:blur(6px);box-shadow:0 0 14px rgba(0,255,106,0.5);animation:zoomActivo 1.8s ease-in-out infinite}
 .badge-abierto .dot-green{width:10px;height:10px;background:#00FF6A;border-radius:50%;box-shadow:0 0 8px #00FF6A}
 @keyframes zoomActivo{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+
 .logo-float{position:absolute;top:50%;left:50%;transform:translate(-50%,-30%);width:115px;height:115px;border-radius:50%;background:white;border:4px solid white;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,0.28);z-index:4;display:flex;align-items:center;justify-content:center}
 .logo-float img{width:100%;height:100%;object-fit:cover}
 .logo-float .inicial{width:100%;height:100%;background:#6B0F2A;color:white;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:30px}
 .nombre-wrap{margin-top:14px;text-align:center;padding:0 16px;display:flex;justify-content:center;flex-direction:column;align-items:center}
 .nombre-wrap h1{font-size:28px;font-weight:900;letter-spacing:-0.5px;text-align:center}
 
-/* INFO NUEVA CENTRADA PEQUEÑA COMO EN LA IMAGEN - SIN LINEAS */
+/* INFO CENTRADA PEQUEÑA */
 .info-centro{margin-top:10px;display:flex;justify-content:center;align-items:flex-start;gap:28px;width:100%;padding:0 16px}
 .info-col{display:flex;flex-direction:column;align-items:center;gap:2px}
 .info-label{font-size:11.5px;color:#9AA0A6;font-weight:600;display:flex;align-items:center;gap:4px}
@@ -57,13 +65,16 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
     <div class="top-bar">
       <button class="btn-back" onclick="history.back()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>
     </div>
-    <div class="badge-abierto"><div class="dot-green"></div><span id="txtAbierto">ABIERTO</span></div>
+    <!-- CORAZON + ABIERTO ARRIBA DERECHA -->
+    <div class="top-right">
+      <button class="btn-heart" id="btnLike"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+      <div class="badge-abierto"><div class="dot-green"></div><span id="txtAbierto">ABIERTO</span></div>
+    </div>
     <div class="logo-float"><img id="imgLogo" src="" style="display:none"><div id="logoInicial" class="inicial">S</div></div>
   </div>
 
   <div class="nombre-wrap">
     <h1 id="txtNombre">Pizzería Nonna Mia</h1>
-    <!-- INFO CENTRADA PEQUEÑA DEBAJO DEL NOMBRE COMO EN TU IMAGEN -->
     <div class="info-centro">
       <div class="info-col">
         <div class="info-label">Entrega <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg></div>
@@ -74,8 +85,8 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
         <div class="info-value" id="txtEnvio">$10.00</div>
       </div>
       <div class="info-col">
-        <div class="info-label">Calificación <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
-        <div class="info-value"><span id="txtRating">4.8</span><span id="txtReseñas">(1914)</span></div>
+        <div class="info-label">Calificación <svg viewBox="0 0 24 24" fill="#FF2D55"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+        <div class="info-value"><span id="txtLikes">0</span> <span>likes</span></div>
       </div>
     </div>
   </div>
@@ -87,7 +98,8 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, onValue, get, set, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
   authDomain: "doloya-aliados.firebaseapp.com",
@@ -99,6 +111,7 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+
 const params = new URLSearchParams(window.location.search);
 let cat = params.get('cat');
 let id = params.get('id');
@@ -106,8 +119,58 @@ if(!cat || !id){
   const guardado = localStorage.getItem('doloya_aliadoSeleccionado');
   if(guardado){ const j=JSON.parse(guardado); cat=j.cat; id=j.id; }
 }
+
+let ipCliente = null;
+let ipKey = null;
+
+// OBTENER IP PARA CONTROL 1 LIKE POR IP
+async function obtenerIP(){
+  try{
+    const r = await fetch('https://api.ipify.org?format=json');
+    const d = await r.json();
+    ipCliente = d.ip;
+    ipKey = ipCliente.replace(/\./g,'_');
+    verificarLike();
+  }catch(e){
+    ipCliente = localStorage.getItem('doloya_device_id') || 'dev_'+Math.random().toString(36).slice(2);
+    localStorage.setItem('doloya_device_id', ipCliente);
+    ipKey = ipCliente.replace(/\./g,'_');
+    verificarLike();
+  }
+}
+
+function verificarLike(){
+  if(!cat || !id || !ipKey) return;
+  get(ref(db, `doloya_likes/${cat}_${id}/${ipKey}`)).then(snap=>{
+    if(snap.exists()){
+      document.getElementById('btnLike').classList.add('liked');
+    }
+  });
+}
+
+async function toggleLike(){
+  if(!ipKey){ alert('Obteniendo IP, intenta de nuevo'); obtenerIP(); return; }
+  const likeRef = ref(db, `doloya_likes/${cat}_${id}/${ipKey}`);
+  const countRef = ref(db, `doloya_aliados/${cat}/${id}/likes`);
+  const snap = await get(likeRef);
+  const btn = document.getElementById('btnLike');
+  if(snap.exists()){
+    // QUITAR LIKE
+    await set(likeRef, null);
+    await runTransaction(countRef, (curr)=> (curr||1)-1 );
+    btn.classList.remove('liked');
+  }else{
+    // DAR LIKE
+    await set(likeRef, {ip: ipCliente, fecha: Date.now()});
+    await runTransaction(countRef, (curr)=> (curr||0)+1 );
+    btn.classList.add('liked');
+    btn.animate([{transform:'scale(1)'},{transform:'scale(1.3)'},{transform:'scale(1)'}],{duration:300});
+  }
+}
+
 if(!cat || !id){ document.getElementById('loading').textContent='Restaurante no encontrado'; }
 else {
+  obtenerIP();
   onValue(ref(db, `doloya_aliados/${cat}/${id}`), snap=>{
     const data = snap.val();
     if(!data){ document.getElementById('loading').textContent='Restaurante no encontrado'; return; }
@@ -118,8 +181,7 @@ else {
     document.getElementById('txtNombre').textContent=data.nombre||'Pizzería Nonna Mia';
     document.getElementById('txtEntrega').textContent=data.tiempoEntrega||'12 min';
     document.getElementById('txtEnvio').textContent=`$${data.costoEnvio||'10.00'}`;
-    document.getElementById('txtRating').textContent=data.rating||'4.8';
-    document.getElementById('txtReseñas').textContent=`(${data.reseñas||'1914'})`;
+    document.getElementById('txtLikes').textContent=data.likes||0;
     document.getElementById('txtAbierto').textContent=data.abierto?'ABIERTO':'CERRADO';
     const menu = data.menu || {};
     const categorias = [...new Set(Object.values(menu).map(m=>m.categoria || m.tipo || 'Combos'))];
@@ -173,6 +235,8 @@ else {
     }
   });
 }
+
+document.getElementById('btnLike').onclick=toggleLike;
 </script>
 </body>
 </html>
