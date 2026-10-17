@@ -31,13 +31,13 @@ body{background:#fff;color:#111;min-height:100vh}
 .banner-text h2{color:white;font-size:15.5px;font-weight:800;line-height:1.15}
 .banner-text p{color:rgba(255,255,255,0.92);font-size:11px;margin-top:3px;line-height:1.3;font-weight:500}
 .banner-text .btn-mini{margin-top:8px;background:white;color:#111;padding:6px 12px;border-radius:999px;font-weight:800;font-size:10.5px;display:inline-block;width:fit-content}
-/* CATEGORIAS 3D MINIMALISTAS */
+/* CATEGORIAS 3D MINIMALISTAS CORREGIDAS */
 .categories{padding:12px 0 12px 16px;display:flex;gap:11px;overflow-x:auto;scrollbar-width:none}
 .categories::-webkit-scrollbar{display:none}
 .cat-item{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;min-width:64px;flex-shrink:0}
-.cat-icon{width:60px;height:60px;background:linear-gradient(180deg,#FFFFFF 0%,#F3F4F6 100%);border-radius:18px;display:flex;align-items:center;justify-content:center;border:1px solid #EDEEF0;box-shadow:0 3px 10px rgba(0,0,0,0.06), inset 0 1px 0 #fff;transition:all 0.2s;position:relative}
+.cat-icon{width:60px;height:60px;background:linear-gradient(180deg,#FFFFFF 0%,#F3F4F6 100%);border-radius:18px;display:flex;align-items:center;justify-content:center;border:1px solid #EDEEF0;box-shadow:0 3px 10px rgba(0,0,0,0.06), inset 0 1px 0 #fff;transition:all 0.2s}
 .cat-item.active .cat-icon{border-color:#D5000F;background:linear-gradient(180deg,#FFF1F2 0%,#FFE4E6 100%);box-shadow:0 6px 16px rgba(213,0,15,0.18);transform:translateY(-1px)}
-.icon-3d{width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 3px 3px rgba(0,0,0,0.12));z-index:1}
+.icon-3d{width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 4px 4px rgba(0,0,0,0.12))}
 .cat-item span{font-size:11px;font-weight:600;color:#222}
 .section-title{padding:8px 16px;display:flex;justify-content:space-between;align-items:center}
 .section-title h3{font-size:16px;font-weight:800}
@@ -99,11 +99,11 @@ body{background:#fff;color:#111;min-height:100vh}
 </div>
 
 <div class="categories" id="categorias">
-  <div class="cat-item active" data-cat="todos"><div class="cat-icon"><img class="icon-3d" src="https://cdn3d.iconscout.com/3d/free/thumb/free-grid-3d-icon-download-in-png-blend-fbx-gltf-file-formats--interface-layout-menu-dots-user-pack-icons-4781762.png"></div><span>Todos</span></div>
-  <div class="cat-item" data-cat="burgers"><div class="cat-icon"><img class="icon-3d" src="https://cdn3d.iconscout.com/3d/premium/thumb/burger-3d-icon-download-in-png-blend-fbx-gltf-file-formats--food-fast-logo-delicious-snack-meal-pack-drink-icons-9562177.png"></div><span>Burger</span></div>
-  <div class="cat-item" data-cat="pizzas"><div class="cat-icon"><img class="icon-3d" src="https://cdn3d.iconscout.com/3d/premium/thumb/pizza-3d-icon-download-in-png-blend-fbx-gltf-file-formats--food-fast-logo-delicious-slice-meal-pack-drink-icons-9562188.png"></div><span>Pizza</span></div>
-  <div class="cat-item" data-cat="alitas"><div class="cat-icon"><img class="icon-3d" src="https://cdn3d.iconscout.com/3d/premium/thumb/chicken-leg-3d-icon-download-in-png-blend-fbx-gltf-file-formats--food-delicious-logo-meat-pack-drink-icons-9562159.png"></div><span>Alitas</span></div>
-  <div class="cat-item" data-cat="tacos"><div class="cat-icon"><img class="icon-3d" src="https://cdn3d.iconscout.com/3d/premium/thumb/taco-3d-icon-download-in-png-blend-fbx-gltf-file-formats--mexican-food-delicious-snack-meal-logo-pack-drink-icons-9562193.png"></div><span>Tacos</span></div>
+  <div class="cat-item active" data-cat="todos"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/grid.png"></div><span>Todos</span></div>
+  <div class="cat-item" data-cat="burgers"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/hamburger.png"></div><span>Burger</span></div>
+  <div class="cat-item" data-cat="pizzas"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/pizza.png"></div><span>Pizza</span></div>
+  <div class="cat-item" data-cat="alitas"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/fried-chicken.png"></div><span>Alitas</span></div>
+  <div class="cat-item" data-cat="tacos"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/taco.png"></div><span>Tacos</span></div>
 </div>
 
 <div class="section-title"><h3>Restaurantes cerca de ti</h3><a href="#" id="verTodos">Ver todos</a></div>
@@ -119,7 +119,7 @@ body{background:#fff;color:#111;min-height:100vh}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
@@ -168,10 +168,7 @@ async function obtenerDireccionReal(){
       document.getElementById('noDolores').style.display='flex';
       document.getElementById('msgNoUbi').innerHTML = `Estás en <b>${direccionCompleta}</b><br><br>Sin cobertura para tu ubicación`;
     }
-  }catch(e){
-    console.error(e);
-    document.getElementById('txtUbi').textContent = `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-  }
+  }catch(e){ document.getElementById('txtUbi').textContent = `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`; }
 }
 obtenerDireccionReal();
 
@@ -179,12 +176,83 @@ let aliadosData = [];
 const listaEl = document.getElementById('listaRestaurantes');
 const searchResult = document.getElementById('searchResult');
 
+// ESTRUCTURA COMPLETA QUE SE GUARDA EN FIREBASE DOLOYA-ALIADOS
+const restaurantesCompletos = {
+  burger_001: {
+    id: "burger_001",
+    nombre: "La Catrina Burger & Grill",
+    logo: "https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=300&h=300&fit=crop",
+    portada: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=800&h=400&fit=crop",
+    categoria: "burgers",
+    descripcion: "Las mejores burgers artesanales de Dolores Hidalgo",
+    rating: 4.8,
+    reseñas: "1.2k",
+    tiempoEntrega: "15-25 min",
+    costoEnvio: 35,
+    abierto: true,
+    activo: true,
+    ubicacion: "Calle Hidalgo 45, Centro, Dolores Hidalgo, Guanajuato",
+    lat: 21.1555,
+    lng: -100.934,
+    telefono: "4181001122",
+    menu: {
+      prod1: { id:"prod1", nombre:"Catrina Clásica", descripcion:"Carne 180g, queso cheddar, lechuga, tomate, aderezo de la casa", precio:95, imagen:"https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400", categoria:"burgers", disponible:true },
+      prod2: { id:"prod2", nombre:"Doble Carne BBQ", descripcion:"Doble carne 180g, tocino crujiente, aros de cebolla, salsa BBQ", precio:145, imagen:"https://images.unsplash.com/photo-1593246049226-ded77bf38872?w=400", categoria:"burgers", disponible:true },
+      prod3: { id:"prod3", nombre:"Papas Catrina", descripcion:"Papas fritas con queso cheddar y tocino", precio:65, imagen:"https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400", categoria:"acompañamientos", disponible:true }
+    }
+  },
+  pizza_001: {
+    id: "pizza_001",
+    nombre: "Pizzería Nonna Mia",
+    logo: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&h=300&fit=crop",
+    portada: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&h=400&fit=crop",
+    categoria: "pizzas",
+    descripcion: "Pizzas a la leña estilo italiano auténtico",
+    rating: 4.9,
+    reseñas: "856",
+    tiempoEntrega: "20-30 min",
+    costoEnvio: 40,
+    abierto: true,
+    activo: true,
+    ubicacion: "Av. Norte 12, Col. Centro, Dolores Hidalgo, Guanajuato",
+    lat: 21.1560,
+    lng: -100.933,
+    telefono: "4181001133",
+    menu: {
+      prod1: { id:"prod1", nombre:"Pizza Pepperoni", descripcion:"Pepperoni premium, queso mozzarella, salsa pomodoro italiana", precio:165, imagen:"https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400", categoria:"pizzas", disponible:true },
+      prod2: { id:"prod2", nombre:"Pizza Hawaiana", descripcion:"Jamón ahumado, piña natural, extra queso mozzarella", precio:155, imagen:"https://images.unsplash.com/photo-1595708684082-a1735871821?w=400", categoria:"pizzas", disponible:true }
+    }
+  },
+  alitas_001: {
+    id: "alitas_001",
+    nombre: "Alitas Factory",
+    logo: "https://images.unsplash.com/photo-1527477396000-e27163dd9a8d?w=300&h=300&fit=crop",
+    portada: "https://images.unsplash.com/photo-1527477396000-e27163dd9a8d?w=800&h=400&fit=crop",
+    categoria: "alitas",
+    descripcion: "Alitas crujientes, boneless y salsas artesanales",
+    rating: 4.7,
+    reseñas: "642",
+    tiempoEntrega: "25-35 min",
+    costoEnvio: 35,
+    abierto: true,
+    activo: true,
+    ubicacion: "Calle Guanajuato 88, Dolores Hidalgo, Guanajuato",
+    lat: 21.1540,
+    lng: -100.935,
+    telefono: "4181001144",
+    menu: {
+      prod1: { id:"prod1", nombre:"10 Alitas BBQ", descripcion:"10 piezas crujientes con salsa BBQ artesanal y aderezo ranch", precio:135, imagen:"https://images.unsplash.com/photo-1527477396000-e27163dd9a8d?w=400", categoria:"alitas", disponible:true },
+      prod2: { id:"prod2", nombre:"Boneless Mango Habanero", descripcion:"250g boneless bañados en salsa mango habanero de la casa", precio:155, imagen:"https://images.unsplash.com/photo-1567620832903-9fc6debc209f?w=400", categoria:"alitas", disponible:true }
+    }
+  }
+};
+
 function renderAliados(filtroCat="todos", busqueda=""){
   let f = aliadosData;
   if(filtroCat!=="todos") f=f.filter(a=>(a.categoria||"").toLowerCase().includes(filtroCat));
   if(busqueda) f=f.filter(a=>a.nombre.toLowerCase().includes(busqueda.toLowerCase()));
   listaEl.innerHTML="";
-  if(f.length===0){ listaEl.innerHTML=`<p style="text-align:center;color:#999;padding:20px;font-size:13px">No hay restaurantes en esta categoría</p>`; return;}
+  if(f.length===0){ listaEl.innerHTML=`<p style="text-align:center;color:#999;padding:20px;font-size:13px">No hay restaurantes</p>`; return;}
   f.forEach(a=>{
     listaEl.innerHTML+=`
     <div class="rest-card" onclick="ir('${a.id}')">
@@ -198,89 +266,31 @@ function renderAliados(filtroCat="todos", busqueda=""){
     </div>`;
   });
 }
-
 function renderSearchDropdown(text){
   if(!text){ searchResult.style.display='none'; return; }
   const fil = aliadosData.filter(a=>a.nombre.toLowerCase().includes(text.toLowerCase())).slice(0,6);
   if(fil.length===0){ searchResult.style.display='none'; return; }
   searchResult.innerHTML="";
-  fil.forEach(a=>{
-    searchResult.innerHTML+=`<div class="search-item" onclick="ir('${a.id}')"><img src="${a.logo}"><div><b>${a.nombre}</b><div style="font-size:11px;color:#777">${a.categoria}</div></div></div>`;
-  });
+  fil.forEach(a=>{ searchResult.innerHTML+=`<div class="search-item" onclick="ir('${a.id}')"><img src="${a.logo}"><div><b>${a.nombre}</b><div style="font-size:11px;color:#777">${a.categoria}</div></div></div>`; });
   searchResult.style.display='block';
 }
-
 window.ir=(id)=>{ localStorage.setItem('doloya_aliadoSeleccionado',id); location.href=`aliado.html?id=${id}`; }
 
-// DATOS DE EJEMPLO - SE MUESTRAN SI TU FIREBASE ESTA VACIA
-const ejemplos = [
-  {
-    id: "burger_001",
-    nombre: "La Catrina Burger & Grill",
-    logo: "https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=200&h=200&fit=crop",
-    portada: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=600",
-    categoria: "burgers",
-    rating: 4.8,
-    reseñas: "1.2k",
-    tiempoEntrega: "15-25 min",
-    costoEnvio: 35,
-    abierto: true,
-    activo: true,
-    menu: {
-      prod1: {nombre:"Catrina Clásica", precio:95, descripcion:"Carne 180g, cheddar"},
-      prod2: {nombre:"Doble BBQ", precio:145, descripcion:"Doble carne, tocino, BBQ"}
-    }
-  },
-  {
-    id: "pizza_001",
-    nombre: "Pizzería Nonna Mia",
-    logo: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=200&h=200&fit=crop",
-    portada: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600",
-    categoria: "pizzas",
-    rating: 4.9,
-    reseñas: "856",
-    tiempoEntrega: "20-30 min",
-    costoEnvio: 40,
-    abierto: true,
-    activo: true,
-    menu: {
-      prod1: {nombre:"Pepperoni", precio:165, descripcion:"Pepperoni y mozzarella"},
-      prod2: {nombre:"Hawaiana", precio:155, descripcion:"Jamón y piña"}
-    }
-  },
-  {
-    id: "alitas_001",
-    nombre: "Alitas Factory",
-    logo: "https://images.unsplash.com/photo-1527477396000-e27163dd9a8d?w=200&h=200&fit=crop",
-    portada: "https://images.unsplash.com/photo-1527477396000-e27163dd9a8d?w=600",
-    categoria: "alitas",
-    rating: 4.7,
-    reseñas: "642",
-    tiempoEntrega: "25-35 min",
-    costoEnvio: 35,
-    abierto: true,
-    activo: true,
-    menu: {
-      prod1: {nombre:"10 Alitas BBQ", precio:135, descripcion:"10 piezas BBQ"},
-      prod2: {nombre:"Boneless Mango", precio:155, descripcion:"250g mango habanero"}
-    }
-  }
-];
-
+// VINCULAR Y GUARDAR EN FIREBASE - UNA SOLA BASE
 onValue(ref(db,'doloya_aliados'), snap=>{
   const v=snap.val();
-  if(v && Object.keys(v).length>0){ 
+  if(v && Object.keys(v).length>0){
     aliadosData=Object.values(v).filter(a=>a.activo!==false);
-    console.log("Restaurantes desde Firebase:", aliadosData.length);
+    renderAliados();
   } else {
-    console.log("Firebase vacía, usando ejemplos");
-    aliadosData=ejemplos;
+    // SI ESTA VACIA, GUARDAMOS LOS 3 RESTAURANTES AUTOMATICAMENTE EN FIREBASE
+    console.log("Guardando 3 restaurantes en Firebase...");
+    Object.values(restaurantesCompletos).forEach(r=>{
+      set(ref(db, 'doloya_aliados/' + r.id), r);
+    });
+    aliadosData=Object.values(restaurantesCompletos);
+    renderAliados();
   }
-  renderAliados();
-}, err=>{
-  console.error(err);
-  aliadosData=ejemplos;
-  renderAliados();
 });
 
 const buscador=document.getElementById('buscador');
