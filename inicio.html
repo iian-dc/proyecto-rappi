@@ -12,7 +12,7 @@ body{background:#fff;color:#111;min-height:100vh}
 .header-left{display:flex;align-items:center;gap:10px}
 .logo-d{width:48px;height:48px;background:#D5000F;border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:28px;font-style:italic;transform:skew(-6deg)}
 .ubi-label{font-size:11px;color:#666;font-weight:500}
-.ubi-city{font-size:14px;font-weight:700;display:flex;align-items:center;gap:4px;color:#111;max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ubi-city{font-size:13px;font-weight:700;display:flex;align-items:center;gap:4px;color:#111;max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .search-wrap{padding:0 16px 14px 16px;position:relative}
 .search{width:100%;height:46px;background:#F3F4F6;border-radius:999px;border:1.5px solid #E5E7EB;display:flex;align-items:center;padding:0 14px;gap:10px}
 .search input{flex:1;border:none;background:transparent;outline:none;font-size:14px;font-weight:500}
@@ -30,14 +30,15 @@ body{background:#fff;color:#111;min-height:100vh}
 .banner-text .btn-mini{margin-top:10px;background:#FFE24C;color:#111;padding:7px 14px;border-radius:999px;font-weight:800;font-size:12px;display:inline-block}
 .banner-img{position:absolute;right:-10px;bottom:-10px;width:55%;height:100%;object-fit:cover}
 
-/* CATEGORIAS DESLIZABLES Y MAS PEQUEÑAS + ICONOS */
+/* CATEGORIAS 3D MINIMALISTAS MAS PEQUEÑAS Y DESLIZABLES */
 .categories{padding:12px 0 12px 16px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .categories::-webkit-scrollbar{display:none}
 .cat-item{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;min-width:62px;flex-shrink:0}
-.cat-icon{width:56px;height:56px;background:#F9FAFB;border-radius:16px;display:flex;align-items:center;justify-content:center;border:2px solid transparent;transition:all 0.2s}
-.cat-item.active .cat-icon{border-color:#D5000F;background:#FFF1F2}
+.cat-icon{width:56px;height:56px;background:linear-gradient(180deg,#FFFFFF 0%,#F5F5F7 100%);border-radius:16px;display:flex;align-items:center;justify-content:center;border:1px solid #EEE;box-shadow:0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9);transition:all 0.2s;position:relative;overflow:hidden}
+.cat-icon::after{content:'';position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(180deg,rgba(255,255,255,0.8) 0%,transparent 100%);border-radius:16px 16px 0 0}
+.cat-item.active .cat-icon{border-color:#D5000F;background:linear-gradient(180deg,#FFF1F2 0%,#FFE4E6 100%);box-shadow:0 4px 12px rgba(213,0,15,0.15)}
 .cat-item span{font-size:11px;font-weight:600;color:#222}
-.cat-icon svg{width:26px;height:26px}
+.icon-3d{width:34px;height:34px;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.1));z-index:1}
 
 .section-title{padding:8px 16px;display:flex;justify-content:space-between;align-items:center}
 .section-title h3{font-size:16px;font-weight:800}
@@ -73,7 +74,6 @@ body{background:#fff;color:#111;min-height:100vh}
 </div>
 
 <div id="contenidoDolores">
-
 <div class="search-wrap">
   <div class="search">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -95,22 +95,22 @@ body{background:#fff;color:#111;min-height:100vh}
 
 <div class="categories" id="categorias">
   <div class="cat-item active" data-cat="todos">
-    <div class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div><span>Todos</span>
+    <div class="cat-icon"><div class="icon-3d" style="font-size:26px">✨</div></div><span>Todos</span>
   </div>
   <div class="cat-item" data-cat="burgers">
-    <div class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8"><path d="M4 10a8 8 0 0 1 16 0"/><path d="M4 10h16v3a8 8 0 0 1-16 0v-3z"/><path d="M4 13h16"/><path d="M6 7a6 6 0 0 1 12 0"/></svg></div><span>Burger</span>
+    <div class="cat-icon"><img class="icon-3d" src="https://cdn3d.iconscout.com/3d/premium/thumb/burger-3d-icon-download-in-png-blend-fbx-gltf-file-formats--food-fast-logo-delicious-snack-meal-pack-drink-icons-9562177.png" onerror="this.outerHTML='<div class=icon-3d style=font-size:26px>🍔</div>'"></div><span>Burger</span>
   </div>
   <div class="cat-item" data-cat="tacos">
-    <div class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8"><path d="M3 12c0-5 4.5-9 9-9s9 4 9 9"/><path d="M3 12c2 3 4 5 9 5s7-2 9-5"/><path d="M7 13c1 1.5 2.5 2.5 5 2.5S15.5 14.5 17 13"/></svg></div><span>Tacos</span>
+    <div class="cat-icon"><div class="icon-3d" style="font-size:26px">🌮</div></div><span>Tacos</span>
   </div>
   <div class="cat-item" data-cat="hotdog">
-    <div class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8"><path d="M5 12c0-3.5 3-6 7-6s7 2.5 7 6-3 6-7 6-7-2.5-7-6z"/><path d="M7 12c1.5 1 3.5 1.5 5 1.5S14.5 13 16 12" stroke-dasharray="2 2"/></svg></div><span>Hot Dog</span>
+    <div class="cat-icon"><div class="icon-3d" style="font-size:26px">🌭</div></div><span>Hot Dog</span>
   </div>
   <div class="cat-item" data-cat="alitas">
-    <div class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8"><path d="M12 5c2 0 4 1.5 4 4 0 2-1 3-2 4l-2 2-2-2c-1-1-2-2-2-4 0-2.5 2-4 4-4z"/><path d="M9 15c-1 1-2 3-1 5 2-1 4-1 5-3"/></svg></div><span>Alitas</span>
+    <div class="cat-icon"><div class="icon-3d" style="font-size:26px">🍗</div></div><span>Alitas</span>
   </div>
   <div class="cat-item" data-cat="pizzas">
-    <div class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8"><path d="M12 3L3 21h18L12 3z"/><circle cx="9" cy="14" r="1" fill="#111"/><circle cx="14" cy="12" r="1" fill="#111"/><circle cx="12" cy="17" r="1" fill="#111"/></svg></div><span>Pizzas</span>
+    <div class="cat-icon"><div class="icon-3d" style="font-size:26px">🍕</div></div><span>Pizzas</span>
   </div>
 </div>
 
@@ -121,7 +121,7 @@ body{background:#fff;color:#111;min-height:100vh}
 <div id="noDolores" style="display:none" class="no-ubi">
   <div style="width:70px;height:70px;background:#FFF1F2;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px">📍</div>
   <h2>Sin cobertura para tu ubicación</h2>
-  <p id="msgNoUbi">Por el momento solo hacemos entregas dentro de Dolores Hidalgo, Gto.</p>
+  <p id="msgNoUbi"></p>
   <p style="margin-top:10px;font-size:11px;color:#999" id="debugUbi"></p>
 </div>
 
@@ -155,50 +155,50 @@ const cliente = JSON.parse(dataStr);
 const lat = cliente.ubicacion?.lat;
 const lng = cliente.ubicacion?.lng;
 
-// OBTENER DIRECCION REAL CON MUNICIPIO + ESTADO (NO POR IP)
 async function obtenerDireccionReal(){
   try{
-    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {headers:{'Accept-Language':'es'}});
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
     const data = await res.json();
     const addr = data.address;
+    const calle = addr.road || addr.street || "";
+    const numero = addr.house_number || "";
+    const colonia = addr.suburb || addr.neighbourhood || "";
     const municipio = addr.city || addr.town || addr.village || addr.municipality || addr.county || "";
     const estado = addr.state || "";
-    const colonia = addr.suburb || addr.neighbourhood || "";
-    const direccionCompleta = `${municipio}${estado ? ', ' + estado : ''}`;
     
-    document.getElementById('txtUbi').textContent = direccionCompleta || "Dolores Hidalgo, Guanajuato";
-    document.getElementById('debugUbi').textContent = `GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)} | ${data.display_name}`;
+    const direccionVisual = `${municipio}, ${estado}`;
+    const direccionLarga = `${calle} ${numero}, ${colonia}, ${municipio}`.replace(/ ,/g,'').trim();
+    
+    document.getElementById('txtUbi').textContent = direccionVisual || data.display_name.split(',').slice(0,2).join(',');
+    document.getElementById('debugUbi').textContent = data.display_name;
 
-    // Guardar direccion real
     cliente.direccionReal = data.display_name;
     cliente.municipio = municipio;
     cliente.estado = estado;
     localStorage.setItem('doloya_ubicacion', JSON.stringify(cliente));
 
-    // VALIDACION ESTRICTA: SOLO DOLORES HIDALGO
-    const esDolores = municipio.toLowerCase().includes('dolores') || 
-                      (data.display_name || '').toLowerCase().includes('dolores hidalgo') ||
-                      (addr.city_district||'').toLowerCase().includes('dolores');
+    const esDolores = municipio.toLowerCase().includes('dolores') || data.display_name.toLowerCase().includes('dolores hidalgo');
 
     if(!esDolores){
       document.getElementById('contenidoDolores').style.display='none';
       document.getElementById('noDolores').style.display='flex';
-      document.getElementById('msgNoUbi').innerHTML = `Sin cobertura para tu ubicación<br><small style="font-size:12px">${direccionCompleta}</small><br><br>Por el momento solo hacemos entregas dentro de Dolores Hidalgo, Gto.`;
+      document.getElementById('msgNoUbi').innerHTML = `Estás en <b>${municipio}, ${estado}</b><br><br>Sin cobertura para tu ubicación<br><small style="font-size:11px;color:#999">${direccionLarga}</small>`;
     }
   }catch(e){
-    console.log(e);
-    // Fallback por GPS
+    console.error(e);
+    // Si falla el reverse, usamos validación por rango GPS de Dolores
     const dentroRango = lat>=20.90 && lat<=21.45 && lng>=-101.25 && lng<=-100.55;
-    document.getElementById('txtUbi').textContent = dentroRango ? "Dolores Hidalgo, Guanajuato" : "Fuera de zona";
+    document.getElementById('txtUbi').textContent = dentroRango ? "Dolores Hidalgo, Guanajuato" : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    document.getElementById('debugUbi').textContent = `GPS: ${lat}, ${lng}`;
     if(!dentroRango){
       document.getElementById('contenidoDolores').style.display='none';
       document.getElementById('noDolores').style.display='flex';
+      document.getElementById('msgNoUbi').textContent = `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)} - Sin cobertura para tu ubicación`;
     }
   }
 }
 obtenerDireccionReal();
 
-// ALIADOS
 let aliadosData = [];
 const listaEl = document.getElementById('listaRestaurantes');
 const searchResult = document.getElementById('searchResult');
