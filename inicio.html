@@ -11,11 +11,16 @@ body{background:#fff;color:#111;min-height:100vh}
 .header{padding:14px 16px 10px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:10}
 .header-left{display:flex;align-items:center;gap:10px}
 .logo-d{width:48px;height:48px;background:#D5000F;border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:28px;font-style:italic;transform:skew(-6deg)}
-.ubi-label{font-size:12px;color:#666;font-weight:500}
-.ubi-city{font-size:15px;font-weight:700;display:flex;align-items:center;gap:4px;color:#111}
-.search-wrap{padding:0 16px 14px 16px}
+.ubi-label{font-size:11px;color:#666;font-weight:500}
+.ubi-city{font-size:14px;font-weight:700;display:flex;align-items:center;gap:4px;color:#111;max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search-wrap{padding:0 16px 14px 16px;position:relative}
 .search{width:100%;height:46px;background:#F3F4F6;border-radius:999px;border:1.5px solid #E5E7EB;display:flex;align-items:center;padding:0 14px;gap:10px}
 .search input{flex:1;border:none;background:transparent;outline:none;font-size:14px;font-weight:500}
+.search-result{position:absolute;top:52px;left:16px;right:16px;background:white;border:1px solid #EEE;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.1);z-index:20;max-height:220px;overflow-y:auto;display:none}
+.search-item{padding:10px 14px;display:flex;gap:10px;align-items:center;cursor:pointer;border-bottom:1px solid #F5F5F5}
+.search-item:last-child{border:none}
+.search-item img{width:36px;height:36px;border-radius:8px;object-fit:cover;background:#111}
+.search-item b{font-size:13px}
 .banners{padding:0 16px;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .banners::-webkit-scrollbar{display:none}
 .banner{scroll-snap-align:start;min-width:92%;height:150px;border-radius:18px;background:linear-gradient(100deg,#D5000F 0%,#A8000C 100%);position:relative;overflow:hidden;display:flex;flex-shrink:0}
@@ -23,29 +28,34 @@ body{background:#fff;color:#111;min-height:100vh}
 .banner-text h2{color:white;font-size:22px;font-weight:800;line-height:1.1}
 .banner-text p{color:rgba(255,255,255,0.9);font-size:12px;margin-top:4px;line-height:1.3}
 .banner-text .btn-mini{margin-top:10px;background:#FFE24C;color:#111;padding:7px 14px;border-radius:999px;font-weight:800;font-size:12px;display:inline-block}
-.banner-img{position:absolute;right:-10px;bottom:-10px;width:55%;height:100%;object-fit:contain}
-.categories{padding:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.cat-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
-.cat-icon{width:100%;aspect-ratio:1;background:#F9FAFB;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:36px;border:2px solid transparent;transition:all 0.2s}
+.banner-img{position:absolute;right:-10px;bottom:-10px;width:55%;height:100%;object-fit:cover}
+
+/* CATEGORIAS DESLIZABLES Y MAS PEQUEÑAS + ICONOS */
+.categories{padding:12px 0 12px 16px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.categories::-webkit-scrollbar{display:none}
+.cat-item{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;min-width:62px;flex-shrink:0}
+.cat-icon{width:56px;height:56px;background:#F9FAFB;border-radius:16px;display:flex;align-items:center;justify-content:center;border:2px solid transparent;transition:all 0.2s}
 .cat-item.active .cat-icon{border-color:#D5000F;background:#FFF1F2}
-.cat-item span{font-size:12px;font-weight:600;color:#222}
+.cat-item span{font-size:11px;font-weight:600;color:#222}
+.cat-icon svg{width:26px;height:26px}
+
 .section-title{padding:8px 16px;display:flex;justify-content:space-between;align-items:center}
-.section-title h3{font-size:17px;font-weight:800}
+.section-title h3{font-size:16px;font-weight:800}
 .section-title a{font-size:13px;color:#D5000F;font-weight:700;text-decoration:none}
 .restaurants{padding:0 16px 20px 16px;display:flex;flex-direction:column;gap:12px}
 .rest-card{display:flex;gap:12px;padding:12px;border:1.5px solid #F0F0F0;border-radius:16px;background:white}
-.rest-logo{width:76px;height:76px;border-radius:12px;background:#111;object-fit:cover;flex-shrink:0}
+.rest-logo{width:70px;height:70px;border-radius:12px;background:#111;object-fit:cover;flex-shrink:0}
 .rest-info{flex:1}
 .rest-top{display:flex;justify-content:space-between;align-items:flex-start}
-.rest-name{font-size:14px;font-weight:800;line-height:1.2;max-width:170px}
-.badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;display:flex;align-items:center;gap:4px}
+.rest-name{font-size:13px;font-weight:800;line-height:1.2;max-width:170px}
+.badge{font-size:10px;font-weight:700;padding:4px 10px;border-radius:999px;display:flex;align-items:center;gap:4px}
 .badge-open{background:#E6F9ED;color:#0A7D2E;border:1px solid #B5ECC5}
-.dot{width:7px;height:7px;background:#16A34A;border-radius:50%}
-.rating{margin-top:4px;display:flex;gap:4px;align-items:center;font-size:12px;font-weight:600}
+.dot{width:6px;height:6px;background:#16A34A;border-radius:50%}
+.rating{margin-top:4px;display:flex;gap:4px;align-items:center;font-size:11px;font-weight:600}
 .tags{margin-top:5px;display:flex;gap:6px;flex-wrap:wrap}
 .tag{font-size:10px;padding:3px 8px;background:#F3F4F6;border-radius:999px;color:#555;font-weight:600}
 .rest-bottom{margin-top:5px;display:flex;gap:6px;font-size:11px;color:#555;font-weight:600;align-items:center}
-.no-ubi{height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
+.no-ubi{height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
 .no-ubi h2{font-size:20px;font-weight:800;margin-top:14px}
 .no-ubi p{font-size:14px;color:#666;margin-top:8px;max-width:260px;line-height:1.4}
 </style>
@@ -57,7 +67,7 @@ body{background:#fff;color:#111;min-height:100vh}
     <div class="logo-d">D</div>
     <div>
       <div class="ubi-label">Tu ubicación</div>
-      <div class="ubi-city" id="ubiCity"><span style="color:#D5000F">📍</span><span id="txtUbi">Cargando...</span> <span style="font-size:12px">▼</span></div>
+      <div class="ubi-city"><span style="color:#D5000F">📍</span><span id="txtUbi">Obteniendo ubicación...</span></div>
     </div>
   </div>
 </div>
@@ -66,178 +76,195 @@ body{background:#fff;color:#111;min-height:100vh}
 
 <div class="search-wrap">
   <div class="search">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M21 21l-4.3-4.3"/></svg>
-    <input id="buscador" type="text" placeholder="Busca restaurantes o comercios...">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input id="buscador" type="text" placeholder="Busca restaurantes o comercios..." autocomplete="off">
   </div>
+  <div id="searchResult" class="search-result"></div>
 </div>
 
-<div class="banners" id="banners">
+<div class="banners">
   <div class="banner">
     <div class="banner-text"><h2>Tu antojo,<br>en minutos</h2><p>Restaurantes, comida<br>y mucho más.</p><div class="btn-mini">Pide ahora</div></div>
-    <img class="banner-img" src="https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?auto=format&fit=crop&w=400&q=80" style="mix-blend-mode:normal">
+    <img class="banner-img" src="https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?auto=format&fit=crop&w=400&q=80">
   </div>
   <div class="banner" style="background:linear-gradient(100deg,#111 0%,#333 100%)">
     <div class="banner-text"><h2>Promo del<br>día 🔥</h2><p>Envío gratis en<br>pedidos + $150</p><div class="btn-mini">Ver promos</div></div>
     <img class="banner-img" src="https://images.unsplash.com/photo-1593246049226-ded77bf38872?auto=format&fit=crop&w=400&q=80">
   </div>
-  <div class="banner" style="background:linear-gradient(100deg,#FF6B00 0%,#D5000F 100%)">
-    <div class="banner-text"><h2>Nuevos<br>aliados</h2><p>Descubre los mejores<br>lugares de Dolores</p><div class="btn-mini">Explorar</div></div>
-    <img class="banner-img" src="https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=400&q=80">
-  </div>
 </div>
 
 <div class="categories" id="categorias">
-  <div class="cat-item active" data-cat="todos"><div class="cat-icon">🍔</div><span>Todos</span></div>
-  <div class="cat-item" data-cat="burgers"><div class="cat-icon">🍔</div><span>Burger</span></div>
-  <div class="cat-item" data-cat="tacos"><div class="cat-icon">🌮</div><span>Tacos</span></div>
-  <div class="cat-item" data-cat="hotdog"><div class="cat-icon">🌭</div><span>Hot Dog</span></div>
-  <div class="cat-item" data-cat="alitas"><div class="cat-icon">🍗</div><span>Alitas</span></div>
+  <div class="cat-item active" data-cat="todos">
+    <div class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div><span>Todos</span>
+  </div>
+  <div class="cat-item" data-cat="burgers">
+    <div class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8"><path d="M4 10a8 8 0 0 1 16 0"/><path d="M4 10h16v3a8 8 0 0 1-16 0v-3z"/><path d="M4 13h16"/><path d="M6 7a6 6 0 0 1 12 0"/></svg></div><span>Burger</span>
+  </div>
+  <div class="cat-item" data-cat="tacos">
+    <div class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8"><path d="M3 12c0-5 4.5-9 9-9s9 4 9 9"/><path d="M3 12c2 3 4 5 9 5s7-2 9-5"/><path d="M7 13c1 1.5 2.5 2.5 5 2.5S15.5 14.5 17 13"/></svg></div><span>Tacos</span>
+  </div>
+  <div class="cat-item" data-cat="hotdog">
+    <div class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8"><path d="M5 12c0-3.5 3-6 7-6s7 2.5 7 6-3 6-7 6-7-2.5-7-6z"/><path d="M7 12c1.5 1 3.5 1.5 5 1.5S14.5 13 16 12" stroke-dasharray="2 2"/></svg></div><span>Hot Dog</span>
+  </div>
+  <div class="cat-item" data-cat="alitas">
+    <div class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8"><path d="M12 5c2 0 4 1.5 4 4 0 2-1 3-2 4l-2 2-2-2c-1-1-2-2-2-4 0-2.5 2-4 4-4z"/><path d="M9 15c-1 1-2 3-1 5 2-1 4-1 5-3"/></svg></div><span>Alitas</span>
+  </div>
+  <div class="cat-item" data-cat="pizzas">
+    <div class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8"><path d="M12 3L3 21h18L12 3z"/><circle cx="9" cy="14" r="1" fill="#111"/><circle cx="14" cy="12" r="1" fill="#111"/><circle cx="12" cy="17" r="1" fill="#111"/></svg></div><span>Pizzas</span>
+  </div>
 </div>
 
 <div class="section-title"><h3>Restaurantes cerca de ti</h3><a href="#" id="verTodos">Ver todos ›</a></div>
 <div class="restaurants" id="listaRestaurantes"></div>
-
 </div>
 
 <div id="noDolores" style="display:none" class="no-ubi">
-  <div style="font-size:48px">📍</div>
-  <h2>No te encuentras en Dolores Hidalgo</h2>
-  <p id="msgNoUbi">Detectamos que estás fuera de nuestra zona de entrega. Por el momento solo hacemos entregas dentro de Dolores Hidalgo, Gto.</p>
-  <p style="margin-top:12px;font-size:12px;color:#999" id="debugUbi"></p>
+  <div style="width:70px;height:70px;background:#FFF1F2;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px">📍</div>
+  <h2>Sin cobertura para tu ubicación</h2>
+  <p id="msgNoUbi">Por el momento solo hacemos entregas dentro de Dolores Hidalgo, Gto.</p>
+  <p style="margin-top:10px;font-size:11px;color:#999" id="debugUbi"></p>
 </div>
 
 <script type="module">
 import { initializeApp as initApp1 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase as getDB1, ref as ref1, onValue as onValue1 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
+import { getDatabase as getDB1 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { initializeApp as initApp2 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase as getDB2, ref as ref2, onValue as onValue2 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// Firebase 1: Ubicaciones (ya la tienes)
 const configUbi = {
   apiKey: "AIzaSyCNL6ebow0VEJ4VfhI2ItVi4gFAjkOiMuo",
   authDomain: "doloya-ubicaciones.firebaseapp.com",
   databaseURL: "https://doloya-ubicaciones-default-rtdb.firebaseio.com",
   projectId: "doloya-ubicaciones",
-  storageBucket: "doloya-ubicaciones.firebasestorage.app",
-  messagingSenderId: "864757091561",
   appId: "1:864757091561:web:7d4f696b95fdc700dab478"
 };
-// Firebase 2: Aliados (nueva)
 const configAliados = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
   authDomain: "doloya-aliados.firebaseapp.com",
   databaseURL: "https://doloya-aliados-default-rtdb.firebaseio.com",
   projectId: "doloya-aliados",
-  storageBucket: "doloya-aliados.firebasestorage.app",
-  messagingSenderId: "122314467740",
-  appId: "1:122314467740:web:9947a0a9560557e3a00059",
-  measurementId: "G-5HETSEL4PT"
+  appId: "1:122314467740:web:9947a0a9560557e3a00059"
 };
-
-const appUbi = initApp1(configUbi, "ubi");
-const dbUbi = getDB1(appUbi);
+initApp1(configUbi, "ubi");
 const appAli = initApp2(configAliados, "aliados");
 const dbAli = getDB2(appAli);
 
-// 1. VALIDAR CLIENTE Y UBICACION
 const dataStr = localStorage.getItem('doloya_ubicacion');
-if(!dataStr){
-  window.location.href = "index.html";
-}
+if(!dataStr){ window.location.href = "index.html"; }
 const cliente = JSON.parse(dataStr);
-const lat = cliente.ubicacion?.lat || 0;
-const lng = cliente.ubicacion?.lng || 0;
-const ciudadIP = (cliente.ipInfo?.ciudad || "").toLowerCase();
-const pais = (cliente.ipInfo?.pais || "").toLowerCase();
+const lat = cliente.ubicacion?.lat;
+const lng = cliente.ubicacion?.lng;
 
-document.getElementById('txtUbi').textContent = cliente.ipInfo?.ciudad ? `${cliente.ipInfo.ciudad}, Gto` : "Dolores Hidalgo, Gto";
-document.getElementById('debugUbi').textContent = `Tu IP: ${cliente.ip} | GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)} | ${cliente.ipInfo?.ciudad}`;
+// OBTENER DIRECCION REAL CON MUNICIPIO + ESTADO (NO POR IP)
+async function obtenerDireccionReal(){
+  try{
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {headers:{'Accept-Language':'es'}});
+    const data = await res.json();
+    const addr = data.address;
+    const municipio = addr.city || addr.town || addr.village || addr.municipality || addr.county || "";
+    const estado = addr.state || "";
+    const colonia = addr.suburb || addr.neighbourhood || "";
+    const direccionCompleta = `${municipio}${estado ? ', ' + estado : ''}`;
+    
+    document.getElementById('txtUbi').textContent = direccionCompleta || "Dolores Hidalgo, Guanajuato";
+    document.getElementById('debugUbi').textContent = `GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)} | ${data.display_name}`;
 
-// Validar si esta en Dolores Hidalgo: por ciudad IP o por GPS
-const estaEnDolores = 
-  ciudadIP.includes('dolores') ||
-  (lat >= 20.90 && lat <= 21.40 && lng >= -101.20 && lng <= -100.60);
+    // Guardar direccion real
+    cliente.direccionReal = data.display_name;
+    cliente.municipio = municipio;
+    cliente.estado = estado;
+    localStorage.setItem('doloya_ubicacion', JSON.stringify(cliente));
 
-if(!estaEnDolores){
-  document.getElementById('contenidoDolores').style.display = 'none';
-  document.getElementById('noDolores').style.display = 'flex';
-  document.getElementById('msgNoUbi').textContent = `Detectamos que estás en ${cliente.ipInfo?.ciudad || 'otra ciudad'}. Por el momento solo hacemos entregas dentro de Dolores Hidalgo, Gto.`;
-} else {
-  document.getElementById('noDolores').style.display = 'none';
+    // VALIDACION ESTRICTA: SOLO DOLORES HIDALGO
+    const esDolores = municipio.toLowerCase().includes('dolores') || 
+                      (data.display_name || '').toLowerCase().includes('dolores hidalgo') ||
+                      (addr.city_district||'').toLowerCase().includes('dolores');
+
+    if(!esDolores){
+      document.getElementById('contenidoDolores').style.display='none';
+      document.getElementById('noDolores').style.display='flex';
+      document.getElementById('msgNoUbi').innerHTML = `Sin cobertura para tu ubicación<br><small style="font-size:12px">${direccionCompleta}</small><br><br>Por el momento solo hacemos entregas dentro de Dolores Hidalgo, Gto.`;
+    }
+  }catch(e){
+    console.log(e);
+    // Fallback por GPS
+    const dentroRango = lat>=20.90 && lat<=21.45 && lng>=-101.25 && lng<=-100.55;
+    document.getElementById('txtUbi').textContent = dentroRango ? "Dolores Hidalgo, Guanajuato" : "Fuera de zona";
+    if(!dentroRango){
+      document.getElementById('contenidoDolores').style.display='none';
+      document.getElementById('noDolores').style.display='flex';
+    }
+  }
 }
+obtenerDireccionReal();
 
-// 2. CARGAR ALIADOS DESDE FIREBASE 2
+// ALIADOS
 let aliadosData = [];
 const listaEl = document.getElementById('listaRestaurantes');
+const searchResult = document.getElementById('searchResult');
 
-function renderAliados(filtroCat = "todos", busqueda = ""){
-  let filtrados = aliadosData;
-  if(filtroCat !== "todos"){
-    filtrados = filtrados.filter(a => (a.categoria || "").toLowerCase().includes(filtroCat) || (a.categorias||[]).join(',').toLowerCase().includes(filtroCat));
-  }
-  if(busqueda){
-    const b = busqueda.toLowerCase();
-    filtrados = filtrados.filter(a => a.nombre.toLowerCase().includes(b));
-  }
-  listaEl.innerHTML = "";
-  if(filtrados.length === 0){
-    listaEl.innerHTML = `<p style="text-align:center;color:#999;padding:20px;font-size:13px">No se encontraron restaurantes</p>`;
-    return;
-  }
-  filtrados.forEach(a=>{
-    listaEl.innerHTML += `
-    <div class="rest-card" onclick="irAlAliado('${a.id}')">
-      <img class="rest-logo" src="${a.logo || 'https://via.placeholder.com/76x76/111/fff?text='+a.nombre[0]}">
+function renderAliados(filtroCat="todos", busqueda=""){
+  let f = aliadosData;
+  if(filtroCat!=="todos") f=f.filter(a=>(a.categoria||"").toLowerCase().includes(filtroCat));
+  if(busqueda) f=f.filter(a=>a.nombre.toLowerCase().includes(busqueda.toLowerCase()));
+  listaEl.innerHTML="";
+  if(f.length===0){ listaEl.innerHTML=`<p style="text-align:center;color:#999;padding:20px;font-size:13px">No se encontraron</p>`; return;}
+  f.forEach(a=>{
+    listaEl.innerHTML+=`
+    <div class="rest-card" onclick="ir('${a.id}')">
+      <img class="rest-logo" src="${a.logo||'https://via.placeholder.com/70'}">
       <div class="rest-info">
-        <div class="rest-top">
-          <div class="rest-name">${a.nombre}</div>
-          <div class="badge badge-open"><div class="dot"></div>${a.abierto ? 'Abierto' : 'Cerrado'}</div>
-        </div>
-        <div class="rating">⭐ ${a.rating || '4.8'} <span style="color:#777;font-weight:500">(${a.reseñas || '1.2k'})</span></div>
-        <div class="tags"><div class="tag">${a.categoria || 'Comida rápida'}</div><div class="tag">${a.subcategoria || 'Mexicana'}</div></div>
-        <div class="rest-bottom">🛵 ${a.tiempoEntrega || '20 min'} · $${a.costoEnvio || '35'}</div>
+        <div class="rest-top"><div class="rest-name">${a.nombre}</div><div class="badge badge-open"><div class="dot"></div>Abierto</div></div>
+        <div class="rating">⭐ ${a.rating||'4.8'} <span style="color:#777">(${a.reseñas||'1.2k'})</span></div>
+        <div class="tags"><div class="tag">${a.categoria||'Comida'}</div></div>
+        <div class="rest-bottom">🛵 ${a.tiempoEntrega||'20 min'} · $${a.costoEnvio||'35'}</div>
       </div>
     </div>`;
   });
 }
 
-window.irAlAliado = (id)=>{
-  localStorage.setItem('doloya_aliadoSeleccionado', id);
-  window.location.href = `aliado.html?id=${id}`;
-};
+function renderSearchDropdown(text){
+  if(!text){ searchResult.style.display='none'; return; }
+  const fil = aliadosData.filter(a=>a.nombre.toLowerCase().includes(text.toLowerCase())).slice(0,6);
+  if(fil.length===0){ searchResult.style.display='none'; return; }
+  searchResult.innerHTML="";
+  fil.forEach(a=>{
+    searchResult.innerHTML+=`<div class="search-item" onclick="ir('${a.id}')"><img src="${a.logo||''}"><div><b>${a.nombre}</b><div style="font-size:11px;color:#777">${a.categoria||''}</div></div></div>`;
+  });
+  searchResult.style.display='block';
+}
 
-// Escuchar Realtime de aliados
-onValue2(ref2(dbAli, 'doloya_aliados'), (snap)=>{
-  const val = snap.val();
-  if(val){
-    aliadosData = Object.values(val).filter(a=>a.activo !== false);
-  } else {
-    // Datos de ejemplo si aún no has cargado aliados
-    aliadosData = [
-      {id:'1', nombre:'La Catrina Burger & Grill', categoria:'burgers', subcategoria:'Comida rápida', logo:'https://i.imgur.com/8Km9tLL.png', rating:'4.8', reseñas:'1.2k', tiempoEntrega:'15 min', costoEnvio:'35', abierto:true, activo:true},
-      {id:'2', nombre:'Tacos El Chingón', categoria:'tacos', subcategoria:'Mexicana', logo:'https://i.imgur.com/Qr2p5Zk.png', rating:'4.7', reseñas:'856', tiempoEntrega:'20 min', costoEnvio:'35', abierto:true, activo:true},
-      {id:'3', nombre:'Dogos & Más', categoria:'hotdog', subcategoria:'Comida rápida', logo:'https://i.imgur.com/5xK8m9p.png', rating:'4.6', reseñas:'642', tiempoEntrega:'25 min', costoEnvio:'35', abierto:true, activo:true},
-      {id:'4', nombre:'Alitas Factory', categoria:'alitas', subcategoria:'Comida rápida', logo:'https://i.imgur.com/9xK8m9p.png', rating:'4.9', reseñas:'1.3k', tiempoEntrega:'30 min', costoEnvio:'45', abierto:true, activo:true},
+window.ir=(id)=>{ localStorage.setItem('doloya_aliadoSeleccionado',id); location.href=`aliado.html?id=${id}`; }
+
+onValue2(ref2(dbAli,'doloya_aliados'), snap=>{
+  const v=snap.val();
+  if(v){ aliadosData=Object.values(v).filter(a=>a.activo!==false); }
+  else{
+    aliadosData=[
+      {id:'1',nombre:'La Catrina Burger & Grill',categoria:'burgers',logo:'',rating:'4.8',reseñas:'1.2k',tiempoEntrega:'15 min',costoEnvio:'35'},
+      {id:'2',nombre:'Tacos El Chingón',categoria:'tacos',logo:'',rating:'4.7',reseñas:'856',tiempoEntrega:'20 min',costoEnvio:'35'},
+      {id:'3',nombre:'Dogos & Más',categoria:'hotdog',logo:'',rating:'4.6',reseñas:'642',tiempoEntrega:'25 min',costoEnvio:'35'},
+      {id:'4',nombre:'Alitas Factory',categoria:'alitas',logo:'',rating:'4.9',reseñas:'1.3k',tiempoEntrega:'30 min',costoEnvio:'45'},
     ];
   }
   renderAliados();
 });
 
-// Buscador
-document.getElementById('buscador').addEventListener('input', (e)=>{
-  const catActiva = document.querySelector('.cat-item.active')?.dataset.cat || 'todos';
-  renderAliados(catActiva, e.target.value);
+const buscador=document.getElementById('buscador');
+buscador.addEventListener('input',e=>{
+  const cat=document.querySelector('.cat-item.active')?.dataset.cat||'todos';
+  renderAliados(cat,e.target.value);
+  renderSearchDropdown(e.target.value);
 });
-// Categorias
+document.addEventListener('click',e=>{ if(!e.target.closest('.search-wrap')) searchResult.style.display='none'; });
 document.querySelectorAll('.cat-item').forEach(el=>{
-  el.addEventListener('click', ()=>{
+  el.addEventListener('click',()=>{
     document.querySelectorAll('.cat-item').forEach(x=>x.classList.remove('active'));
     el.classList.add('active');
-    renderAliados(el.dataset.cat, document.getElementById('buscador').value);
+    renderAliados(el.dataset.cat, buscador.value);
   });
 });
-document.getElementById('verTodos').addEventListener('click',(e)=>{e.preventDefault();document.querySelectorAll('.cat-item').forEach(x=>x.classList.remove('active'));document.querySelector('.cat-item[data-cat="todos"]').classList.add('active');renderAliados('todos','');document.getElementById('buscador').value='';});
+document.getElementById('verTodos').addEventListener('click',e=>{e.preventDefault();document.querySelectorAll('.cat-item').forEach(x=>x.classList.remove('active'));document.querySelector('[data-cat="todos"]').classList.add('active');renderAliados('todos','');buscador.value='';});
 </script>
 </body>
 </html>
