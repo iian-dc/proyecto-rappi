@@ -8,26 +8,26 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
 body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
-.portada-wrap{position:relative;width:100%;height:280px;overflow:hidden;background:#111}
-.portada-wrap img{width:100%;height:100%;object-fit:cover}
-.portada-fade{position:absolute;bottom:0;left:0;right:0;height:120px;background:linear-gradient(0deg,rgba(255,255,255,1) 0%,rgba(255,255,255,0.85) 30%,rgba(255,255,255,0) 100%);z-index:1}
+.portada-wrap{position:relative;width:100%;height:300px;overflow:hidden;background:#111;display:flex;align-items:center;justify-content:center}
+.portada-wrap img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.portada-fade{position:absolute;bottom:0;left:0;right:0;height:130px;background:linear-gradient(0deg,rgba(255,255,255,1) 0%,rgba(255,255,255,0.9) 40%,rgba(255,255,255,0) 100%);z-index:1}
 .top-bar{position:absolute;top:0;left:0;right:0;padding:16px;display:flex;justify-content:space-between;align-items:flex-start;z-index:3}
 .btn-back{width:42px;height:42px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.15);cursor:pointer;border:none}
 .badge-abierto{position:absolute;top:16px;right:16px;background:rgba(0,0,0,0.6);border:1.5px solid #00FF6A;color:white;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px;backdrop-filter:blur(6px);box-shadow:0 0 12px rgba(0,255,106,0.4);z-index:3}
 .badge-abierto .dot-green{width:10px;height:10px;background:#00FF6A;border-radius:50%;box-shadow:0 0 8px #00FF6A}
-.top-actions{position:absolute;top:66px;right:16px;display:flex;gap:10px;z-index:3}
-.action-circle{width:42px;height:42px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.15);cursor:pointer;border:none}
-.logo-float{position:absolute;bottom:-42px;left:50%;transform:translateX(-50%);width:110px;height:110px;border-radius:50%;background:white;border:4px solid white;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,0.18);z-index:4;display:flex;align-items:center;justify-content:center}
+/* LOGO CENTRADO EN EL CENTRO DE LA PORTADA */
+.logo-float{position:absolute;top:50%;left:50%;transform:translate(-50%,-30%);width:115px;height:115px;border-radius:50%;background:white;border:4px solid white;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,0.22);z-index:4;display:flex;align-items:center;justify-content:center}
 .logo-float img{width:100%;height:100%;object-fit:cover}
-.logo-float .inicial{width:100%;height:100%;background:#6B0F2A;color:white;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:28px}
-.nombre-wrap{margin-top:50px;text-align:center;padding:0 16px}
-.nombre-wrap h1{font-size:28px;font-weight:900;letter-spacing:-0.5px}
-.info-bar{margin-top:12px;padding:0 16px;display:flex;align-items:center;gap:10px;overflow-x:auto;scrollbar-width:none;white-space:nowrap;font-size:13px;font-weight:600;color:#222}
+.logo-float .inicial{width:100%;height:100%;background:#6B0F2A;color:white;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:30px}
+.nombre-wrap{margin-top:14px;text-align:center;padding:0 16px;display:flex;justify-content:center}
+.nombre-wrap h1{font-size:28px;font-weight:900;letter-spacing:-0.5px;text-align:center}
+/* INFO BAR CENTRADO EN TODO EL CENTRO */
+.info-bar{margin-top:12px;padding:0 16px;display:flex;align-items:center;justify-content:center;gap:10px;overflow-x:auto;scrollbar-width:none;white-space:nowrap;font-size:13px;font-weight:600;color:#222;width:100%;text-align:center}
 .info-bar::-webkit-scrollbar{display:none}
 .info-bar .sep{width:1px;height:18px;background:#DDD;flex-shrink:0}
-.info-item{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.info-item{display:flex;align-items:center;gap:6px;flex-shrink:0;justify-content:center}
 .info-item .icon-small{width:18px;height:18px}
-.tabs{margin-top:16px;padding:0 16px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none}
+.tabs{margin-top:16px;padding:0 16px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;justify-content:flex-start}
 .tabs::-webkit-scrollbar{display:none}
 .tab{padding:10px 18px;border-radius:999px;border:1.5px solid #E5E7EB;background:white;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0}
 .tab.active{background:#E30613;color:white;border-color:#E30613;box-shadow:0 4px 12px rgba(227,6,19,0.25)}
@@ -55,10 +55,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
       <button class="btn-back" onclick="history.back()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>
     </div>
     <div class="badge-abierto"><div class="dot-green"></div><span id="txtAbierto">ABIERTO</span></div>
-    <div class="top-actions">
-      <button class="action-circle" id="btnFav"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-      <button class="action-circle" id="btnShare"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98"/><path d="M15.41 6.51l-6.82 3.98"/></svg></button>
-    </div>
     <div class="logo-float"><img id="imgLogo" src="" style="display:none"><div id="logoInicial" class="inicial">S</div></div>
   </div>
 
@@ -112,7 +108,6 @@ else {
     document.getElementById('loading').style.display='none';
     document.getElementById('contenido').style.display='block';
 
-    // Datos principales
     document.getElementById('imgPortada').src = data.portada || data.logo;
     if(data.logo){ document.getElementById('imgLogo').src=data.logo; document.getElementById('imgLogo').style.display='block'; document.getElementById('logoInicial').style.display='none'; }
     else { document.getElementById('logoInicial').textContent=data.nombre?data.nombre[0].toUpperCase():'S'; }
@@ -124,7 +119,6 @@ else {
     document.getElementById('txtDistancia').textContent=data.distancia||'180 metros';
     document.getElementById('txtAbierto').textContent=data.abierto?'ABIERTO':'CERRADO';
 
-    // Menu agrupado por categorias
     const menu = data.menu || {};
     const categorias = [...new Set(Object.values(menu).map(m=>m.categoria || m.tipo || 'Combos'))];
     const tabsList = categorias.length>0?categorias:['Combos','Salchipapas','Desgranados','Bebidas'];
@@ -183,11 +177,6 @@ else {
       alert(`${nombre} agregado - $${precio}`);
     }
   });
-}
-
-document.getElementById('btnShare').onclick=()=>{
-  if(navigator.share){ navigator.share({title: document.getElementById('txtNombre').textContent, url: window.location.href}); }
-  else { navigator.clipboard.writeText(window.location.href); alert('Link copiado'); }
 }
 </script>
 </body>
