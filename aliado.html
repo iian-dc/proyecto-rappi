@@ -59,6 +59,19 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
 .carrito-info b{font-size:13px;font-weight:800}
 .carrito-info span{font-size:11.5px;color:#6B7280}
 .btn-ver-carrito{background:#E30613;color:white;border:none;padding:12px 20px;border-radius:999px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;box-shadow:0 4px 12px rgba(227,6,19,0.25)}
+
+/* MODAL CAMBIAR PEDIDO - IGUAL IMAGEN */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-cambio{width:100%;max-width:500px;background:white;border-radius:28px 28px 0 0;padding:28px 20px 24px 20px;animation:slideUp 0.3s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-cambio h2{font-size:22px;font-weight:900;line-height:1.2}
+.modal-cambio .linea{height:1px;background:#EEE;margin:16px 0}
+.modal-cambio p{font-size:15px;font-weight:600;line-height:1.4;color:#111}
+.modal-cambio p b{font-weight:900}
+.modal-btns{margin-top:22px;display:flex;gap:12px}
+.btn-conservar{flex:1;padding:16px;border-radius:999px;border:1.5px solid #E5E7EB;background:white;font-size:15px;font-weight:800;cursor:pointer}
+.btn-eliminar{flex:1;padding:16px;border-radius:999px;border:none;background:#E30613;color:white;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(227,6,19,0.3)}
 .loading{text-align:center;padding:40px;color:#999}
 </style>
 </head>
@@ -97,6 +110,19 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
   <button class="btn-ver-carrito" id="btnVerCarrito">Ver carrito</button>
 </div>
 
+<!-- MODAL CAMBIAR PEDIDO -->
+<div class="modal-overlay" id="modalCambio">
+  <div class="modal-cambio">
+    <h2>¿Quieres cambiar tu pedido?</h2>
+    <div class="linea"></div>
+    <p>Recuerda que tienes productos agregados en tu canasta de <b id="txtRestauranteAnterior">Subway - Dolores Hidalgo</b> ¿Deseas eliminarlos y agregar nuevos productos?</p>
+    <div class="modal-btns">
+      <button class="btn-conservar" id="btnConservar">Conservar</button>
+      <button class="btn-eliminar" id="btnEliminar">Sí, eliminar</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, onValue, get, set, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -126,6 +152,8 @@ let ipCliente = null;
 let ipKey = null;
 let ubicacionGPS = {lat:null,lng:null};
 let carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
+let restauranteActualCarrito = localStorage.getItem('doloya_carrito_restaurante')||null; // id del restaurante del carrito actual
+let restauranteAnteriorData = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
 
 async function obtenerIPyGPS(){
   try{
@@ -176,9 +204,16 @@ function calcularValoracion(likes){
   return valor.toFixed(1);
 }
 
-// CARRITO CON FIREBASE + CORRECCION BUG MENOS
+// CARRITO + MODAL CAMBIO RESTAURANTE
 function guardarCarrito(){
   localStorage.setItem('doloya_carrito_v2', JSON.stringify(carrito));
+  if(carrito.length>0){
+    localStorage.setItem('doloya_carrito_restaurante', id);
+    localStorage.setItem('doloya_carrito_restaurante_data', JSON.stringify({id:id, cat:cat, nombre:nombreRestauranteGlobal}));
+  }else{
+    localStorage.removeItem('doloya_carrito_restaurante');
+    localStorage.removeItem('doloya_carrito_restaurante_data');
+  }
   renderBarraCarrito();
   guardarCarritoFirebase();
 }
@@ -197,18 +232,28 @@ function guardarCarritoFirebase(){
     ubicacion: ubicacionGPS,
     fecha: Date.now()
   };
-  // carpeta nueva carrito que pediste
-  set(ref(db, `carrito/${cat}_${id}_${ipKey}`), dataCarrito);
-  // tambien dentro de aliado para que el restaurante lo vea
   if(carrito.length>0){
+    set(ref(db, `carrito/${cat}/${id}/${ipKey}`), dataCarrito);
     set(ref(db, `doloya_aliados/${cat}/${id}/carritos/${ipKey}`), dataCarrito);
   }else{
+    set(ref(db, `carrito/${cat}/${id}/${ipKey}`), null);
     set(ref(db, `doloya_aliados/${cat}/${id}/carritos/${ipKey}`), null);
-    set(ref(db, `carrito/${cat}_${id}_${ipKey}`), null);
   }
 }
 
+function verificarCambioRestaurante(){
+  // si hay carrito y es de otro restaurante
+  if(carrito.length>0 && restauranteActualCarrito && restauranteActualCarrito!==id){
+    const nombreAnt = restauranteAnteriorData?.nombre || restauranteActualCarrito;
+    document.getElementById('txtRestauranteAnterior').textContent = nombreAnt;
+    document.getElementById('modalCambio').classList.add('show');
+    return true;
+  }
+  return false;
+}
+
 function addProducto(nombre, precio, imagen){
+  if(verificarCambioRestaurante()) return;
   const existe = carrito.find(p=>p.nombre===nombre);
   if(existe){ existe.cantidad++; }
   else{ carrito.push({nombre, precio, imagen, cantidad:1}); }
@@ -242,7 +287,6 @@ function renderBarraCarrito(){
   const prc = document.getElementById('carritoPrecio');
   if(txt) txt.textContent = totalProductos===1?`1 producto`:`${totalProductos} productos`;
   if(prc) prc.textContent = `$${totalPrecio}`;
-  // CORRECCION BUG: actualizar todos los botones visibles por nombre
   document.querySelectorAll('.prod-card').forEach(card=>{
     const nombre = card.querySelector('.prod-name')?.textContent;
     if(!nombre) return;
@@ -331,6 +375,8 @@ else {
       renderProductos(fil.length>0?fil:productosArray.filter(p=>p.categoria===tabsList[0]));
     }
     renderProductos(productosArray.filter(p=>p.categoria===tabsList[0]));
+    // verificar si viene de otro restaurante al cargar
+    setTimeout(()=>{ verificarCambioRestaurante(); }, 500);
   });
 }
 
@@ -340,8 +386,33 @@ window.handleRestar=(nombre)=>{ restarProducto(nombre); }
 document.getElementById('btnLike').onclick=toggleLike;
 document.getElementById('btnVerCarrito').onclick=()=>{
   if(carrito.length===0) return;
-  // ya esta guardado en Firebase carrito, ahora pasar a pedidos si quieres
-  alert(`Carrito guardado en Firebase: carrito/${cat}_${id}_${ipKey} con ${carrito.length} productos`);
+  alert(`Carrito: ${carrito.length} productos`);
+}
+
+// BOTONES MODAL
+document.getElementById('btnConservar').onclick=()=>{
+  document.getElementById('modalCambio').classList.remove('show');
+  // devolver al restaurante anterior
+  if(restauranteAnteriorData){
+    window.location.href = `aliado.html?cat=${restauranteAnteriorData.cat}&id=${restauranteAnteriorData.id}`;
+  }else{
+    history.back();
+  }
+}
+document.getElementById('btnEliminar').onclick=async()=>{
+  // borrar carrito anterior de firebase
+  if(restauranteAnteriorData && ipKey){
+    set(ref(db, `carrito/${restauranteAnteriorData.cat}/${restauranteAnteriorData.id}/${ipKey}`), null);
+    set(ref(db, `doloya_aliados/${restauranteAnteriorData.cat}/${restauranteAnteriorData.id}/carritos/${ipKey}`), null);
+  }
+  carrito=[];
+  localStorage.setItem('doloya_carrito_v2', JSON.stringify([]));
+  localStorage.removeItem('doloya_carrito_restaurante');
+  localStorage.removeItem('doloya_carrito_restaurante_data');
+  restauranteActualCarrito=null;
+  document.getElementById('modalCambio').classList.remove('show');
+  renderBarraCarrito();
+  location.reload();
 }
 </script>
 </body>
