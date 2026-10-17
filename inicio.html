@@ -8,13 +8,13 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
 body{background:#fff;color:#111;min-height:100vh}
-.header{padding:14px 16px 8px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:10}
-.header-left{display:flex;align-items:center;gap:10px}
+.header{padding:14px 16px 8px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;background:#fff;z-index:10}
 .logo-d{width:44px;height:44px;background:#D5000F;border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:26px;font-style:italic;transform:skew(-6deg);flex-shrink:0}
-.ubi-label{font-size:10px;color:#888;font-weight:600;letter-spacing:0.3px;text-transform:uppercase}
-.ubi-city{font-size:12px;font-weight:700;display:flex;align-items:flex-start;gap:5px;color:#111;max-width:265px;line-height:1.25}
-.ubi-city #txtUbi{white-space:normal;overflow:visible;text-overflow:clip;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.loc-icon{width:16px;height:16px;flex-shrink:0;margin-top:1px;color:#D5000F}
+.header-text{flex:1;overflow:hidden}
+.ubi-label{font-size:10px;color:#888;font-weight:600;letter-spacing:0.3px;text-transform:capitalize}
+.ubi-city{font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:6px;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
+.ubi-city #txtUbi{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline}
+.loc-icon{width:16px;height:16px;flex-shrink:0;color:#D5000F}
 .search-wrap{padding:0 16px 12px 16px;position:relative}
 .search{width:100%;height:44px;background:#F3F4F6;border-radius:999px;border:1.5px solid #E5E7EB;display:flex;align-items:center;padding:0 14px;gap:10px}
 .search input{flex:1;border:none;background:transparent;outline:none;font-size:14px;font-weight:500}
@@ -31,7 +31,6 @@ body{background:#fff;color:#111;min-height:100vh}
 .banner-text h2{color:white;font-size:15.5px;font-weight:800;line-height:1.15}
 .banner-text p{color:rgba(255,255,255,0.92);font-size:11px;margin-top:3px;line-height:1.3;font-weight:500}
 .banner-text .btn-mini{margin-top:8px;background:white;color:#111;padding:6px 12px;border-radius:999px;font-weight:800;font-size:10.5px;display:inline-block;width:fit-content}
-/* CATEGORIAS 3D MINIMALISTAS CORREGIDAS */
 .categories{padding:12px 0 12px 16px;display:flex;gap:11px;overflow-x:auto;scrollbar-width:none}
 .categories::-webkit-scrollbar{display:none}
 .cat-item{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;min-width:64px;flex-shrink:0}
@@ -64,14 +63,12 @@ body{background:#fff;color:#111;min-height:100vh}
 <body>
 
 <div class="header">
-  <div class="header-left">
-    <div class="logo-d">D</div>
-    <div>
-      <div class="ubi-label">Tu ubicación</div>
-      <div class="ubi-city">
-        <svg class="loc-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-        <span id="txtUbi">Obteniendo ubicación...</span>
-      </div>
+  <div class="logo-d">D</div>
+  <div class="header-text">
+    <div class="ubi-label">Tu ubicación</div>
+    <div class="ubi-city">
+      <svg class="loc-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+      <span id="txtUbi">Obteniendo ubicación...</span>
     </div>
   </div>
 </div>
@@ -99,11 +96,12 @@ body{background:#fff;color:#111;min-height:100vh}
 </div>
 
 <div class="categories" id="categorias">
-  <div class="cat-item active" data-cat="todos"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/grid.png"></div><span>Todos</span></div>
+  <div class="cat-item active" data-cat="todos"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/bullet-list.png"></div><span>Todos</span></div>
   <div class="cat-item" data-cat="burgers"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/hamburger.png"></div><span>Burger</span></div>
   <div class="cat-item" data-cat="pizzas"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/pizza.png"></div><span>Pizza</span></div>
   <div class="cat-item" data-cat="alitas"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/fried-chicken.png"></div><span>Alitas</span></div>
   <div class="cat-item" data-cat="tacos"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/taco.png"></div><span>Tacos</span></div>
+  <div class="cat-item" data-cat="hotdog"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/hot-dog.png"></div><span>Hot Dog</span></div>
 </div>
 
 <div class="section-title"><h3>Restaurantes cerca de ti</h3><a href="#" id="verTodos">Ver todos</a></div>
@@ -128,10 +126,8 @@ const firebaseConfig = {
   projectId: "doloya-aliados",
   storageBucket: "doloya-aliados.firebasestorage.app",
   messagingSenderId: "122314467740",
-  appId: "1:122314467740:web:9947a0a9560557e3a00059",
-  measurementId: "G-5HETSEL4PT"
+  appId: "1:122314467740:web:9947a0a9560557e3a00059"
 };
-
 const app = initializeApp(firebaseConfig, "aliadosApp");
 const db = getDatabase(app);
 
@@ -149,7 +145,7 @@ async function obtenerDireccionReal(){
     const calle = addr.road || "";
     const numero = addr.house_number || "";
     const colonia = addr.suburb || addr.neighbourhood || "";
-    const municipio = addr.city || addr.town || addr.village || addr.municipality || addr.county || "";
+    const municipio = addr.city || addr.town || addr.village || addr.municipality || "";
     const estado = addr.state || "";
     let partes = [];
     if(calle) partes.push(`${calle} ${numero}`.trim());
@@ -159,9 +155,6 @@ async function obtenerDireccionReal(){
     const direccionCompleta = partes.join(', ');
     document.getElementById('txtUbi').textContent = direccionCompleta || data.display_name;
     document.getElementById('debugUbi').textContent = data.display_name;
-    cliente.municipio = municipio;
-    cliente.estado = estado;
-    localStorage.setItem('doloya_ubicacion', JSON.stringify(cliente));
     const esDolores = (municipio && municipio.toLowerCase().includes('dolores')) || data.display_name.toLowerCase().includes('dolores hidalgo');
     if(!esDolores){
       document.getElementById('contenidoDolores').style.display='none';
@@ -176,86 +169,89 @@ let aliadosData = [];
 const listaEl = document.getElementById('listaRestaurantes');
 const searchResult = document.getElementById('searchResult');
 
-// ESTRUCTURA COMPLETA QUE SE GUARDA EN FIREBASE DOLOYA-ALIADOS
-const restaurantesCompletos = {
-  burger_001: {
-    id: "burger_001",
-    nombre: "La Catrina Burger & Grill",
-    logo: "https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=300&h=300&fit=crop",
-    portada: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=800&h=400&fit=crop",
-    categoria: "burgers",
-    descripcion: "Las mejores burgers artesanales de Dolores Hidalgo",
-    rating: 4.8,
-    reseñas: "1.2k",
-    tiempoEntrega: "15-25 min",
-    costoEnvio: 35,
-    abierto: true,
-    activo: true,
-    ubicacion: "Calle Hidalgo 45, Centro, Dolores Hidalgo, Guanajuato",
-    lat: 21.1555,
-    lng: -100.934,
-    telefono: "4181001122",
-    menu: {
-      prod1: { id:"prod1", nombre:"Catrina Clásica", descripcion:"Carne 180g, queso cheddar, lechuga, tomate, aderezo de la casa", precio:95, imagen:"https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400", categoria:"burgers", disponible:true },
-      prod2: { id:"prod2", nombre:"Doble Carne BBQ", descripcion:"Doble carne 180g, tocino crujiente, aros de cebolla, salsa BBQ", precio:145, imagen:"https://images.unsplash.com/photo-1593246049226-ded77bf38872?w=400", categoria:"burgers", disponible:true },
-      prod3: { id:"prod3", nombre:"Papas Catrina", descripcion:"Papas fritas con queso cheddar y tocino", precio:65, imagen:"https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400", categoria:"acompañamientos", disponible:true }
+// ESTRUCTURA ORGANIZADA POR CATEGORIAS - SIN 001
+const estructuraOrganizada = {
+  burgers: {
+    la_catrina_burger: {
+      id: "la_catrina_burger",
+      nombre: "La Catrina Burger & Grill",
+      categoria: "burgers",
+      logo: "https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=300&h=300&fit=crop",
+      portada: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=800&h=400&fit=crop",
+      descripcion: "Las mejores burgers artesanales de Dolores Hidalgo",
+      telefono: "4181001122",
+      ubicacion: "Calle Hidalgo 45, Centro, Dolores Hidalgo, Guanajuato",
+      lat: 21.1555, lng: -100.934,
+      rating: 4.8, reseñas: "1.2k",
+      tiempoEntrega: "15-25 min", costoEnvio: 35,
+      abierto: true, activo: true,
+      menu: {
+        clasica: { id:"clasica", nombre:"Catrina Clásica", descripcion:"Carne 180g, cheddar, lechuga, tomate", precio:95, imagen:"https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400", disponible:true },
+        doble_bbq: { id:"doble_bbq", nombre:"Doble Carne BBQ", descripcion:"Doble carne, tocino, aros cebolla, BBQ", precio:145, imagen:"https://images.unsplash.com/photo-1593246049226-ded77bf38872?w=400", disponible:true }
+      }
     }
   },
-  pizza_001: {
-    id: "pizza_001",
-    nombre: "Pizzería Nonna Mia",
-    logo: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&h=300&fit=crop",
-    portada: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&h=400&fit=crop",
-    categoria: "pizzas",
-    descripcion: "Pizzas a la leña estilo italiano auténtico",
-    rating: 4.9,
-    reseñas: "856",
-    tiempoEntrega: "20-30 min",
-    costoEnvio: 40,
-    abierto: true,
-    activo: true,
-    ubicacion: "Av. Norte 12, Col. Centro, Dolores Hidalgo, Guanajuato",
-    lat: 21.1560,
-    lng: -100.933,
-    telefono: "4181001133",
-    menu: {
-      prod1: { id:"prod1", nombre:"Pizza Pepperoni", descripcion:"Pepperoni premium, queso mozzarella, salsa pomodoro italiana", precio:165, imagen:"https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400", categoria:"pizzas", disponible:true },
-      prod2: { id:"prod2", nombre:"Pizza Hawaiana", descripcion:"Jamón ahumado, piña natural, extra queso mozzarella", precio:155, imagen:"https://images.unsplash.com/photo-1595708684082-a1735871821?w=400", categoria:"pizzas", disponible:true }
+  pizzas: {
+    nonna_mia: {
+      id: "nonna_mia",
+      nombre: "Pizzería Nonna Mia",
+      categoria: "pizzas",
+      logo: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&h=300&fit=crop",
+      portada: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&h=400&fit=crop",
+      descripcion: "Pizzas a la leña estilo italiano",
+      telefono: "4181001133",
+      ubicacion: "Av. Norte 12, Centro, Dolores Hidalgo, Guanajuato",
+      lat: 21.1560, lng: -100.933,
+      rating: 4.9, reseñas: "856",
+      tiempoEntrega: "20-30 min", costoEnvio: 40,
+      abierto: true, activo: true,
+      menu: {
+        pepperoni: { id:"pepperoni", nombre:"Pizza Pepperoni", descripcion:"Pepperoni premium, mozzarella, pomodoro", precio:165, imagen:"https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400", disponible:true },
+        hawaiana: { id:"hawaiana", nombre:"Pizza Hawaiana", descripcion:"Jamón ahumado, piña, extra queso", precio:155, imagen:"https://images.unsplash.com/photo-1595708684082-a1735871821?w=400", disponible:true }
+      }
     }
   },
-  alitas_001: {
-    id: "alitas_001",
-    nombre: "Alitas Factory",
-    logo: "https://images.unsplash.com/photo-1527477396000-e27163dd9a8d?w=300&h=300&fit=crop",
-    portada: "https://images.unsplash.com/photo-1527477396000-e27163dd9a8d?w=800&h=400&fit=crop",
-    categoria: "alitas",
-    descripcion: "Alitas crujientes, boneless y salsas artesanales",
-    rating: 4.7,
-    reseñas: "642",
-    tiempoEntrega: "25-35 min",
-    costoEnvio: 35,
-    abierto: true,
-    activo: true,
-    ubicacion: "Calle Guanajuato 88, Dolores Hidalgo, Guanajuato",
-    lat: 21.1540,
-    lng: -100.935,
-    telefono: "4181001144",
-    menu: {
-      prod1: { id:"prod1", nombre:"10 Alitas BBQ", descripcion:"10 piezas crujientes con salsa BBQ artesanal y aderezo ranch", precio:135, imagen:"https://images.unsplash.com/photo-1527477396000-e27163dd9a8d?w=400", categoria:"alitas", disponible:true },
-      prod2: { id:"prod2", nombre:"Boneless Mango Habanero", descripcion:"250g boneless bañados en salsa mango habanero de la casa", precio:155, imagen:"https://images.unsplash.com/photo-1567620832903-9fc6debc209f?w=400", categoria:"alitas", disponible:true }
+  alitas: {
+    alitas_factory: {
+      id: "alitas_factory",
+      nombre: "Alitas Factory",
+      categoria: "alitas",
+      logo: "https://images.unsplash.com/photo-1527477396000-e27163dd9a8d?w=300&h=300&fit=crop",
+      portada: "https://images.unsplash.com/photo-1527477396000-e27163dd9a8d?w=800&h=400&fit=crop",
+      descripcion: "Alitas crujientes, boneless y salsas artesanales",
+      telefono: "4181001144",
+      ubicacion: "Calle Guanajuato 88, Dolores Hidalgo, Guanajuato",
+      lat: 21.1540, lng: -100.935,
+      rating: 4.7, reseñas: "642",
+      tiempoEntrega: "25-35 min", costoEnvio: 35,
+      abierto: true, activo: true,
+      menu: {
+        bbq_10: { id:"bbq_10", nombre:"10 Alitas BBQ", descripcion:"10 piezas BBQ y ranch", precio:135, imagen:"https://images.unsplash.com/photo-1527477396000-e27163dd9a8d?w=400", disponible:true },
+        mango: { id:"mango", nombre:"Boneless Mango Habanero", descripcion:"250g mango habanero de la casa", precio:155, imagen:"https://images.unsplash.com/photo-1567620832903-9fc6debc209f?w=400", disponible:true }
+      }
     }
   }
 };
 
+function aplanarDatos(dataPorCategoria){
+  let lista = [];
+  Object.keys(dataPorCategoria).forEach(cat=>{
+    Object.values(dataPorCategoria[cat]).forEach(rest=>{
+      lista.push(rest);
+    });
+  });
+  return lista;
+}
+
 function renderAliados(filtroCat="todos", busqueda=""){
   let f = aliadosData;
-  if(filtroCat!=="todos") f=f.filter(a=>(a.categoria||"").toLowerCase().includes(filtroCat));
+  if(filtroCat!=="todos") f=f.filter(a=>a.categoria===filtroCat);
   if(busqueda) f=f.filter(a=>a.nombre.toLowerCase().includes(busqueda.toLowerCase()));
   listaEl.innerHTML="";
   if(f.length===0){ listaEl.innerHTML=`<p style="text-align:center;color:#999;padding:20px;font-size:13px">No hay restaurantes</p>`; return;}
   f.forEach(a=>{
     listaEl.innerHTML+=`
-    <div class="rest-card" onclick="ir('${a.id}')">
+    <div class="rest-card" onclick="ir('${a.categoria}','${a.id}')">
       <img class="rest-logo" src="${a.logo}">
       <div class="rest-info">
         <div class="rest-top"><div class="rest-name">${a.nombre}</div><div class="badge badge-open"><div class="dot"></div>${a.abierto?'Abierto':'Cerrado'}</div></div>
@@ -271,24 +267,24 @@ function renderSearchDropdown(text){
   const fil = aliadosData.filter(a=>a.nombre.toLowerCase().includes(text.toLowerCase())).slice(0,6);
   if(fil.length===0){ searchResult.style.display='none'; return; }
   searchResult.innerHTML="";
-  fil.forEach(a=>{ searchResult.innerHTML+=`<div class="search-item" onclick="ir('${a.id}')"><img src="${a.logo}"><div><b>${a.nombre}</b><div style="font-size:11px;color:#777">${a.categoria}</div></div></div>`; });
+  fil.forEach(a=>{ searchResult.innerHTML+=`<div class="search-item" onclick="ir('${a.categoria}','${a.id}')"><img src="${a.logo}"><div><b>${a.nombre}</b><div style="font-size:11px;color:#777">${a.categoria}</div></div></div>`; });
   searchResult.style.display='block';
 }
-window.ir=(id)=>{ localStorage.setItem('doloya_aliadoSeleccionado',id); location.href=`aliado.html?id=${id}`; }
+window.ir=(cat,id)=>{ localStorage.setItem('doloya_aliadoSeleccionado',JSON.stringify({cat,id})); location.href=`aliado.html?cat=${cat}&id=${id}`; }
 
-// VINCULAR Y GUARDAR EN FIREBASE - UNA SOLA BASE
 onValue(ref(db,'doloya_aliados'), snap=>{
   const v=snap.val();
   if(v && Object.keys(v).length>0){
-    aliadosData=Object.values(v).filter(a=>a.activo!==false);
+    aliadosData=aplanarDatos(v);
     renderAliados();
   } else {
-    // SI ESTA VACIA, GUARDAMOS LOS 3 RESTAURANTES AUTOMATICAMENTE EN FIREBASE
-    console.log("Guardando 3 restaurantes en Firebase...");
-    Object.values(restaurantesCompletos).forEach(r=>{
-      set(ref(db, 'doloya_aliados/' + r.id), r);
+    // GUARDAR AUTOMATICAMENTE ORGANIZADO POR CATEGORIAS
+    Object.keys(estructuraOrganizada).forEach(cat=>{
+      Object.keys(estructuraOrganizada[cat]).forEach(restId=>{
+        set(ref(db, `doloya_aliados/${cat}/${restId}`), estructuraOrganizada[cat][restId]);
+      });
     });
-    aliadosData=Object.values(restaurantesCompletos);
+    aliadosData=aplanarDatos(estructuraOrganizada);
     renderAliados();
   }
 });
