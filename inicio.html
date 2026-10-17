@@ -31,13 +31,12 @@ body{background:#fff;color:#111;min-height:100vh}
 .banner-text h2{color:white;font-size:15.5px;font-weight:800;line-height:1.15}
 .banner-text p{color:rgba(255,255,255,0.92);font-size:11px;margin-top:3px;line-height:1.3;font-weight:500}
 .banner-text .btn-mini{margin-top:8px;background:white;color:#111;padding:6px 12px;border-radius:999px;font-weight:800;font-size:10.5px;display:inline-block;width:fit-content}
-/* CATEGORIAS 3D MINIMALISTAS CORREGIDAS QUE COINCIDEN */
 .categories{padding:12px 0 12px 16px;display:flex;gap:11px;overflow-x:auto;scrollbar-width:none}
 .categories::-webkit-scrollbar{display:none}
 .cat-item{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;min-width:64px;flex-shrink:0}
 .cat-icon{width:60px;height:60px;background:linear-gradient(180deg,#FFFFFF 0%,#F3F4F6 100%);border-radius:18px;display:flex;align-items:center;justify-content:center;border:1px solid #EDEEF0;box-shadow:0 3px 10px rgba(0,0,0,0.06), inset 0 1px 0 #fff;transition:all 0.2s}
 .cat-item.active .cat-icon{border-color:#D5000F;background:linear-gradient(180deg,#FFF1F2 0%,#FFE4E6 100%);box-shadow:0 6px 16px rgba(213,0,15,0.18);transform:translateY(-1px)}
-.icon-3d{width:40px;height:40px;object-fit:contain;filter:drop-shadow(0 3px 4px rgba(0,0,0,0.12))}
+.icon-3d{width:42px;height:42px;object-fit:contain;filter:drop-shadow(0 4px 5px rgba(0,0,0,0.13))}
 .cat-item span{font-size:11px;font-weight:600;color:#222}
 .section-title{padding:8px 16px;display:flex;justify-content:space-between;align-items:center}
 .section-title h3{font-size:16px;font-weight:800}
@@ -99,15 +98,15 @@ body{background:#fff;color:#111;min-height:100vh}
 </div>
 
 <div class="categories" id="categorias">
-  <div class="cat-item active" data-cat="todos"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/10486/10486474.png" alt="Todos"></div><span>Todos</span></div>
-  <div class="cat-item" data-cat="burgers"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/3075/3075977.png" alt="Burger"></div><span>Burger</span></div>
-  <div class="cat-item" data-cat="pizzas"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/3132/3132693.png" alt="Pizza"></div><span>Pizza</span></div>
-  <div class="cat-item" data-cat="alitas"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/1046/1046784.png" alt="Alitas"></div><span>Alitas</span></div>
-  <div class="cat-item" data-cat="tacos"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/3480/3480823.png" alt="Tacos"></div><span>Tacos</span></div>
-  <div class="cat-item" data-cat="hotdog"><div class="cat-icon"><img class="icon-3d" src="https://cdn-icons-png.flaticon.com/512/4672/4672586.png" alt="Hot Dog"></div><span>Hot Dog</span></div>
+  <div class="cat-item active" data-cat="todos"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/bento.png"></div><span>Todos</span></div>
+  <div class="cat-item" data-cat="burgers"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/hamburger.png"></div><span>Burger</span></div>
+  <div class="cat-item" data-cat="pizzas"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/pizza.png"></div><span>Pizza</span></div>
+  <div class="cat-item" data-cat="alitas"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/fried-chicken.png"></div><span>Alitas</span></div>
+  <div class="cat-item" data-cat="tacos"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/taco.png"></div><span>Tacos</span></div>
+  <div class="cat-item" data-cat="hotdog"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/hot-dog.png"></div><span>Hot Dog</span></div>
 </div>
 
-<div class="section-title"><h3>Restaurantes cerca de ti</h3><a href="vertodos.html" id="verTodos">Ver todos</a></div>
+<div class="section-title"><h3>Restaurantes cerca de ti</h3><a href="vertodos.html">Ver todos</a></div>
 <div class="restaurants" id="listaRestaurantes"></div>
 </div>
 
@@ -158,12 +157,6 @@ async function obtenerDireccionReal(){
     const direccionCompleta = partes.join(', ');
     document.getElementById('txtUbi').textContent = direccionCompleta || data.display_name;
     document.getElementById('debugUbi').textContent = data.display_name;
-    const esDolores = data.display_name.toLowerCase().includes('dolores hidalgo');
-    if(!esDolores){
-      document.getElementById('contenidoDolores').style.display='none';
-      document.getElementById('noDolores').style.display='flex';
-      document.getElementById('msgNoUbi').innerHTML = `Estás en <b>${direccionCompleta}</b><br><br>Sin cobertura`;
-    }
   }catch(e){ document.getElementById('txtUbi').textContent = `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`; }
 }
 obtenerDireccionReal();
@@ -186,9 +179,7 @@ const estructuraNueva = {
       tiempoEntrega: "15-25 min", costoEnvio: 10,
       distancia: "180 m",
       abierto: true, activo: true,
-      menu: {
-        clasica: { nombre:"Catrina Clásica", descripcion:"Carne 180g, cheddar", precio:95, imagen:"https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400", disponible:true }
-      }
+      menu: { clasica: { nombre:"Catrina Clásica", descripcion:"Carne 180g, cheddar", precio:95, imagen:"https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400", disponible:true } }
     }
   },
   pizzas: {
@@ -204,9 +195,7 @@ const estructuraNueva = {
       tiempoEntrega: "20-30 min", costoEnvio: 10,
       distancia: "220 m",
       abierto: true, activo: true,
-      menu: {
-        pepperoni: { nombre:"Pizza Pepperoni", descripcion:"Pepperoni premium", precio:165, imagen:"https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400", disponible:true }
-      }
+      menu: { pepperoni: { nombre:"Pizza Pepperoni", descripcion:"Pepperoni premium", precio:165, imagen:"https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400", disponible:true } }
     }
   },
   alitas: {
@@ -222,9 +211,7 @@ const estructuraNueva = {
       tiempoEntrega: "25-35 min", costoEnvio: 10,
       distancia: "180 m",
       abierto: true, activo: true,
-      menu: {
-        bbq_10: { nombre:"10 Alitas BBQ", descripcion:"10 piezas BBQ", precio:135, imagen:"https://images.unsplash.com/photo-1527477396000-e27163dd9a8d?w=400", disponible:true }
-      }
+      menu: { bbq_10: { nombre:"10 Alitas BBQ", descripcion:"10 piezas BBQ", precio:135, imagen:"https://images.unsplash.com/photo-1527477396000-e27163dd9a8d?w=400", disponible:true } }
     }
   },
   tacos: {},
@@ -260,9 +247,9 @@ function renderAliados(filtroCat="todos", busqueda=""){
         <div class="rating"><svg class="i" viewBox="0 0 24 24" fill="#FFB800"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> ${a.rating} <span style="color:#777">(${a.reseñas})</span></div>
         <div class="tags"><div class="tag">${a.categoria}</div></div>
         <div class="rest-bottom">
-          <svg class="moto" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><path d="M15 17.5h-4"/><path d="M2 8h12v6"/><path d="M14 8l4 3v3"/></svg> ${a.tiempoEntrega}
+          <svg class="moto" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M19 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M8 17h5l2-5h3.5"/><path d="M13 12l2-3h2"/><path d="M5 12v5"/><path d="M8 12v1"/></svg> ${a.tiempoEntrega}
           <span>·</span>
-          <svg class="moto" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><path d="M15 17.5h-4"/><path d="M2 8h12v6"/><path d="M14 8l4 3v3"/></svg> $${a.costoEnvio}
+          <svg class="moto" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M19 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M8 17h5l2-5h3.5"/><path d="M13 12l2-3h2"/><path d="M5 12v5"/><path d="M8 12v1"/></svg> $${a.costoEnvio}
           <span class="distancia">${a.distancia || '180 m'}</span>
         </div>
       </div>
@@ -287,18 +274,8 @@ onValue(ref(db,'doloya_aliados'), async snap=>{
     renderAliados();
     return;
   }
-  const keys = Object.keys(v);
-  const esFormatoViejo = keys.some(k=>k.includes('_001') || (v[k] && v[k].nombre && !v[k].burgers && !v.burgers));
-  const tieneCategorias = v.burgers || v.pizzas || v.alitas;
-  if(esFormatoViejo && !tieneCategorias){
-    await remove(ref(db,'doloya_aliados'));
-    for(const cat in estructuraNueva){ for(const restId in estructuraNueva[cat]){ await set(ref(db, `doloya_aliados/${cat}/${restId}`), estructuraNueva[cat][restId]); } }
-    aliadosData=aplanarDatos(estructuraNueva);
-    renderAliados();
-  } else {
-    aliadosData=aplanarDatos(v);
-    renderAliados();
-  }
+  aliadosData=aplanarDatos(v);
+  renderAliados();
 });
 
 const buscador=document.getElementById('buscador');
