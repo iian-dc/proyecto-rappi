@@ -13,7 +13,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
 .portada-fade{position:absolute;bottom:0;left:0;right:0;height:160px;background:linear-gradient(0deg,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0.45) 40%,rgba(0,0,0,0) 100%);z-index:1}
 .top-bar{position:absolute;top:0;left:0;right:0;padding:16px;display:flex;justify-content:space-between;align-items:flex-start;z-index:3}
 .btn-back{width:42px;height:42px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.15);cursor:pointer;border:none}
-/* BADGE ABIERTO CON ZOOM LENTO ACTIVO */
 .badge-abierto{position:absolute;top:16px;right:16px;background:rgba(0,0,0,0.65);border:1.5px solid #00FF6A;color:white;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px;backdrop-filter:blur(6px);box-shadow:0 0 14px rgba(0,255,106,0.5);z-index:3;animation:zoomActivo 1.8s ease-in-out infinite}
 .badge-abierto .dot-green{width:10px;height:10px;background:#00FF6A;border-radius:50%;box-shadow:0 0 8px #00FF6A}
 @keyframes zoomActivo{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
@@ -22,19 +21,19 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
 .logo-float .inicial{width:100%;height:100%;background:#6B0F2A;color:white;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:30px}
 .nombre-wrap{margin-top:14px;text-align:center;padding:0 16px;display:flex;justify-content:center}
 .nombre-wrap h1{font-size:28px;font-weight:900;letter-spacing:-0.5px;text-align:center}
-/* INFO BAR YA NO DESLIZA - REDUCIDO Y CENTRADO QUE QUEPA BIEN */
-.info-bar{margin-top:12px;padding:0 12px;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:nowrap;font-size:10.5px;font-weight:600;color:#222;width:100%;text-align:center}
-.info-bar .sep{width:1px;height:16px;background:#DDD;flex-shrink:0}
-.info-item{display:flex;align-items:center;gap:4px;flex-shrink:0;justify-content:center;white-space:nowrap}
-.info-item .icon-small{width:14px;height:14px;flex-shrink:0}
-.info-item b{font-size:11px}
+/* INFO BAR ORGANIZADO A LA IZQUIERDA COMO PEDISTE */
+.info-bar{margin-top:12px;padding:0 16px;display:flex;align-items:center;justify-content:flex-start;gap:10px;flex-wrap:wrap;width:100%}
+.info-item{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#1F2937;white-space:nowrap}
+.info-item .icon-small{width:16px;height:16px;flex-shrink:0}
+.estrella{color:#E30613}
+.votos{color:#9CA3AF;font-weight:500;font-size:12px}
+.distancia-neon{background:#E6F9ED;border:1.5px solid #00C950;color:#00C950;font-weight:800;padding:3px 10px;border-radius:999px;font-size:11px;box-shadow:0 0 10px rgba(0,201,80,0.25);display:flex;align-items:center;gap:4px}
 .tabs{margin-top:16px;padding:0 16px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;justify-content:flex-start}
 .tabs::-webkit-scrollbar{display:none}
 .tab{padding:10px 18px;border-radius:999px;border:1.5px solid #E5E7EB;background:white;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0}
 .tab.active{background:#E30613;color:white;border-color:#E30613;box-shadow:0 4px 12px rgba(227,6,19,0.25)}
 .menu-title{padding:18px 16px 10px 16px;font-size:18px;font-weight:800}
 .productos{padding:0 16px;display:flex;flex-direction:column;gap:12px}
-/* TARJETA PRODUCTO BOTON CENTRADO ELEGANTE */
 .prod-card{display:flex;gap:12px;padding:12px;border:1.5px solid #EEE;border-radius:16px;background:white;align-items:center}
 .prod-img{width:92px;height:72px;border-radius:12px;object-fit:cover;flex-shrink:0;background:#F3F4F6}
 .prod-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
@@ -60,16 +59,23 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
     <div class="logo-float"><img id="imgLogo" src="" style="display:none"><div id="logoInicial" class="inicial">S</div></div>
   </div>
 
-  <div class="nombre-wrap"><h1 id="txtNombre">Santillos</h1></div>
+  <div class="nombre-wrap"><h1 id="txtNombre">Pizzería Nonna Mia</h1></div>
 
+  <!-- BARRA ORGANIZADA A LA IZQUIERDA COMO PEDISTE -->
   <div class="info-bar">
-    <div class="info-item"><svg class="icon-small" viewBox="0 0 24 24" fill="#E30613"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> <b id="txtRating">4.8</b> <span style="color:#6B7280;font-weight:500;font-size:10px" id="txtReseñas">(1.2k)</span></div>
-    <div class="sep"></div>
-    <div class="info-item"><svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 2v7c0 1.1-.9 2-2 2h-4a2 2 0 0 1-2-2V2"/><path d="M15 2v20"/></svg> <span id="txtCategoria">Comida rápida</span></div>
-    <div class="sep"></div>
-    <div class="info-item"><svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8"><path d="M5 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M19 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M8 17h5l2-5h3.5"/><path d="M13 12l2-3h2"/></svg> <span><b id="txtEnvio">$15 mxn</b></span></div>
-    <div class="sep"></div>
-    <div class="info-item"><svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <span id="txtDistancia">180 m</span></div>
+    <div class="info-item">
+      <svg class="icon-small estrella" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      <b id="txtRating">4.9</b> <span class="votos" id="txtReseñas">(856)</span>
+    </div>
+    <div class="info-item">
+      <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.8"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 2v7c0 1.1-.9 2-2 2h-4a2 2 0 0 1-2-2V2"/><path d="M15 2v20"/></svg>
+      <span id="txtCategoria">pizzas</span>
+    </div>
+    <div class="info-item">
+      <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M19 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M8 17h5l2-5h3.5"/><path d="M13 12l2-3h2"/></svg>
+      <b id="txtEnvio">$40 mxn</b>
+    </div>
+    <div class="distancia-neon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <span id="txtDistancia">180 mts</span></div>
   </div>
 
   <div class="tabs" id="tabs"></div>
@@ -80,7 +86,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
 const firebaseConfig = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
   authDomain: "doloya-aliados.firebaseapp.com",
@@ -92,7 +97,6 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-
 const params = new URLSearchParams(window.location.search);
 let cat = params.get('cat');
 let id = params.get('id');
@@ -109,12 +113,12 @@ else {
     document.getElementById('contenido').style.display='block';
     document.getElementById('imgPortada').src = data.portada || data.logo;
     if(data.logo){ document.getElementById('imgLogo').src=data.logo; document.getElementById('imgLogo').style.display='block'; document.getElementById('logoInicial').style.display='none'; }
-    document.getElementById('txtNombre').textContent=data.nombre||'Santillos';
-    document.getElementById('txtRating').textContent=data.rating||'4.8';
-    document.getElementById('txtReseñas').textContent=`(${data.reseñas||'1.2k'})`;
-    document.getElementById('txtCategoria').textContent=data.categoria||'Comida rápida';
-    document.getElementById('txtEnvio').textContent=`$${data.costoEnvio||15} mxn`;
-    document.getElementById('txtDistancia').textContent=data.distancia||'180 m';
+    document.getElementById('txtNombre').textContent=data.nombre||'Pizzería Nonna Mia';
+    document.getElementById('txtRating').textContent=data.rating||'4.9';
+    document.getElementById('txtReseñas').textContent=`(${data.reseñas||'856'})`;
+    document.getElementById('txtCategoria').textContent=data.categoria||'pizzas';
+    document.getElementById('txtEnvio').textContent=`$${data.costoEnvio||40} mxn`;
+    document.getElementById('txtDistancia').textContent=data.distancia||'180 mts';
     document.getElementById('txtAbierto').textContent=data.abierto?'ABIERTO':'CERRADO';
     const menu = data.menu || {};
     const categorias = [...new Set(Object.values(menu).map(m=>m.categoria || m.tipo || 'Combos'))];
@@ -135,10 +139,8 @@ else {
     let productosArray = Object.values(menu).map(p=>({...p, categoria: p.categoria||p.tipo||tabsList[0]}));
     if(productosArray.length===0){
       productosArray=[
-        {nombre:'Combo individual', descripcion:'Hamburguesa, papas y bebida.', precio:120, imagen:'https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400', categoria:'Combos'},
-        {nombre:'Combo doble', descripcion:'Doble carne, queso, papas y bebida.', precio:140, imagen:'https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400', categoria:'Combos'},
-        {nombre:'Combo triple', descripcion:'Triple carne, queso, papas y bebida.', precio:260, imagen:'https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400', categoria:'Combos'},
-        {nombre:'Combo familiar', descripcion:'4 hamburguesas, papas grandes y 4 bebidas.', precio:480, imagen:'https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400', categoria:'Combos'}
+        {nombre:'Pizza Pepperoni', descripcion:'Pepperoni premium, queso mozzarella.', precio:165, imagen:'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400', categoria:'Combos'},
+        {nombre:'Pizza Margarita', descripcion:'Tomate, mozzarella y albahaca.', precio:145, imagen:'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400', categoria:'Combos'}
       ];
     }
     function renderProductos(lista){
