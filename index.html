@@ -15,42 +15,44 @@ display:flex;
 flex-direction:column;
 align-items:center;
 justify-content:center;
-padding:24px 20px;
+padding:22px 18px;
 color:white;
 }
-.container{width:100%;max-width:380px;display:flex;flex-direction:column;align-items:center;text-align:center}
-h1{font-size:33px;font-weight:800;line-height:1.1;margin-top:26px;letter-spacing:-0.5px}
-p{font-size:18px;font-weight:400;margin-top:12px;line-height:1.32;opacity:0.96;max-width:310px}
-.icon-map{width:200px;height:200px;margin:28px 0 38px 0}
+.container{width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;text-align:center}
+h1{font-size:26px;font-weight:800;line-height:1.1;margin-top:18px;letter-spacing:-0.3px}
+p{font-size:15px;font-weight:400;margin-top:8px;line-height:1.3;opacity:0.96;max-width:280px}
+.icon-map{width:150px;height:150px;margin:20px 0 28px 0}
 .btn{
 width:100%;
-height:62px;
+height:52px;
 border-radius:999px;
-font-size:19px;
+font-size:16px;
 font-weight:700;
 border:none;
 cursor:pointer;
 display:flex;
 align-items:center;
 justify-content:center;
-gap:12px;
+gap:10px;
 transition:all 0.2s;
 }
 .btn:active{transform:scale(0.97)}
-.btn-white{background:white;color:#151515;box-shadow:0 4px 20px rgba(0,0,0,0.15)}
-.btn-outline{background:transparent;border:2px solid white;color:white;margin-top:16px}
-.status{margin-top:18px;font-size:14px;min-height:20px;font-weight:600;opacity:0.95;text-align:center}
-.logo-wrap{width:240px;display:flex;flex-direction:column;align-items:center}
+.btn-white{background:white;color:#151515;box-shadow:0 4px 16px rgba(0,0,0,0.12)}
+.btn-outline{background:transparent;border:2px solid white;color:white;margin-top:12px;height:50px}
+.status{margin-top:14px;font-size:13px;min-height:18px;font-weight:600;opacity:0.95;text-align:center}
+.logo-wrap{width:190px;display:flex;flex-direction:column;align-items:center}
+.spinner{width:18px;height:18px;border:2.5px solid #ddd;border-top-color:#D5000F;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 <div class="container">
 <div class="logo-wrap">
-<svg viewBox="0 0 260 160" style="width:230px">
+<svg viewBox="0 0 260 160" style="width:180px">
 <path d="M85 15 L165 15 L150 45 L108 45 Q88 45 82 62 L72 95 Q70 108 90 108 L125 108 L115 135 L62 135 L35 135 Q12 135 16 110 L42 20 Q44 15 85 15 Z" fill="white"/>
 <path d="M118 58 L208 38 L122 70 Z" fill="#D5000F" stroke="white" stroke-width="3"/>
 </svg>
-<div style="font-weight:900;font-style:italic;font-size:56px;letter-spacing:-1.5px;transform:skew(-8deg);margin-top:-8px;line-height:1">DoloYa</div>
+<div style="font-weight:900;font-style:italic;font-size:42px;letter-spacing:-1px;transform:skew(-8deg);margin-top:-6px;line-height:1">DoloYa</div>
 </div>
 
 <h1>Permite tu ubicación</h1>
@@ -68,8 +70,8 @@ transition:all 0.2s;
 </svg>
 
 <button id="btnPermitir" class="btn btn-white">
-<svg width="26" height="26" viewBox="0 0 24 24" fill="#D5000F"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-Permitir ubicación
+<svg width="20" height="20" viewBox="0 0 24 24" fill="#D5000F"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+<span id="txtPermitir">Permitir ubicación</span>
 </button>
 
 <button id="btnCancelar" class="btn btn-outline">Cancelar</button>
@@ -96,6 +98,7 @@ const db = getFirestore(app);
 try{ getAnalytics(app); }catch(e){}
 
 const btnPermitir = document.getElementById('btnPermitir');
+const txtPermitir = document.getElementById('txtPermitir');
 const btnCancelar = document.getElementById('btnCancelar');
 const statusEl = document.getElementById('status');
 
@@ -104,20 +107,24 @@ btnCancelar.addEventListener('click', () => {
 });
 
 btnPermitir.addEventListener('click', async () => {
-  statusEl.textContent = "Obteniendo ubicación...";
+  statusEl.textContent = "Solicitando permiso de ubicacion...";
   btnPermitir.disabled = true;
-  btnPermitir.innerHTML = "⏳ Obteniendo ubicación...";
+  txtPermitir.textContent = "Obteniendo ubicacion...";
+  btnPermitir.insertAdjacentHTML('afterbegin','<div class="spinner" id="sp"></div>');
+  const icon = btnPermitir.querySelector('svg'); if(icon) icon.style.display='none';
 
   if(!navigator.geolocation){
-    statusEl.textContent = "Tu navegador no soporta ubicación";
+    statusEl.textContent = "Tu navegador no soporta ubicacion";
     btnPermitir.disabled = false;
-    btnPermitir.innerHTML = 'Permitir ubicación';
+    txtPermitir.textContent = "Permitir ubicacion";
+    document.getElementById('sp')?.remove();
+    if(icon) icon.style.display='block';
     return;
   }
 
   navigator.geolocation.getCurrentPosition(async (pos) => {
     try{
-      statusEl.textContent = "Guardando información...";
+      statusEl.textContent = "Guardando informacion...";
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
       const accuracy = pos.coords.accuracy;
@@ -152,20 +159,10 @@ btnPermitir.addEventListener('click', async () => {
 
       const data = {
         clienteId,
-        ubicacion: {
-          lat, lng, accuracy,
-          googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`
-        },
+        ubicacion: { lat, lng, accuracy, googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}` },
         ip: ipData.ip,
-        ipInfo: {
-          ciudad: ipData.city || '',
-          region: ipData.region || '',
-          pais: ipData.country_name || ipData.country || '',
-          org: ipData.org || '',
-          postal: ipData.postal || ''
-        },
+        ipInfo: { ciudad: ipData.city || '', region: ipData.region || '', pais: ipData.country_name || ipData.country || '', org: ipData.org || '', postal: ipData.postal || '' },
         dispositivo: deviceInfo,
-        contadorVisitas: 1,
         fechaISO: new Date().toISOString()
       };
 
@@ -173,48 +170,36 @@ btnPermitir.addEventListener('click', async () => {
       const snap = await getDoc(clienteRef);
       
       if(snap.exists()){
+        const nuevoConteo = (snap.data().contadorVisitas || 0) + 1;
         await setDoc(clienteRef, {
-          ubicacion: data.ubicacion,
-          ip: data.ip,
-          ipInfo: data.ipInfo,
-          dispositivo: data.dispositivo,
-          contadorVisitas: increment(1),
-          ultimaVisita: serverTimestamp(),
-          ultimaFechaISO: new Date().toISOString()
+          ubicacion: data.ubicacion, ip: data.ip, ipInfo: data.ipInfo, dispositivo: data.dispositivo,
+          contadorVisitas: increment(1), ultimaVisita: serverTimestamp(), ultimaFechaISO: new Date().toISOString()
         }, {merge:true});
-        
         await addDoc(collection(db, "doloya_clientes", clienteId, "historial"), {
-          lat, lng, accuracy, ip: data.ip, fecha: serverTimestamp(), fechaISO: new Date().toISOString()
+          lat, lng, accuracy, ip: data.ip, conteo: nuevoConteo, fecha: serverTimestamp(), fechaISO: new Date().toISOString()
         });
       }else{
         await setDoc(clienteRef, {
-          clienteId,
-          ubicacion: data.ubicacion,
-          ip: data.ip,
-          ipInfo: data.ipInfo,
-          dispositivo: data.dispositivo,
-          contadorVisitas: 1,
-          totalPedidos: 0,
-          primeraVisita: serverTimestamp(),
-          ultimaVisita: serverTimestamp(),
-          fechaISO: new Date().toISOString()
+          clienteId, ubicacion: data.ubicacion, ip: data.ip, ipInfo: data.ipInfo, dispositivo: data.dispositivo,
+          contadorVisitas: 1, totalPedidos: 0, primeraVisita: serverTimestamp(), ultimaVisita: serverTimestamp(), fechaISO: new Date().toISOString()
         });
         await addDoc(collection(db, "doloya_clientes", clienteId, "historial"), {
-          lat, lng, accuracy, ip: data.ip, fecha: serverTimestamp(), fechaISO: new Date().toISOString()
+          lat, lng, accuracy, ip: data.ip, conteo: 1, fecha: serverTimestamp(), fechaISO: new Date().toISOString()
         });
       }
 
       await addDoc(collection(db, "doloya_accesos"), {
-        ...data,
-        primeraVisita: serverTimestamp(),
-        ultimaVisita: serverTimestamp()
+        ...data, contador: snap.exists() ? (snap.data().contadorVisitas || 0) + 1 : 1,
+        primeraVisita: serverTimestamp(), ultimaVisita: serverTimestamp()
       });
 
-      localStorage.setItem('doloya_ubicacion', JSON.stringify(data));
+      localStorage.setItem('doloya_ubicacion', JSON.stringify({...data, conteo: snap.exists() ? (snap.data().contadorVisitas || 0) + 1 : 1}));
       sessionStorage.setItem('doloya_ubicacion', JSON.stringify(data));
 
-      statusEl.textContent = "¡Ubicación registrada! Entrando...";
-      btnPermitir.innerHTML = "✅ Ubicación registrada";
+      statusEl.textContent = "Ubicacion registrada correctamente. Entrando...";
+      document.getElementById('sp')?.remove();
+      txtPermitir.textContent = "Ubicacion registrada";
+      btnPermitir.insertAdjacentHTML('afterbegin','<svg width="20" height="20" viewBox="0 0 24 24" fill="#D5000F"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>');
 
       setTimeout(()=>{ window.location.href = "inicio.html"; }, 900);
 
@@ -222,15 +207,19 @@ btnPermitir.addEventListener('click', async () => {
       console.error(err);
       statusEl.textContent = "Error: " + err.message;
       btnPermitir.disabled = false;
-      btnPermitir.innerHTML = 'Permitir ubicación';
+      txtPermitir.textContent = "Permitir ubicacion";
+      document.getElementById('sp')?.remove();
+      const ic = btnPermitir.querySelector('svg'); if(ic) ic.style.display='block';
     }
   }, (err)=>{
     btnPermitir.disabled = false;
-    btnPermitir.innerHTML = 'Permitir ubicación';
+    txtPermitir.textContent = "Permitir ubicacion";
+    document.getElementById('sp')?.remove();
+    const ic = btnPermitir.querySelector('svg'); if(ic) ic.style.display='block';
     if(err.code === 1){
-      statusEl.textContent = "Debes permitir la ubicación para entrar a DoloYa";
+      statusEl.textContent = "Debes permitir la ubicacion para entrar a DoloYa";
     }else{
-      statusEl.textContent = "No se pudo obtener ubicación: " + err.message;
+      statusEl.textContent = "No se pudo obtener ubicacion: " + err.message;
     }
   }, {enableHighAccuracy:true, timeout:15000, maximumAge:0});
 });
