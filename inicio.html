@@ -15,35 +15,29 @@ body{background:#fff;color:#111;min-height:100vh}
 .ubi-city{font-size:12.5px;font-weight:700;display:flex;align-items:flex-start;gap:5px;color:#111;max-width:260px;line-height:1.25}
 .ubi-city #txtUbi{white-space:normal;overflow:visible;text-overflow:clip;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .loc-icon{width:16px;height:16px;flex-shrink:0;margin-top:1px;color:#D5000F}
-
 .search-wrap{padding:0 16px 12px 16px;position:relative}
 .search{width:100%;height:44px;background:#F3F4F6;border-radius:999px;border:1.5px solid #E5E7EB;display:flex;align-items:center;padding:0 14px;gap:10px}
 .search input{flex:1;border:none;background:transparent;outline:none;font-size:14px;font-weight:500}
 .search-result{position:absolute;top:50px;left:16px;right:16px;background:white;border:1px solid #EEE;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.1);z-index:20;max-height:220px;overflow-y:auto;display:none}
 .search-item{padding:10px 14px;display:flex;gap:10px;align-items:center;cursor:pointer;border-bottom:1px solid #F5F5F5}
-.search-item:last-child{border:none}
 .search-item img{width:36px;height:36px;border-radius:8px;object-fit:cover;background:#111}
 .search-item b{font-size:13px}
-
-/* BANNERS MAS PEQUEÑOS Y ELEGANTES - CORREGIDO */
 .banners{padding:0 16px;display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .banners::-webkit-scrollbar{display:none}
 .banner{scroll-snap-align:start;min-width:88%;height:118px;border-radius:16px;background:#D5000F;position:relative;overflow:hidden;display:flex;flex-shrink:0;box-shadow:0 4px 12px rgba(213,0,15,0.18)}
 .banner-gradient{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.15) 60%,rgba(0,0,0,0) 100%);z-index:1}
 .banner-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .banner-text{position:relative;z-index:2;padding:14px 16px;width:62%;display:flex;flex-direction:column;justify-content:center}
-.banner-text h2{color:white;font-size:16px;font-weight:800;line-height:1.15;text-shadow:0 1px 2px rgba(0,0,0,0.2)}
+.banner-text h2{color:white;font-size:16px;font-weight:800;line-height:1.15}
 .banner-text p{color:rgba(255,255,255,0.92);font-size:11px;margin-top:3px;line-height:1.3;font-weight:500}
-.banner-text .btn-mini{margin-top:8px;background:white;color:#111;padding:6px 12px;border-radius:999px;font-weight:800;font-size:10.5px;display:inline-block;width:fit-content;box-shadow:0 2px 6px rgba(0,0,0,0.15)}
-
-.categories{padding:12px 0 12px 16px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.banner-text .btn-mini{margin-top:8px;background:white;color:#111;padding:6px 12px;border-radius:999px;font-weight:800;font-size:10.5px;display:inline-block;width:fit-content}
+.categories{padding:12px 0 12px 16px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none}
 .categories::-webkit-scrollbar{display:none}
 .cat-item{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;min-width:62px;flex-shrink:0}
-.cat-icon{width:56px;height:56px;background:linear-gradient(180deg,#FFFFFF 0%,#F5F5F7 100%);border-radius:16px;display:flex;align-items:center;justify-content:center;border:1px solid #EEE;box-shadow:0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9);transition:all 0.2s;position:relative;overflow:hidden}
-.cat-icon::after{content:'';position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(180deg,rgba(255,255,255,0.8) 0%,transparent 100%);border-radius:16px 16px 0 0}
+.cat-icon{width:56px;height:56px;background:linear-gradient(180deg,#FFFFFF 0%,#F5F5F7 100%);border-radius:16px;display:flex;align-items:center;justify-content:center;border:1px solid #EEE;box-shadow:0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9);transition:all 0.2s}
 .cat-item.active .cat-icon{border-color:#D5000F;background:linear-gradient(180deg,#FFF1F2 0%,#FFE4E6 100%);box-shadow:0 4px 12px rgba(213,0,15,0.15)}
 .cat-item span{font-size:11px;font-weight:600;color:#222}
-.icon-3d{width:34px;height:34px;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.1));z-index:1;font-size:26px;display:flex;align-items:center;justify-content:center}
+.icon-3d{width:28px;height:28px;z-index:1}
 .section-title{padding:8px 16px;display:flex;justify-content:space-between;align-items:center}
 .section-title h3{font-size:16px;font-weight:800}
 .section-title a{font-size:13px;color:#D5000F;font-weight:700;text-decoration:none}
@@ -63,6 +57,7 @@ body{background:#fff;color:#111;min-height:100vh}
 .no-ubi{height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
 .no-ubi h2{font-size:20px;font-weight:800;margin-top:14px}
 .no-ubi p{font-size:14px;color:#666;margin-top:8px;max-width:280px;line-height:1.4}
+.i{width:14px;height:14px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -73,7 +68,7 @@ body{background:#fff;color:#111;min-height:100vh}
     <div>
       <div class="ubi-label">Tu ubicación</div>
       <div class="ubi-city">
-        <svg class="loc-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        <svg class="loc-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
         <span id="txtUbi">Obteniendo ubicación...</span>
       </div>
     </div>
@@ -84,62 +79,47 @@ body{background:#fff;color:#111;min-height:100vh}
 <div class="search-wrap">
   <div class="search">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M21 21l-4.3-4.3"/></svg>
-    <input id="buscador" type="text" placeholder="Busca restaurantes o comercios..." autocomplete="off">
+    <input id="buscador" type="text" placeholder="Busca restaurantes..." autocomplete="off">
   </div>
   <div id="searchResult" class="search-result"></div>
 </div>
 
 <div class="banners">
   <div class="banner">
-    <img class="banner-bg" src="https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?auto=format&fit=crop&w=600&q=80">
+    <img class="banner-bg" src="https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=600&h=300&fit=crop&q=80">
     <div class="banner-gradient"></div>
     <div class="banner-text"><h2>Tu antojo,<br>en minutos</h2><p>Restaurantes y más cerca de ti</p><div class="btn-mini">Pide ahora</div></div>
   </div>
   <div class="banner" style="background:#111">
-    <img class="banner-bg" src="https://images.unsplash.com/photo-1593246049226-ded77bf38872?auto=format&fit=crop&w=600&q=80" style="opacity:0.7">
+    <img class="banner-bg" src="https://images.unsplash.com/photo-1593246049226-ded77bf38872?w=600&h=300&fit=crop&q=80" style="opacity:0.7">
     <div class="banner-gradient"></div>
     <div class="banner-text"><h2>Promo del día</h2><p>Envío gratis +$150</p><div class="btn-mini">Ver promos</div></div>
-  </div>
-  <div class="banner" style="background:#FF6B00">
-    <img class="banner-bg" src="https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=600&q=80" style="opacity:0.6">
-    <div class="banner-gradient"></div>
-    <div class="banner-text"><h2>Nuevos aliados</h2><p>Descubre lo mejor de Dolores</p><div class="btn-mini">Explorar</div></div>
   </div>
 </div>
 
 <div class="categories" id="categorias">
-  <div class="cat-item active" data-cat="todos"><div class="cat-icon"><div class="icon-3d">✨</div></div><span>Todos</span></div>
-  <div class="cat-item" data-cat="burgers"><div class="cat-icon"><div class="icon-3d">🍔</div></div><span>Burger</span></div>
-  <div class="cat-item" data-cat="tacos"><div class="cat-icon"><div class="icon-3d">🌮</div></div><span>Tacos</span></div>
-  <div class="cat-item" data-cat="hotdog"><div class="cat-icon"><div class="icon-3d">🌭</div></div><span>Hot Dog</span></div>
-  <div class="cat-item" data-cat="alitas"><div class="cat-icon"><div class="icon-3d">🍗</div></div><span>Alitas</span></div>
-  <div class="cat-item" data-cat="pizzas"><div class="cat-icon"><div class="icon-3d">🍕</div></div><span>Pizzas</span></div>
+  <div class="cat-item active" data-cat="todos"><div class="cat-icon"><svg class="icon-3d" viewBox="0 0 24 24" fill="none" stroke="#D5000F" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div><span>Todos</span></div>
+  <div class="cat-item" data-cat="burgers"><div class="cat-icon"><svg class="icon-3d" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.6"><path d="M4 10a8 8 0 0 1 16 0"/><path d="M4 10h16v3a8 8 0 0 1-16 0v-3z"/></svg></div><span>Burger</span></div>
+  <div class="cat-item" data-cat="pizzas"><div class="cat-icon"><svg class="icon-3d" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.6"><path d="M12 3L3 21h18L12 3z"/></svg></div><span>Pizza</span></div>
+  <div class="cat-item" data-cat="alitas"><div class="cat-icon"><svg class="icon-3d" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.6"><path d="M12 5c2 0 4 1.5 4 4 0 2-1 3-2 4l-2 2-2-2c-1-1-2-2-2-4 0-2.5 2-4 4-4z"/></svg></div><span>Alitas</span></div>
+  <div class="cat-item" data-cat="tacos"><div class="cat-icon"><svg class="icon-3d" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.6"><path d="M3 12c0-5 4.5-9 9-9s9 4 9 9"/></svg></div><span>Tacos</span></div>
 </div>
 
-<div class="section-title"><h3>Restaurantes cerca de ti</h3><a href="#" id="verTodos">Ver todos ›</a></div>
+<div class="section-title"><h3>Restaurantes cerca de ti</h3><a href="#" id="verTodos">Ver todos</a></div>
 <div class="restaurants" id="listaRestaurantes"></div>
 </div>
 
 <div id="noDolores" style="display:none" class="no-ubi">
-  <div style="width:70px;height:70px;background:#FFF1F2;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px">📍</div>
+  <div style="width:70px;height:70px;background:#FFF1F2;border-radius:50%;display:flex;align-items:center;justify-content:center"><svg width="34" height="34" viewBox="0 0 24 24" fill="#D5000F"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg></div>
   <h2>Sin cobertura para tu ubicación</h2>
   <p id="msgNoUbi"></p>
   <p style="margin-top:10px;font-size:11px;color:#999" id="debugUbi"></p>
 </div>
 
 <script type="module">
-import { initializeApp as initApp1 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase as getDB1 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import { initializeApp as initApp2 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase as getDB2, ref as ref2, onValue as onValue2 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-const configUbi = {
-  apiKey: "AIzaSyCNL6ebow0VEJ4VfhI2ItVi4gFAjkOiMuo",
-  authDomain: "doloya-ubicaciones.firebaseapp.com",
-  databaseURL: "https://doloya-ubicaciones-default-rtdb.firebaseio.com",
-  projectId: "doloya-ubicaciones",
-  appId: "1:864757091561:web:7d4f696b95fdc700dab478"
-};
 const configAliados = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
   authDomain: "doloya-aliados.firebaseapp.com",
@@ -147,9 +127,8 @@ const configAliados = {
   projectId: "doloya-aliados",
   appId: "1:122314467740:web:9947a0a9560557e3a00059"
 };
-initApp1(configUbi, "ubi");
-const appAli = initApp2(configAliados, "aliados");
-const dbAli = getDB2(appAli);
+const appAli = initializeApp(configAliados, "aliados");
+const dbAli = getDatabase(appAli);
 
 const dataStr = localStorage.getItem('doloya_ubicacion');
 if(!dataStr){ window.location.href = "index.html"; }
@@ -162,31 +141,24 @@ async function obtenerDireccionReal(){
     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
     const data = await res.json();
     const addr = data.address;
-    const calle = addr.road || addr.street || addr.footway || "";
+    const calle = addr.road || "";
     const numero = addr.house_number || "";
-    const colonia = addr.suburb || addr.neighbourhood || addr.residential || "";
+    const colonia = addr.suburb || addr.neighbourhood || "";
     const municipio = addr.city || addr.town || addr.village || addr.municipality || addr.county || "";
     const estado = addr.state || "";
-    
     let partes = [];
     if(calle) partes.push(`${calle} ${numero}`.trim());
     if(colonia) partes.push(colonia);
     if(municipio) partes.push(municipio);
     if(estado) partes.push(estado);
-    
     const direccionCompleta = partes.join(', ');
-    
     document.getElementById('txtUbi').textContent = direccionCompleta || data.display_name;
     document.getElementById('debugUbi').textContent = data.display_name;
-
     cliente.direccionReal = data.display_name;
     cliente.municipio = municipio;
     cliente.estado = estado;
-    cliente.direccionCompleta = direccionCompleta;
     localStorage.setItem('doloya_ubicacion', JSON.stringify(cliente));
-
     const esDolores = (municipio && municipio.toLowerCase().includes('dolores')) || data.display_name.toLowerCase().includes('dolores hidalgo');
-
     if(!esDolores){
       document.getElementById('contenidoDolores').style.display='none';
       document.getElementById('noDolores').style.display='flex';
@@ -194,14 +166,7 @@ async function obtenerDireccionReal(){
     }
   }catch(e){
     console.error(e);
-    const dentroRango = lat>=20.90 && lat<=21.45 && lng>=-101.25 && lng<=-100.55;
-    document.getElementById('txtUbi').textContent = dentroRango ? "Dolores Hidalgo, Guanajuato" : `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-    document.getElementById('debugUbi').textContent = `Lat: ${lat}, Lng: ${lng}`;
-    if(!dentroRango){
-      document.getElementById('contenidoDolores').style.display='none';
-      document.getElementById('noDolores').style.display='flex';
-      document.getElementById('msgNoUbi').textContent = `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)} - Sin cobertura para tu ubicación`;
-    }
+    document.getElementById('txtUbi').textContent = `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
   }
 }
 obtenerDireccionReal();
@@ -219,12 +184,12 @@ function renderAliados(filtroCat="todos", busqueda=""){
   f.forEach(a=>{
     listaEl.innerHTML+=`
     <div class="rest-card" onclick="ir('${a.id}')">
-      <img class="rest-logo" src="${a.logo||'https://via.placeholder.com/70'}">
+      <img class="rest-logo" src="${a.logo}">
       <div class="rest-info">
-        <div class="rest-top"><div class="rest-name">${a.nombre}</div><div class="badge badge-open"><div class="dot"></div>Abierto</div></div>
-        <div class="rating">⭐ ${a.rating||'4.8'} <span style="color:#777">(${a.reseñas||'1.2k'})</span></div>
-        <div class="tags"><div class="tag">${a.categoria||'Comida'}</div></div>
-        <div class="rest-bottom">🛵 ${a.tiempoEntrega||'20 min'} · $${a.costoEnvio||'35'}</div>
+        <div class="rest-top"><div class="rest-name">${a.nombre}</div><div class="badge badge-open"><div class="dot"></div>${a.abierto?'Abierto':'Cerrado'}</div></div>
+        <div class="rating"><svg class="i" viewBox="0 0 24 24" fill="#FFB800"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> ${a.rating} <span style="color:#777">(${a.reseñas})</span></div>
+        <div class="tags"><div class="tag">${a.categoria}</div></div>
+        <div class="rest-bottom"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><path d="M15 17.5h-4"/><path d="M2 8h12v6"/><path d="M14 8l4 3v3"/></svg> ${a.tiempoEntrega} · $${a.costoEnvio} envío</div>
       </div>
     </div>`;
   });
@@ -236,23 +201,19 @@ function renderSearchDropdown(text){
   if(fil.length===0){ searchResult.style.display='none'; return; }
   searchResult.innerHTML="";
   fil.forEach(a=>{
-    searchResult.innerHTML+=`<div class="search-item" onclick="ir('${a.id}')"><img src="${a.logo||''}"><div><b>${a.nombre}</b><div style="font-size:11px;color:#777">${a.categoria||''}</div></div></div>`;
+    searchResult.innerHTML+=`<div class="search-item" onclick="ir('${a.id}')"><img src="${a.logo}"><div><b>${a.nombre}</b><div style="font-size:11px;color:#777">${a.categoria}</div></div></div>`;
   });
   searchResult.style.display='block';
 }
 
 window.ir=(id)=>{ localStorage.setItem('doloya_aliadoSeleccionado',id); location.href=`aliado.html?id=${id}`; }
 
-onValue2(ref2(dbAli,'doloya_aliados'), snap=>{
+onValue(ref(dbAli,'doloya_aliados'), snap=>{
   const v=snap.val();
-  if(v){ aliadosData=Object.values(v).filter(a=>a.activo!==false); }
-  else{
-    aliadosData=[
-      {id:'1',nombre:'La Catrina Burger & Grill',categoria:'burgers',logo:'',rating:'4.8',reseñas:'1.2k',tiempoEntrega:'15 min',costoEnvio:'35'},
-      {id:'2',nombre:'Tacos El Chingón',categoria:'tacos',logo:'',rating:'4.7',reseñas:'856',tiempoEntrega:'20 min',costoEnvio:'35'},
-      {id:'3',nombre:'Dogos & Más',categoria:'hotdog',logo:'',rating:'4.6',reseñas:'642',tiempoEntrega:'25 min',costoEnvio:'35'},
-      {id:'4',nombre:'Alitas Factory',categoria:'alitas',logo:'',rating:'4.9',reseñas:'1.3k',tiempoEntrega:'30 min',costoEnvio:'45'},
-    ];
+  if(v){ 
+    aliadosData=Object.values(v).filter(a=>a.activo!==false);
+  } else {
+    aliadosData=[];
   }
   renderAliados();
 });
