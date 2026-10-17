@@ -59,8 +59,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
 .carrito-info b{font-size:13px;font-weight:800}
 .carrito-info span{font-size:11.5px;color:#6B7280}
 .btn-ver-carrito{background:#E30613;color:white;border:none;padding:12px 20px;border-radius:999px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;box-shadow:0 4px 12px rgba(227,6,19,0.25)}
-
-/* MODAL CAMBIAR PEDIDO - IGUAL IMAGEN */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:flex-end;justify-content:center}
 .modal-overlay.show{display:flex}
 .modal-cambio{width:100%;max-width:500px;background:white;border-radius:28px 28px 0 0;padding:28px 20px 24px 20px;animation:slideUp 0.3s ease}
@@ -83,7 +81,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
   <div class="portada-wrap">
     <img id="imgPortada" src="">
     <div class="portada-fade"></div>
-    <div class="top-bar"><button class="btn-back" onclick="history.back()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button></div>
+    <div class="top-bar"><button class="btn-back" onclick="irAlInicio()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button></div>
     <div class="top-right"><div class="badge-abierto"><div class="dot-green"></div><span id="txtAbierto">ABIERTO</span></div><button class="btn-heart" id="btnLike"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button></div>
     <div class="logo-float"><img id="imgLogo" src="" style="display:none"><div id="logoInicial" class="inicial">S</div></div>
   </div>
@@ -110,7 +108,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
   <button class="btn-ver-carrito" id="btnVerCarrito">Ver carrito</button>
 </div>
 
-<!-- MODAL CAMBIAR PEDIDO -->
 <div class="modal-overlay" id="modalCambio">
   <div class="modal-cambio">
     <h2>¿Quieres cambiar tu pedido?</h2>
@@ -152,8 +149,13 @@ let ipCliente = null;
 let ipKey = null;
 let ubicacionGPS = {lat:null,lng:null};
 let carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
-let restauranteActualCarrito = localStorage.getItem('doloya_carrito_restaurante')||null; // id del restaurante del carrito actual
+let restauranteActualCarrito = localStorage.getItem('doloya_carrito_restaurante')||null;
 let restauranteAnteriorData = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
+
+function irAlInicio(){
+  window.location.href = 'index.html';
+}
+window.irAlInicio = irAlInicio;
 
 async function obtenerIPyGPS(){
   try{
@@ -204,20 +206,20 @@ function calcularValoracion(likes){
   return valor.toFixed(1);
 }
 
-// CARRITO + MODAL CAMBIO RESTAURANTE
 function guardarCarrito(){
   localStorage.setItem('doloya_carrito_v2', JSON.stringify(carrito));
   if(carrito.length>0){
     localStorage.setItem('doloya_carrito_restaurante', id);
     localStorage.setItem('doloya_carrito_restaurante_data', JSON.stringify({id:id, cat:cat, nombre:nombreRestauranteGlobal}));
+    restauranteActualCarrito = id;
   }else{
     localStorage.removeItem('doloya_carrito_restaurante');
     localStorage.removeItem('doloya_carrito_restaurante_data');
+    restauranteActualCarrito = null;
   }
   renderBarraCarrito();
   guardarCarritoFirebase();
 }
-
 function guardarCarritoFirebase(){
   if(!cat || !id || !ipKey) return;
   const total = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
@@ -240,9 +242,7 @@ function guardarCarritoFirebase(){
     set(ref(db, `doloya_aliados/${cat}/${id}/carritos/${ipKey}`), null);
   }
 }
-
 function verificarCambioRestaurante(){
-  // si hay carrito y es de otro restaurante
   if(carrito.length>0 && restauranteActualCarrito && restauranteActualCarrito!==id){
     const nombreAnt = restauranteAnteriorData?.nombre || restauranteActualCarrito;
     document.getElementById('txtRestauranteAnterior').textContent = nombreAnt;
@@ -251,7 +251,6 @@ function verificarCambioRestaurante(){
   }
   return false;
 }
-
 function addProducto(nombre, precio, imagen){
   if(verificarCambioRestaurante()) return;
   const existe = carrito.find(p=>p.nombre===nombre);
@@ -347,7 +346,6 @@ else {
         {nombre:'Doble Carne BBQ', descripcion:'Doble carne', precio:145, imagenFinal:'https://images.unsplash.com/photo-1550547660-d9450f859349?w=400', categoria:'Combos'}
       ];
     }
-
     function renderProductos(lista){
       const cont=document.getElementById('listaProductos');
       cont.innerHTML='';
@@ -375,7 +373,6 @@ else {
       renderProductos(fil.length>0?fil:productosArray.filter(p=>p.categoria===tabsList[0]));
     }
     renderProductos(productosArray.filter(p=>p.categoria===tabsList[0]));
-    // verificar si viene de otro restaurante al cargar
     setTimeout(()=>{ verificarCambioRestaurante(); }, 500);
   });
 }
@@ -389,18 +386,16 @@ document.getElementById('btnVerCarrito').onclick=()=>{
   alert(`Carrito: ${carrito.length} productos`);
 }
 
-// BOTONES MODAL
+// MODAL BOTONES CORREGIDOS
 document.getElementById('btnConservar').onclick=()=>{
   document.getElementById('modalCambio').classList.remove('show');
-  // devolver al restaurante anterior
   if(restauranteAnteriorData){
-    window.location.href = `aliado.html?cat=${restauranteAnteriorData.cat}&id=${restauranteAnteriorData.id}`;
+    window.location.replace(`aliado.html?cat=${restauranteAnteriorData.cat}&id=${restauranteAnteriorData.id}`);
   }else{
-    history.back();
+    window.location.replace('index.html');
   }
 }
-document.getElementById('btnEliminar').onclick=async()=>{
-  // borrar carrito anterior de firebase
+document.getElementById('btnEliminar').onclick=()=>{
   if(restauranteAnteriorData && ipKey){
     set(ref(db, `carrito/${restauranteAnteriorData.cat}/${restauranteAnteriorData.id}/${ipKey}`), null);
     set(ref(db, `doloya_aliados/${restauranteAnteriorData.cat}/${restauranteAnteriorData.id}/carritos/${ipKey}`), null);
@@ -410,9 +405,10 @@ document.getElementById('btnEliminar').onclick=async()=>{
   localStorage.removeItem('doloya_carrito_restaurante');
   localStorage.removeItem('doloya_carrito_restaurante_data');
   restauranteActualCarrito=null;
+  restauranteAnteriorData=null;
   document.getElementById('modalCambio').classList.remove('show');
   renderBarraCarrito();
-  location.reload();
+  // SIN recarga, solo limpia UI
 }
 </script>
 </body>
