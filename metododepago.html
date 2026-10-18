@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
-body{background:#fff;min-height:100vh;padding-bottom:120px}
+body{background:#fff;min-height:100vh;padding-bottom:130px}
 .header{padding:12px 16px;display:flex;align-items:center;gap:12px}
 .btn-back{width:42px;height:42px;background:#F2F3F5;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .title{padding:10px 16px 4px 16px}
@@ -24,27 +24,31 @@ body{background:#fff;min-height:100vh;padding-bottom:120px}
 .card.selected{border-color:#111}
 .card-left{display:flex;align-items:center;gap:12px}
 .icon-bank{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#fff}
-.card-right{width:32px;height:32px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;border:1px solid #E5E7EB}
+.card-right{width:32px;height:32px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;border:1px solid #E5E7EB}
+.datos-transferencia{display:none;background:#fff;border:2px solid #111;border-radius:20px;margin-top:10px;padding:16px}
+.datos-transferencia.show{display:block}
+.dato-head{font-weight:900;font-size:14px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.dato-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid #F0F0F0}
+.dato-row:last-child{border:none}
+.dato-label{font-size:11px;color:#8A94A6;font-weight:700;text-transform:uppercase}
+.dato-value{font-size:13px;font-weight:800;margin-top:2px;word-break:break-all}
+.btn-copy{width:36px;height:36px;border-radius:50%;background:#F3F4F6;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-left:12px;flex-shrink:0}
+.hidden-banks{display:none}
+.hidden-banks.show{display:block}
 .btn-vermas{display:flex;justify-content:center;margin-top:12px}
 .btn-vermas button{background:#fff;border:none;border-radius:999px;padding:10px 18px;font-weight:800;font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,0.08);cursor:pointer;display:flex;align-items:center;gap:6px}
 .efectivo-container{background:#EEF1F6;border-radius:28px;padding:14px;margin:14px 12px}
 .efectivo-card{background:#fff;border-radius:20px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;border:2px solid transparent}
 .efectivo-card.active{border-color:#22C55E;background:#F0FDF4}
 .icon-efectivo{width:40px;height:40px;border-radius:50%;background:#D1FAE5;display:flex;align-items:center;justify-content:center;color:#22C55E;font-weight:900}
-/* CAJA DE DATOS DEBAJO DE CADA BANCO */
-.datos-transferencia{display:none;background:#fff;border:2px solid #111;border-radius:20px;margin-top:10px;padding:16px;animation:slideDown 0.25s ease}
-.datos-transferencia.show{display:block}
-@keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-.dato-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #F0F0F0}
-.dato-row:last-child{border:none}
-.dato-label{font-size:11px;color:#8A94A6;font-weight:700;text-transform:uppercase}
-.dato-value{font-size:13px;font-weight:800;margin-top:2px;word-break:break-all}
-.btn-copy{width:36px;height:36px;border-radius:50%;background:#F3F4F6;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-left:12px;flex-shrink:0}
-.btn-ir-banco{width:100%;margin-top:14px;padding:13px;background:#22C55E;color:white;border:none;border-radius:999px;font-weight:800;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
-.hidden-banks{display:none}
-.hidden-banks.show{display:block}
+/* SUBIR COMPROBANTE */
+.upload-box{margin:16px 12px;background:#fff;border:2px dashed #D1D5DB;border-radius:20px;padding:20px;text-align:center;cursor:pointer}
+.upload-box.dragover{border-color:#111;background:#F9FAFB}
+.upload-box p{font-size:13px;font-weight:700;margin-top:8px;color:#111}
+.upload-box small{font-size:11px;color:#8A94A6}
+.preview-img{width:100%;max-height:220px;object-fit:contain;border-radius:16px;margin-top:12px;display:none}
 .footer{position:fixed;bottom:0;left:0;right:0;padding:16px;background:#fff;border-top:1px solid #F0F0F0}
-.btn-seleccionar{width:100%;padding:18px;border:none;border-radius:999px;font-size:16px;font-weight:800;background:#E30613;color:white;cursor:pointer;box-shadow:0 6px 18px rgba(227,6,19,0.3)}
+.btn-guardar{width:100%;padding:18px;border:none;border-radius:999px;font-size:16px;font-weight:800;background:#E30613;color:white;cursor:pointer;box-shadow:0 6px 18px rgba(227,6,19,0.3)}
 </style>
 </head>
 <body>
@@ -60,7 +64,6 @@ body{background:#fff;min-height:100vh;padding-bottom:120px}
   <p id="totalPagar">Total a pagar: $162.00</p>
 </div>
 
-<!-- DOS BOTONES ARRIBA -->
 <div class="tabs">
   <div class="tab active" id="tabEfectivo" onclick="setTipo('Efectivo')">Efectivo</div>
   <div class="tab" id="tabTransferencia" onclick="setTipo('Transferencia')">Transferencia</div>
@@ -68,70 +71,71 @@ body{background:#fff;min-height:100vh;padding-bottom:120px}
 
 <div id="seccionEfectivo">
   <div class="efectivo-container">
-    <div class="efectivo-card active" id="cardEfectivo">
+    <div class="efectivo-card active">
       <div class="icon-efectivo">$</div>
       <div style="flex:1"><b style="font-size:14px">Efectivo</b><small style="color:#22C55E;font-weight:700;display:block">• Disponible - Activo</small></div>
-      <div style="width:20px;height:20px;border-radius:50%;border:2px solid #22C55E;background:#22C55E;display:flex;align-items:center;justify-content:center;color:white">✓</div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#22C55E"/><path d="M8 12l2.5 2.5L16 9" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
     </div>
   </div>
 </div>
 
 <div id="seccionTransferencia" style="display:none">
   <div class="separator">Agregar nuevo método de pago</div>
-  <div class="card-container" id="banksContainer">
-    <!-- BANCO ITEM 1 -->
+  <div class="card-container">
     <div class="bank-item" id="item-BBVA">
-      <div class="card" onclick="seleccionarBanco('BBVA')"><div class="card-left"><div class="icon-bank" style="background:#004481">BBVA</div><b>BBVA</b></div><div class="card-right">+</div></div>
+      <div class="card" onclick="seleccionarBanco('BBVA')"><div class="card-left"><div class="icon-bank" style="background:#004481">BBVA</div><b>BBVA</b></div><div class="card-right"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></div></div>
       <div class="datos-transferencia" id="datos-BBVA"></div>
     </div>
     <div class="bank-item" id="item-Banorte">
-      <div class="card" onclick="seleccionarBanco('Banorte')"><div class="card-left"><div class="icon-bank" style="background:#EB0029">BN</div><b>Banorte</b></div><div class="card-right">+</div></div>
+      <div class="card" onclick="seleccionarBanco('Banorte')"><div class="card-left"><div class="icon-bank" style="background:#EB0029">BN</div><b>Banorte</b></div><div class="card-right"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></div></div>
       <div class="datos-transferencia" id="datos-Banorte"></div>
     </div>
-    <!-- OCULTOS HASTA VER MAS -->
+
     <div class="hidden-banks" id="hiddenBanks">
-      <div class="bank-item" id="item-Santander">
-        <div class="card" onclick="seleccionarBanco('Santander')"><div class="card-left"><div class="icon-bank" style="background:#EC0000">SAN</div><b>Santander</b></div><div class="card-right">+</div></div>
-        <div class="datos-transferencia" id="datos-Santander"></div>
-      </div>
-      <div class="bank-item" id="item-Spin">
-        <div class="card" onclick="seleccionarBanco('Spin')"><div class="card-left"><div class="icon-bank" style="background:#FF6000">SPIN</div><b>Spin by OXXO</b></div><div class="card-right">+</div></div>
-        <div class="datos-transferencia" id="datos-Spin"></div>
-      </div>
-      <div class="bank-item" id="item-MercadoPago">
-        <div class="card" onclick="seleccionarBanco('MercadoPago')"><div class="card-left"><div class="icon-bank" style="background:#009EE3">MP</div><b>Mercado Pago</b></div><div class="card-right">+</div></div>
-        <div class="datos-transferencia" id="datos-MercadoPago"></div>
-      </div>
-      <div class="bank-item" id="item-Azteca">
-        <div class="card" onclick="seleccionarBanco('Azteca')"><div class="card-left"><div class="icon-bank" style="background:#006341">AZ</div><b>Banco Azteca</b></div><div class="card-right">+</div></div>
-        <div class="datos-transferencia" id="datos-Azteca"></div>
-      </div>
+      <div class="bank-item" id="item-Santander"><div class="card" onclick="seleccionarBanco('Santander')"><div class="card-left"><div class="icon-bank" style="background:#EC0000">SAN</div><b>Santander</b></div><div class="card-right"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></div></div><div class="datos-transferencia" id="datos-Santander"></div></div>
+      <div class="bank-item" id="item-Spin"><div class="card" onclick="seleccionarBanco('Spin')"><div class="card-left"><div class="icon-bank" style="background:#FF6000">SPIN</div><b>Spin by OXXO</b></div><div class="card-right"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></div></div><div class="datos-transferencia" id="datos-Spin"></div></div>
+      <div class="bank-item" id="item-MercadoPago"><div class="card" onclick="seleccionarBanco('MercadoPago')"><div class="card-left"><div class="icon-bank" style="background:#009EE3">MP</div><b>Mercado Pago</b></div><div class="card-right"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></div></div><div class="datos-transferencia" id="datos-MercadoPago"></div></div>
+      <div class="bank-item" id="item-Azteca"><div class="card" onclick="seleccionarBanco('Azteca')"><div class="card-left"><div class="icon-bank" style="background:#006341">AZ</div><b>Banco Azteca</b></div><div class="card-right"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></div></div><div class="datos-transferencia" id="datos-Azteca"></div></div>
     </div>
     <div class="btn-vermas"><button id="btnVerMas" onclick="toggleVerMas()">Ver más <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg></button></div>
   </div>
 </div>
 
+<!-- SUBIR CAPTURA DESDE CELULAR -->
+<div class="upload-box" id="uploadBox" onclick="document.getElementById('inputComprobante').click()">
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+  <p>Subir captura de transferencia</p>
+  <small>Toca para seleccionar imagen desde tu celular</small>
+  <img id="preview" class="preview-img">
+  <input type="file" id="inputComprobante" accept="image/*" style="display:none" onchange="cargarImagen(this)">
+</div>
+
 <div class="footer">
-  <button class="btn-seleccionar" id="btnSeleccionar" onclick="confirmarPago()">Seleccionar</button>
+  <button class="btn-guardar" id="btnGuardar" onclick="guardarMetodo()">Guardar</button>
 </div>
 
 <script>
-// CONFIGURA AQUI TUS DATOS REALES - LINKS CORREGIDOS OFICIALES
 const DATOS_BANCOS = {
-  BBVA: { banco: 'BBVA', titular: 'DOLOYA RESTAURANT SA DE CV', clabe: '012 180 01567890123 4', link: 'https://play.google.com/store/apps/details?id=com.bbva.bbvacompass.bbva' },
-  Banorte: { banco: 'Banorte', titular: 'DOLOYA RESTAURANT SA DE CV', clabe: '072 180 00876543210 8', link: 'https://play.google.com/store/apps/details?id=net.veritran.banorte' },
-  Santander: { banco: 'Santander', titular: 'DOLOYA RESTAURANT SA DE CV', clabe: '014 180 00123456789 2', link: 'https://play.google.com/store/apps/details?id=com.santander.app' },
-  Spin: { banco: 'Spin by OXXO', titular: 'DOLOYA DOLORES HIDALGO', clabe: '646 180 123456789012', link: 'https://play.google.com/store/apps/details?id=com.oxxo.spp' },
-  MercadoPago: { banco: 'Mercado Pago', titular: 'DOLOYA RESTAURANT', clabe: '722 180 09876543210 5', link: 'https://play.google.com/store/apps/details?id=com.mercadopago.wallet' },
-  Azteca: { banco: 'Banco Azteca', titular: 'DOLOYA RESTAURANT', clabe: '127 180 01345678901 3', link: 'https://play.google.com/store/apps/details?id=com.alnova.smsclient' }
+  BBVA: { banco: 'BBVA', titular: 'DOLOYA RESTAURANT SA DE CV', clabe: '012 180 01567890123 4' },
+  Banorte: { banco: 'Banorte', titular: 'DOLOYA RESTAURANT SA DE CV', clabe: '072 180 00876543210 8' },
+  Santander: { banco: 'Santander', titular: 'DOLOYA RESTAURANT SA DE CV', clabe: '014 180 00123456789 2' },
+  Spin: { banco: 'Spin by OXXO', titular: 'DOLOYA DOLORES HIDALGO', clabe: '646 180 123456789012' },
+  MercadoPago: { banco: 'Mercado Pago', titular: 'DOLOYA RESTAURANT', clabe: '722 180 09876543210 5' },
+  Azteca: { banco: 'Banco Azteca', titular: 'DOLOYA RESTAURANT', clabe: '127 180 01345678901 3' }
 };
 
 let tipoActual = 'Efectivo';
 let bancoSeleccionado = null;
 let verMasAbierto = false;
+let comprobanteBase64 = localStorage.getItem('doloya_comprobante') || null;
 
 const total = localStorage.getItem('doloya_total') || '162.00';
 document.getElementById('totalPagar').textContent = `Total a pagar: $${total}`;
+
+if(comprobanteBase64){
+  document.getElementById('preview').src = comprobanteBase64;
+  document.getElementById('preview').style.display = 'block';
+}
 
 function setTipo(tipo){
   tipoActual = tipo;
@@ -139,8 +143,7 @@ function setTipo(tipo){
   document.getElementById('tabTransferencia').classList.toggle('active', tipo==='Transferencia');
   document.getElementById('seccionEfectivo').style.display = tipo==='Efectivo' ? 'block' : 'none';
   document.getElementById('seccionTransferencia').style.display = tipo==='Transferencia' ? 'block' : 'none';
-  document.getElementById('btnSeleccionar').textContent = tipo==='Efectivo' ? 'Seleccionar' : 'Seleccionar método';
-  if(tipo==='Efectivo'){ bancoSeleccionado=null; cerrarTodosDatos(); }
+  if(tipo==='Efectivo'){ cerrarTodosDatos(); bancoSeleccionado=null; }
 }
 
 function toggleVerMas(){
@@ -155,49 +158,49 @@ function cerrarTodosDatos(){
 }
 
 function seleccionarBanco(nombre){
-  // si ya esta abierto ese mismo, cierralo
-  const yaAbierto = document.getElementById(`datos-${nombre}`).classList.contains('show');
+  const cont = document.getElementById(`datos-${nombre}`);
+  const yaAbierto = cont.classList.contains('show');
   cerrarTodosDatos();
   if(yaAbierto){ bancoSeleccionado=null; return; }
-
   bancoSeleccionado = nombre;
   const datos = DATOS_BANCOS[nombre];
-  const cont = document.getElementById(`datos-${nombre}`);
-  
   cont.innerHTML = `
-    <div style="font-weight:900;font-size:14px;margin-bottom:12px">💳 Datos para transferir - ${datos.banco}</div>
-    <div class="dato-row"><div><div class="dato-label">Banco</div><div class="dato-value">${datos.banco}</div></div><button class="btn-copy" onclick="copiarTexto('${datos.banco}', this)">📋</button></div>
-    <div class="dato-row"><div><div class="dato-label">Titular / Restaurante</div><div class="dato-value">${datos.titular}</div></div><button class="btn-copy" onclick="copiarTexto('${datos.titular}', this)">📋</button></div>
-    <div class="dato-row"><div><div class="dato-label">CLABE Interbancaria</div><div class="dato-value">${datos.clabe}</div></div><button class="btn-copy" onclick="copiarTexto('${datos.clabe}', this)">📋</button></div>
-    <div class="dato-row"><div><div class="dato-label">Monto a transferir</div><div class="dato-value">$${total}</div></div><button class="btn-copy" onclick="copiarTexto('${total}', this)">📋</button></div>
-    <button class="btn-ir-banco" onclick="irAlBanco('${nombre}')">Ir a mi banco ${datos.banco} →</button>
+    <div class="dato-head"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> Datos para transferir - ${datos.banco}</div>
+    <div class="dato-row"><div><div class="dato-label">Titular / Restaurante</div><div class="dato-value">${datos.titular}</div></div><button class="btn-copy" onclick="copiarTexto('${datos.titular}', this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v3"/></svg></button></div>
+    <div class="dato-row"><div><div class="dato-label">CLABE Interbancaria</div><div class="dato-value">${datos.clabe}</div></div><button class="btn-copy" onclick="copiarTexto('${datos.clabe}', this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v3"/></svg></button></div>
+    <div class="dato-row"><div><div class="dato-label">Monto a transferir</div><div class="dato-value">$${total}</div></div><button class="btn-copy" onclick="copiarTexto('${total}', this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v3"/></svg></button></div>
   `;
   cont.classList.add('show');
   document.querySelector(`#item-${nombre} .card`).classList.add('selected');
-  document.getElementById('btnSeleccionar').textContent = `Pagar con ${datos.banco}`;
-  cont.scrollIntoView({behavior:'smooth', block:'center'});
 }
 
 function copiarTexto(texto, btn){
   navigator.clipboard.writeText(texto);
   const orig = btn.innerHTML;
   btn.innerHTML = '✓';
-  setTimeout(()=> btn.innerHTML = orig, 1200);
+  setTimeout(()=> btn.innerHTML = orig, 1000);
 }
 
-function irAlBanco(nombre){
-  const datos = DATOS_BANCOS[nombre];
-  // Abre link oficial corregido
-  window.open(datos.link, '_blank');
+function cargarImagen(input){
+  if(input.files && input.files[0]){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      comprobanteBase64 = e.target.result;
+      document.getElementById('preview').src = comprobanteBase64;
+      document.getElementById('preview').style.display = 'block';
+      localStorage.setItem('doloya_comprobante', comprobanteBase64);
+    }
+    reader.readAsDataURL(input.files[0]);
+  }
 }
 
-function confirmarPago(){
+function guardarMetodo(){
   if(tipoActual==='Efectivo'){
     localStorage.setItem('doloya_metodo_pago', 'Efectivo');
     localStorage.removeItem('doloya_banco_seleccionado');
   } else {
-    if(!bancoSeleccionado){ alert('Selecciona un banco'); return; }
-    localStorage.setItem('doloya_metodo_pago', `Transferencia ${bancoSeleccionado}`);
+    if(!bancoSeleccionado){ alert('Selecciona un banco para transferir'); return; }
+    localStorage.setItem('doloya_metodo_pago', `Transferencia ${DATOS_BANCOS[bancoSeleccionado].banco}`);
     localStorage.setItem('doloya_banco_seleccionado', bancoSeleccionado);
     localStorage.setItem('doloya_datos_transferencia', JSON.stringify(DATOS_BANCOS[bancoSeleccionado]));
   }
