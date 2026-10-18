@@ -1,1 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tu canasta - DoloYa</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
+body{background:#fff;color:#111;min-height:100vh;padding-bottom:140px}
+.header{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:10}
+.btn-back{width:42px;height:42px;background:#F3F4F6;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.header h1{font-size:17px;font-weight:800;flex:1;margin-left:10px}
+.btn-vaciar-top{padding:10px 20px;background:#F3F4F6;border-radius:999px;border:none;font-size:13px;font-weight:700;cursor:pointer;color:#111}
 
+.restaurante-box{padding:20px 16px 10px 16px;display:flex;align-items:center;justify-content:space-between}
+.restaurante-left{display:flex;align-items:center;gap:12px}
+.logo-rest{width:56px;height:56px;border-radius:50%;object-fit:cover;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:18px}
+.restaurante-left b{font-size:18px;font-weight:900}
+.restaurante-right{display:flex;align-items:center;gap:10px}
+.badge-count{background:#F3F4F6;padding:6px 16px;border-radius:999px;font-size:14px;font-weight:800}
+.btn-toggle{width:32px;height:32px;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.2s}
+.btn-toggle.cerrado{transform:rotate(180deg)}
+
+.productos{padding:10px 16px;display:flex;flex-direction:column;gap:18px;transition:all 0.3s}
+.productos.oculto{display:none}
+.prod-item{display:flex;gap:12px;align-items:flex-start;position:relative}
+.prod-img{width:56px;height:56px;border-radius:10px;object-fit:cover;background:#F3F4F6;flex-shrink:0}
+.prod-info{flex:1;min-width:0}
+.prod-nombre{font-size:14px;font-weight:700;line-height:1.2}
+.prod-precio{font-size:15px;font-weight:900;margin-top:2px}
+.prod-desc{font-size:12px;color:#6B7280;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95%}
+.prod-controls{position:absolute;right:0;top:0;display:flex;align-items:center;gap:0;background:white;border:1.5px solid #E5E7EB;border-radius:999px;padding:4px 6px;box-shadow:0 1px 4px rgba(0,0,0,0.05)}
+.ctrl-btn{width:28px;height:28px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;font-weight:800}
+.ctrl-num{font-size:14px;font-weight:800;min-width:20px;text-align:center}
+.btn-desc-toggle{position:absolute;right:0;bottom:-2px;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+.footer{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #EEE;padding:14px 16px;display:flex;gap:12px;z-index:999}
+.btn-vaciar-canasta{flex:1;padding:16px;border-radius:999px;border:1.5px solid #E5E7EB;background:white;font-size:15px;font-weight:800;cursor:pointer}
+.btn-siguiente{flex:1;padding:16px;border-radius:999px;border:none;background:#E30613;color:white;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(227,6,19,0.25)}
+
+.vacio{text-align:center;padding:80px 20px;color:#9AA0A6}
+.vacio b{color:#111;font-size:18px;display:block;margin-bottom:6px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="btn-back" onclick="window.location.href='inicio.html'">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+  <h1>Tu canasta</h1>
+  <button class="btn-vaciar-top" onclick="vaciarTodo()">Vaciar</button>
+</div>
+
+<div id="contenido"></div>
+
+<div class="footer" id="footer" style="display:none">
+  <button class="btn-vaciar-canasta" onclick="vaciarTodo()">Vaciar canasta</button>
+  <button class="btn-siguiente" onclick="irSiguiente()">Siguiente</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
+  authDomain: "doloya-aliados.firebaseapp.com",
+  databaseURL: "https://doloya-aliados-default-rtdb.firebaseio.com",
+  projectId: "doloya-aliados",
+  storageBucket: "doloya-aliados.firebasestorage.app",
+  messagingSenderId: "122314467740",
+  appId: "1:122314467740:web:9947a0a9560557e3a00059"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+let carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
+let dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
+let ipKey = localStorage.getItem('doloya_device_id') || null;
+let productosAbiertos = true;
+
+if(!ipKey){
+  fetch('https://api.ipify.org?format=json').then(r=>r.json()).then(d=>{
+    ipKey = d.ip.replace(/\./g,'_');
+  }).catch(()=>{
+    ipKey = localStorage.getItem('doloya_device_id');
+  });
+}
+
+function render(){
+  const cont = document.getElementById('contenido');
+  const foot = document.getElementById('footer');
+  
+  if(carrito.length===0){
+    cont.innerHTML = `<div class="vacio"><b>Tu canasta está vacía</b>Agrega productos de un restaurante</div>`;
+    foot.style.display='none';
+    return;
+  }
+  foot.style.display='flex';
+  const totalCant = carrito.reduce((s,i)=>s+i.cantidad,0);
+  const nombreRest = dataRest?.nombre || 'Restaurante';
+  const inicial = nombreRest.charAt(0).toUpperCase();
+  const logoRest = dataRest?.logo || '';
+
+  cont.innerHTML = `
+    <div class="restaurante-box">
+      <div class="restaurante-left">
+        ${logoRest ? `<img class="logo-rest" src="${logoRest}">` : `<div class="logo-rest" style="background:#6B0F2A">${inicial}</div>`}
+        <b>${nombreRest}</b>
+      </div>
+      <div class="restaurante-right">
+        <div class="badge-count">${totalCant}</div>
+        <button class="btn-toggle ${!productosAbiertos?'cerrado':''}" onclick="toggleProductos()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="productos ${!productosAbiertos?'oculto':''}" id="listaProds">
+      ${carrito.map((p,idx)=>`
+        <div class="prod-item">
+          <img class="prod-img" src="${p.imagen}">
+          <div class="prod-info">
+            <div class="prod-nombre">${p.nombre}</div>
+            <div class="prod-precio">$${(p.precio * p.cantidad).toFixed(2)}</div>
+            <div class="prod-desc" id="desc-${idx}">${p.descripcion || p.nombre + ' - ' + p.nombre}</div>
+          </div>
+          <div class="prod-controls">
+            ${p.cantidad===1 ? 
+              `<button class="ctrl-btn" onclick="eliminarItem(${idx})">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+              </button>` :
+              `<button class="ctrl-btn" onclick="cambiarCant(${idx}, -1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M5 12h14"/></svg></button>`
+            }
+            <span class="ctrl-num">${p.cantidad}</span>
+            <button class="ctrl-btn" onclick="cambiarCant(${idx}, 1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+          </div>
+          <button class="btn-desc-toggle" onclick="toggleDesc(${idx})">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+window.toggleProductos = ()=>{
+  productosAbiertos = !productosAbiertos;
+  render();
+}
+window.toggleDesc = (idx)=>{
+  const el = document.getElementById(`desc-${idx}`);
+  if(el.style.whiteSpace==='normal'){
+    el.style.whiteSpace='nowrap';
+    el.style.overflow='hidden';
+  }else{
+    el.style.whiteSpace='normal';
+    el.style.overflow='visible';
+  }
+}
+window.cambiarCant = (idx, delta)=>{
+  carrito[idx].cantidad += delta;
+  if(carrito[idx].cantidad<=0){
+    carrito.splice(idx,1);
+  }
+  guardar();
+}
+window.eliminarItem = (idx)=>{
+  carrito.splice(idx,1);
+  guardar();
+}
+window.vaciarTodo = ()=>{
+  if(carrito.length===0) return;
+  carrito=[];
+  guardar();
+  if(dataRest && ipKey){
+    set(ref(db, `carrito/${dataRest.cat}/${dataRest.id}/${ipKey}`), null);
+    set(ref(db, `doloya_aliados/${dataRest.cat}/${dataRest.id}/carritos/${ipKey}`), null);
+  }
+  localStorage.removeItem('doloya_carrito_restaurante');
+  localStorage.removeItem('doloya_carrito_restaurante_data');
+  window.location.href='inicio.html';
+}
+window.irSiguiente = ()=>{
+  if(carrito.length===0) return;
+  window.location.href='direccion.html';
+}
+function guardar(){
+  localStorage.setItem('doloya_carrito_v2', JSON.stringify(carrito));
+  if(carrito.length===0){
+    localStorage.removeItem('doloya_carrito_restaurante');
+    localStorage.removeItem('doloya_carrito_restaurante_data');
+    const foot = document.getElementById('footer');
+    if(foot) foot.style.display='none';
+    if(dataRest && ipKey){
+      set(ref(db, `carrito/${dataRest.cat}/${dataRest.id}/${ipKey}`), null);
+      set(ref(db, `doloya_aliados/${dataRest.cat}/${dataRest.id}/carritos/${ipKey}`), null);
+    }
+  }else{
+    // actualizar firebase
+    if(dataRest && ipKey){
+      const total = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
+      set(ref(db, `carrito/${dataRest.cat}/${dataRest.id}/${ipKey}`), {
+        restauranteId: dataRest.id,
+        restauranteCat: dataRest.cat,
+        restauranteNombre: dataRest.nombre,
+        productos: carrito,
+        total: total,
+        cantidadTotal: carrito.reduce((s,i)=>s+i.cantidad,0),
+        fecha: Date.now()
+      });
+    }
+  }
+  render();
+}
+render();
+</script>
+</body>
+</html>
