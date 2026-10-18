@@ -153,7 +153,7 @@ let restauranteActualCarrito = localStorage.getItem('doloya_carrito_restaurante'
 let restauranteAnteriorData = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
 
 function irAlInicio(){
-  window.location.href = 'index.html';
+  window.location.href = 'inicio.html';
 }
 window.irAlInicio = irAlInicio;
 
@@ -386,13 +386,12 @@ document.getElementById('btnVerCarrito').onclick=()=>{
   alert(`Carrito: ${carrito.length} productos`);
 }
 
-// MODAL BOTONES CORREGIDOS
 document.getElementById('btnConservar').onclick=()=>{
   document.getElementById('modalCambio').classList.remove('show');
   if(restauranteAnteriorData){
     window.location.replace(`aliado.html?cat=${restauranteAnteriorData.cat}&id=${restauranteAnteriorData.id}`);
   }else{
-    window.location.replace('index.html');
+    window.location.replace('inicio.html');
   }
 }
 document.getElementById('btnEliminar').onclick=()=>{
@@ -408,7 +407,6 @@ document.getElementById('btnEliminar').onclick=()=>{
   restauranteAnteriorData=null;
   document.getElementById('modalCambio').classList.remove('show');
   renderBarraCarrito();
-  // SIN recarga, solo limpia UI
 }
 </script>
 </body>
