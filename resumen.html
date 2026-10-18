@@ -93,7 +93,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
   <h3>
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
     Entrega estimada
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
   </h3>
 
   <div class="entrega-op active" id="opRapido" onclick="selEntrega('rapido')">
@@ -101,7 +100,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
       <div class="circle active" id="cRapido"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg></div>
       <div><b style="display:flex;align-items:center;gap:4px"><span style="color:#E30613">⚡</span><span style="color:#E30613">Más rápido</span></b><span>34 - 49 min</span></div>
     </div>
-    <div class="entrega-right verde">+ $45</div>
+    <div class="entrega-right verde">+ $45.00 MXN</div>
   </div>
 
   <div class="entrega-op" id="opAhorra" onclick="selEntrega('ahorra')">
@@ -109,7 +108,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
       <div class="circle" id="cAhorra"></div>
       <div><b>Ahorra sin prisas</b><span>54 - 74 min</span></div>
     </div>
-    <div class="entrega-right rojo">+ $35</div>
+    <div class="entrega-right rojo">+ $35.00 MXN</div>
   </div>
 </div>
 
@@ -125,24 +124,23 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 
 <div class="resumen-header" onclick="toggleResumen()">
   <div class="logo-sub" id="logoRest">SUBWAY</div>
-  <div class="resumen-info"><b id="nombreRest">Subway</b><span id="cantProductos">3 Productos</span></div>
+  <div class="resumen-info"><b id="nombreRest">Subway</b><span id="cantProductos">0 Productos</span></div>
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5" id="flechaResumen"><path d="M6 9l6 6 6-6"/></svg>
 </div>
 
 <div id="detalleResumen" style="display:block">
   <div class="lista-costos">
     <div style="padding:8px 0;border-top:1px solid #F0F0F0"></div>
-    <div class="costo-row"><span>Costo de productos</span><b>$0.00</b></div>
-    <div class="costo-row"><span>Costo de envío</span><b>$0.00</b></div>
-    <div class="costo-row"><span>Tarifa de Servicio</span><b>$0.00</b></div>
-    <div class="costo-row" id="rowDinamica"><span id="labelDinamica">Más rápido</span><b id="valorDinamica" class="verde">$45.00</b></div>
-    <div class="costo-row total" style="padding-top:12px;border-top:1px solid #F0F0F0;margin-top:8px"><b>Total a pagar</b><b id="totalPagar">$45.00</b></div>
+    <div class="costo-row"><span>Costo de productos</span><b id="costoProd">$0.00 MXN</b></div>
+    <div class="costo-row"><span>Costo de envío</span><b id="costoEnvio">$45.00 MXN</b></div>
+    <div class="costo-row"><span>Tarifa de Servicio</span><b>$0.00 MXN</b></div>
+    <div class="costo-row total" style="padding-top:12px;border-top:1px solid #F0F0F0;margin-top:8px"><b>Total a pagar</b><b id="totalPagar">$0.00 MXN</b></div>
   </div>
   <div class="ahorro-banner"><div style="font-size:28px">🪙</div><b>Ahorras $26.90 con descuentos exclusivos del App</b></div>
 </div>
 
 <div class="footer">
-  <div><span>Total a pagar</span><b id="totalFooter">$45.00</b></div>
+  <div><span>Total a pagar</span><b id="totalFooter">$0.00 MXN</b></div>
   <button class="btn-continuar" onclick="window.location.href='metododepago.html'">Continuar</button>
 </div>
 
@@ -153,13 +151,31 @@ const metodoSel = JSON.parse(localStorage.getItem('doloya_metodo_pago')||'null')
 const carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 const dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
 
+// MAPA Y DIRECCION REAL
 let lat = ubicacion?.ubicacion?.lat || 21.1576;
 let lng = ubicacion?.ubicacion?.lng || -100.9306;
 document.getElementById('mapaIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
 
-if(ubicacion?.direccion){
-  document.getElementById('txtDireccion').textContent = ubicacion.direccion;
+function cargarDireccion(){
+  if(ubicacion?.direccion){
+    document.getElementById('txtDireccion').textContent = ubicacion.direccion;
+  }else{
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`)
+    .then(r=>r.json()).then(d=>{
+      const a=d.address||{};
+      const dir = `${a.road||''} ${a.house_number||''}, ${a.suburb||''}, ${a.city||a.town||a.village||''}, ${a.state||''}, Mexico`.replace(/ ,/g,',').replace(/\s+/g,' ').trim();
+      document.getElementById('txtDireccion').textContent = dir;
+      if(ubicacion){
+        ubicacion.direccion = dir;
+        localStorage.setItem('doloya_ubicacion', JSON.stringify(ubicacion));
+      }
+    }).catch(()=>{
+      document.getElementById('txtDireccion').textContent = `${lat}, ${lng}`;
+    });
+  }
 }
+cargarDireccion();
+
 if(detallesRef){
   document.getElementById('txtDetalles').textContent = detallesRef;
 }
@@ -170,36 +186,25 @@ if(metodoSel){
   document.getElementById('badgeMetodo').style.color = '#0A7D2E';
 }
 
-if(dataRest){
-  document.getElementById('nombreRest').textContent = dataRest.nombre || 'Restaurante';
-  document.getElementById('cantProductos').textContent = `${carrito.reduce((s,i)=>s+i.cantidad,0)} Productos`;
-  if(dataRest.logo){
-    document.getElementById('logoRest').innerHTML = `<img src="${dataRest.logo}">`;
-  }
-}
-
 let tipoActual = localStorage.getItem('doloya_tipo_entrega') || 'rapido';
+let costoProductos = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
 
 function actualizarResumen(){
-  const label = document.getElementById('labelDinamica');
-  const valor = document.getElementById('valorDinamica');
-  const total = document.getElementById('totalPagar');
+  const costoProdEl = document.getElementById('costoProd');
+  const costoEnvioEl = document.getElementById('costoEnvio');
+  const totalEl = document.getElementById('totalPagar');
   const totalF = document.getElementById('totalFooter');
-  if(tipoActual==='rapido'){
-    label.textContent = 'Más rápido';
-    valor.textContent = '$45.00';
-    valor.className = 'verde';
-    total.textContent = '$45.00';
-    totalF.textContent = '$45.00';
-  }else{
-    label.textContent = 'Ahorra sin prisas';
-    valor.textContent = '$35.00';
-    valor.className = 'rojo';
-    total.textContent = '$35.00';
-    totalF.textContent = '$35.00';
-  }
+  
+  let envio = tipoActual==='rapido' ? 45 : 35;
+  costoProdEl.textContent = `$${costoProductos.toFixed(2)} MXN`;
+  costoEnvioEl.textContent = `$${envio.toFixed(2)} MXN`;
+  
+  let total = costoProductos + envio;
+  totalEl.textContent = `$${total.toFixed(2)} MXN`;
+  totalF.textContent = `$${total.toFixed(2)} MXN`;
+  
   localStorage.setItem('doloya_tipo_entrega', tipoActual);
-  localStorage.setItem('doloya_costo_entrega', tipoActual==='rapido'?45:35);
+  localStorage.setItem('doloya_costo_entrega', envio);
 }
 
 function selEntrega(tipo){
@@ -230,7 +235,14 @@ function toggleResumen(){
   }
 }
 
-// inicializar estado guardado
+if(dataRest){
+  document.getElementById('nombreRest').textContent = dataRest.nombre || 'Restaurante';
+  document.getElementById('cantProductos').textContent = `${carrito.reduce((s,i)=>s+i.cantidad,0)} Productos`;
+  if(dataRest.logo){
+    document.getElementById('logoRest').innerHTML = `<img src="${dataRest.logo}">`;
+  }
+}
+
 if(tipoActual==='ahorra') selEntrega('ahorra'); else selEntrega('rapido');
 </script>
 </body>
