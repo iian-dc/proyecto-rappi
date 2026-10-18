@@ -1,1 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Terminar y pagar - DoloYa</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
+body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
+.header{padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;background:#fff;z-index:20;border-bottom:1px solid #F5F5F5}
+.btn-back{width:38px;height:38px;background:#F3F4F6;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.header h1{font-size:17px;font-weight:800}
 
+/* MAPA */
+.mapa-wrap{position:relative;width:100%;height:190px;background:#E5E7EB;overflow:hidden}
+.mapa-wrap iframe{width:100%;height:100%;border:0;filter:grayscale(0.2)}
+.pin-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-80%);width:54px;height:54px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,0.25);z-index:2}
+.btn-ajustar{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:white;padding:8px 14px;border-radius:999px;border:none;box-shadow:0 4px 12px rgba(0,0,0,0.18);font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:6px;z-index:3;cursor:pointer}
+.google-badge{position:absolute;bottom:10px;left:10px;background:white;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:900;z-index:2;color:#111;box-shadow:0 1px 4px rgba(0,0,0,0.15)}
+
+/* SECCIONES */
+.item-row{padding:18px 16px;display:flex;align-items:flex-start;gap:14px;border-bottom:1px solid #F0F0F0;cursor:pointer}
+.item-row .icono{width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.item-row .info{flex:1;min-width:0}
+.item-row .info b{font-size:14px;font-weight:700;display:block}
+.item-row .info span{font-size:12.5px;color:#555;line-height:1.3;display:block;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-row .flecha{margin-top:4px}
+.tag-lejos{background:#FFF7E0;color:#B77900;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:999px;width:fit-content;margin-top:6px}
+
+/* ENTREGA */
+.section{padding:18px 16px}
+.section h3{font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.entrega-op{border:1.5px solid #E5E7EB;border-radius:16px;padding:14px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:pointer;transition:all 0.2s}
+.entrega-op.active{border-color:#111;border-width:2px}
+.entrega-left{display:flex;align-items:center;gap:10px}
+.circle{width:28px;height:28px;border-radius:50%;border:2px solid #111;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.circle.active{background:#111;color:white}
+.entrega-left b{font-size:13px;font-weight:800}
+.entrega-left span{font-size:12px;color:#666;display:block}
+.entrega-right{font-size:13px;font-weight:800;text-align:right}
+.entrega-right .gris{color:#9AA0A6;text-decoration:line-through;font-weight:600;margin-right:4px}
+.entrega-right .azul{color:#3B82F6}
+.entrega-right .rojo{color:#E30613}
+.entrega-right .verde{color:#2ECC71}
+
+/* METODO PAGO */
+.metodo-box{padding:16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #F0F0F0;cursor:pointer}
+.metodo-icon{width:44px;height:44px;background:#F3F4F6;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.metodo-info{flex:1}
+.metodo-info b{font-size:14px;font-weight:700}
+.metodo-info span{font-size:12px;color:#888}
+.badge-obli{border:1.5px solid #E5E7EB;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700}
+
+/* CUPONES */
+.cupon-row{padding:16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;border-bottom:1px solid #F0F0F0}
+.cupon-row b{font-size:14px;font-weight:700}
+
+/* RESUMEN */
+.resumen-header{padding:18px 16px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.logo-sub{width:52px;height:52px;border-radius:50%;background:#00684A;display:flex;align-items:center;justify-content:center;color:#FFC72C;font-weight:900;font-size:12px;overflow:hidden;flex-shrink:0}
+.logo-sub img{width:100%;height:100%;object-fit:cover}
+.resumen-info{flex:1}
+.resumen-info b{font-size:15px;font-weight:800}
+.resumen-info span{font-size:12.5px;color:#666}
+.lista-costos{padding:0 16px}
+.costo-row{display:flex;justify-content:space-between;padding:9px 0;font-size:14px;color:#444;font-weight:500}
+.costo-row b{color:#111;font-weight:800}
+.costo-row.total b{font-size:15px}
+.ahorro-banner{background:#EAF4FF;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-top:14px}
+.ahorro-banner img{width:54px;height:38px;object-fit:contain}
+.ahorro-banner b{font-size:13px;color:#1E40AF;line-height:1.3}
+
+/* FOOTER FIJO */
+.footer{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #EEE;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;z-index:999;box-shadow:0 -4px 12px rgba(0,0,0,0.06)}
+.footer b{font-size:22px;font-weight:900;line-height:1}
+.footer span{font-size:12px;color:#555;font-weight:600}
+.btn-continuar{padding:15px 28px;background:#2ECC71;color:white;border:none;border-radius:999px;font-size:15px;font-weight:800;box-shadow:0 6px 18px rgba(46,204,113,0.35);cursor:pointer;min-width:160px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="btn-back" onclick="window.location.href='inicio.html'">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+  <h1>Terminar y pagar</h1>
+</div>
+
+<!-- MAPA GOOGLE -->
+<div class="mapa-wrap" id="mapaWrap">
+  <iframe id="mapaIframe" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+  <div class="pin-center">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M6 10a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1a2 2 0 0 1-1 1.73l-3 1.73a2 2 0 0 1-2 0l-3-1.73A2 2 0 0 1 8 11v-1z"/><path d="M6 11v3a2 2 0 0 0 1 1.73l3 1.73a2 2 0 0 0 2 0l3-1.73A2 2 0 0 0 16 14v-3"/></svg>
+  </div>
+  <button class="btn-ajustar" onclick="window.location.href='puntodeentrega.html'">
+    Ajustar punto de entrega
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a5 5 0 0 0-5 5c0 5 5 11 5 11s5-6 5-11a5 5 0 0 0-5-5z"/><circle cx="12" cy="7" r="1.5"/></svg>
+  </button>
+  <div class="google-badge">Google</div>
+</div>
+
+<!-- DIRECCION -->
+<div class="item-row" onclick="window.location.href='puntodeentrega.html'">
+  <div class="icono">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+  </div>
+  <div class="info">
+    <b>Oficina</b>
+    <span id="txtDireccion">Tamaulipas 104, Centro, 37800 Dolores Hidalgo Cuna de la Independencia Nacional, Gto., Mexico</span>
+    <div class="tag-lejos">Estás lejos de la dirección</div>
+  </div>
+  <div class="flecha"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg></div>
+</div>
+
+<div class="item-row">
+  <div class="icono">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M4 4h16v12H4z"/><path d="M4 8h16"/><path d="M8 12h4"/><path d="M8 16h8"/></svg>
+  </div>
+  <div class="info"><b>Detalles</b><span id="txtDetalles">Primer Piso, cas</span></div>
+  <div class="flecha"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg></div>
+</div>
+
+<div class="item-row">
+  <div class="icono">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M18 22V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16"/><path d="M9 6h6"/><path d="M12 12h.01"/><path d="M9 15h6"/><path d="M9 18h6"/></svg>
+  </div>
+  <div class="info"><b>Yo recibo el pedido en la recepción</b><span>casa</span></div>
+  <div class="flecha"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg></div>
+</div>
+
+<div class="section">
+  <h3>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    Entrega estimada
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+  </h3>
+
+  <div class="entrega-op active" id="opRapido" onclick="selEntrega('rapido')">
+    <div class="entrega-left">
+      <div class="circle active" id="cRapido"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg></div>
+      <div><b style="display:flex;align-items:center;gap:4px"><span style="color:#E30613">⚡</span><span style="color:#E30613">Más rápido</span></b><span>34 - 49 min</span></div>
+    </div>
+    <div class="entrega-right">$26.9 <b>Gratis</b></div>
+  </div>
+
+  <div class="entrega-op" id="opEstandar" onclick="selEntrega('estandar')">
+    <div class="entrega-left">
+      <div class="circle" id="cEstandar"></div>
+      <div><b style="display:flex;gap:4px">🕐 Estandar</b><span>39 - 54 min</span></div>
+    </div>
+    <div class="entrega-right"></div>
+  </div>
+
+  <div class="entrega-op" id="opAhorra" onclick="selEntrega('ahorra')">
+    <div class="entrega-left">
+      <div class="circle" id="cAhorra"></div>
+      <div><b>Ahorra sin prisas</b><span>54 - 74 min</span></div>
+    </div>
+    <div class="entrega-right">Ahorra $10</div>
+  </div>
+</div>
+
+<div class="section" style="padding-bottom:0"><h3>Método de pago</h3></div>
+<div class="metodo-box" onclick="alert('Seleccionar método de pago')">
+  <div class="metodo-icon">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/><path d="M12 14h4"/><circle cx="18" cy="7" r="0.5" fill="#111"/><path d="M6 19a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/><path d="M16 17h2"/></svg>
+  </div>
+  <div class="metodo-info"><b>Método de pago</b><span>Selecciona un método de pago</span></div>
+  <div class="badge-obli">Obligatorio</div>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+</div>
+
+<div class="cupon-row"><b>Cupones</b><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg></div>
+
+<div class="section" style="padding-bottom:0"><h3>Resumen del pedido</h3></div>
+
+<div class="resumen-header" onclick="toggleResumen()">
+  <div class="logo-sub" id="logoRest">SUBWAY</div>
+  <div class="resumen-info"><b id="nombreRest">Subway</b><span id="cantProductos">3 Productos</span></div>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5" id="flechaResumen"><path d="M6 9l6 6 6-6"/></svg>
+</div>
+
+<div id="detalleResumen" style="display:block">
+  <div class="lista-costos">
+    <div style="padding:8px 0;border-top:1px solid #F0F0F0"></div>
+    <div class="cupon-row" style="padding-left:0"><b>Enviar como regalo</b><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg></div>
+    <div style="padding:8px 0;border-top:1px solid #F0F0F0"></div>
+    <div class="costo-row"><span>Costo de productos</span><b id="costoProd">$406.00</b></div>
+    <div class="costo-row"><span style="display:flex;gap:6px;align-items:center">Costo de envío <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span><b id="costoEnvio">$10.00</b></div>
+    <div class="costo-row"><span>Tarifa de Servicio</span><b id="tarifaServ">$28.50</b></div>
+    <div class="costo-row"><span>Más rápido</span><b><span class="gris" style="text-decoration:line-through;color:#9AA0A6;margin-right:4px">$26.90</span><span class="azul" style="color:#3B82F6">$0.00</span></b></div>
+    <div class="costo-row total" style="padding-top:12px;border-top:1px solid #F0F0F0;margin-top:8px"><b>Total a pagar</b><b id="totalPagar">$444.50</b></div>
+  </div>
+
+  <div class="ahorro-banner">
+    <div style="font-size:28px">🪙</div>
+    <b>Ahorras $26.90 con descuentos exclusivos del App</b>
+  </div>
+</div>
+
+<div class="footer">
+  <div><span>Total a pagar</span><b id="totalFooter">$444.50</b></div>
+  <button class="btn-continuar" onclick="window.location.href='metodopago.html'">Continuar</button>
+</div>
+
+<script>
+const carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
+const dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
+const ubicacion = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
+
+// MAPA GOOGLE - toma lat lng de tu ubicación
+let lat = ubicacion?.ubicacion?.lat || 21.1576;
+let lng = ubicacion?.ubicacion?.lng || -100.9306;
+document.getElementById('mapaIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
+
+// DIRECCION
+if(ubicacion?.direccion){
+  document.getElementById('txtDireccion').textContent = ubicacion.direccion;
+}
+if(ubicacion?.detalles){
+  document.getElementById('txtDetalles').textContent = ubicacion.detalles;
+}
+
+// CALCULO TOTALES
+const costoProd = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
+const envio = 10;
+const servicio = 28.5;
+const total = costoProd + envio + servicio;
+
+document.getElementById('costoProd').textContent = `$${costoProd.toFixed(2)}`;
+document.getElementById('costoEnvio').textContent = `$${envio.toFixed(2)}`;
+document.getElementById('tarifaServ').textContent = `$${servicio.toFixed(2)}`;
+document.getElementById('totalPagar').textContent = `$${total.toFixed(2)}`;
+document.getElementById('totalFooter').textContent = `$${total.toFixed(2)}`;
+
+if(dataRest){
+  document.getElementById('nombreRest').textContent = dataRest.nombre || 'Restaurante';
+  document.getElementById('cantProductos').textContent = `${carrito.reduce((s,i)=>s+i.cantidad,0)} Productos`;
+  if(dataRest.logo){
+    document.getElementById('logoRest').innerHTML = `<img src="${dataRest.logo}">`;
+  }else{
+    document.getElementById('logoRest').textContent = (dataRest.nombre||'S').charAt(0);
+  }
+}
+
+function selEntrega(tipo){
+  document.querySelectorAll('.entrega-op').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.circle').forEach(c=>{c.classList.remove('active'); c.innerHTML='';});
+  if(tipo==='rapido'){
+    document.getElementById('opRapido').classList.add('active');
+    document.getElementById('cRapido').classList.add('active');
+    document.getElementById('cRapido').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>`;
+  }else if(tipo==='estandar'){
+    document.getElementById('opEstandar').classList.add('active');
+    document.getElementById('cEstandar').classList.add('active');
+    document.getElementById('cEstandar').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>`;
+  }else{
+    document.getElementById('opAhorra').classList.add('active');
+    document.getElementById('cAhorra').classList.add('active');
+    document.getElementById('cAhorra').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>`;
+  }
+}
+function toggleResumen(){
+  const det = document.getElementById('detalleResumen');
+  const flecha = document.getElementById('flechaResumen');
+  if(det.style.display==='none'){
+    det.style.display='block';
+    flecha.style.transform='rotate(0deg)';
+  }else{
+    det.style.display='none';
+    flecha.style.transform='rotate(180deg)';
+  }
+}
+</script>
+</body>
+</html>
