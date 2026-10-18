@@ -15,7 +15,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:140px}
 
 .restaurante-box{padding:20px 16px 10px 16px;display:flex;align-items:center;justify-content:space-between}
 .restaurante-left{display:flex;align-items:center;gap:12px}
-.logo-rest{width:56px;height:56px;border-radius:50%;object-fit:cover;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:18px}
+.logo-rest{width:56px;height:56px;border-radius:50%;object-fit:cover;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:18px;border:1px solid #EEE;overflow:hidden}
 .restaurante-left b{font-size:18px;font-weight:900}
 .restaurante-right{display:flex;align-items:center;gap:10px}
 .badge-count{background:#F3F4F6;padding:6px 16px;border-radius:999px;font-size:14px;font-weight:800}
@@ -26,7 +26,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:140px}
 .productos.oculto{display:none}
 .prod-item{display:flex;gap:12px;align-items:flex-start;position:relative}
 .prod-img{width:56px;height:56px;border-radius:10px;object-fit:cover;background:#F3F4F6;flex-shrink:0}
-.prod-info{flex:1;min-width:0}
+.prod-info{flex:1;min-width:0;padding-right:110px}
 .prod-nombre{font-size:14px;font-weight:700;line-height:1.2}
 .prod-precio{font-size:15px;font-weight:900;margin-top:2px}
 .prod-desc{font-size:12px;color:#6B7280;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95%}
@@ -62,7 +62,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:140px}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
@@ -80,6 +80,7 @@ let carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 let dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
 let ipKey = localStorage.getItem('doloya_device_id') || null;
 let productosAbiertos = true;
+let logoRestaurante = dataRest?.logo || null;
 
 if(!ipKey){
   fetch('https://api.ipify.org?format=json').then(r=>r.json()).then(d=>{
@@ -87,6 +88,26 @@ if(!ipKey){
   }).catch(()=>{
     ipKey = localStorage.getItem('doloya_device_id');
   });
+}
+
+// CORRECCION LOGO - traer logo de Firebase si no existe
+async function obtenerLogo(){
+  if(logoRestaurante) { render(); return; }
+  if(dataRest?.cat && dataRest?.id){
+    try{
+      const snap = await get(ref(db, `doloya_aliados/${dataRest.cat}/${dataRest.id}`));
+      const data = snap.val();
+      if(data && data.logo){
+        logoRestaurante = data.logo;
+        dataRest.logo = data.logo;
+        localStorage.setItem('doloya_carrito_restaurante_data', JSON.stringify(dataRest));
+        render();
+      }else if(data && data.portada){
+        logoRestaurante = data.portada;
+        render();
+      }
+    }catch(e){ render(); }
+  }else{ render(); }
 }
 
 function render(){
@@ -102,12 +123,11 @@ function render(){
   const totalCant = carrito.reduce((s,i)=>s+i.cantidad,0);
   const nombreRest = dataRest?.nombre || 'Restaurante';
   const inicial = nombreRest.charAt(0).toUpperCase();
-  const logoRest = dataRest?.logo || '';
 
   cont.innerHTML = `
     <div class="restaurante-box">
       <div class="restaurante-left">
-        ${logoRest ? `<img class="logo-rest" src="${logoRest}">` : `<div class="logo-rest" style="background:#6B0F2A">${inicial}</div>`}
+        ${logoRestaurante ? `<img class="logo-rest" src="${logoRestaurante}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"><div class="logo-rest" style="display:none;background:#6B0F2A">${inicial}</div>` : `<div class="logo-rest" style="background:#6B0F2A">${inicial}</div>`}
         <b>${nombreRest}</b>
       </div>
       <div class="restaurante-right">
@@ -124,7 +144,7 @@ function render(){
           <div class="prod-info">
             <div class="prod-nombre">${p.nombre}</div>
             <div class="prod-precio">$${(p.precio * p.cantidad).toFixed(2)}</div>
-            <div class="prod-desc" id="desc-${idx}">${p.descripcion || p.nombre + ' - ' + p.nombre}</div>
+            <div class="prod-desc" id="desc-${idx}">${p.descripcion || p.nombre}</div>
           </div>
           <div class="prod-controls">
             ${p.cantidad===1 ? 
@@ -161,9 +181,7 @@ window.toggleDesc = (idx)=>{
 }
 window.cambiarCant = (idx, delta)=>{
   carrito[idx].cantidad += delta;
-  if(carrito[idx].cantidad<=0){
-    carrito.splice(idx,1);
-  }
+  if(carrito[idx].cantidad<=0){ carrito.splice(idx,1); }
   guardar();
 }
 window.eliminarItem = (idx)=>{
@@ -198,7 +216,6 @@ function guardar(){
       set(ref(db, `doloya_aliados/${dataRest.cat}/${dataRest.id}/carritos/${ipKey}`), null);
     }
   }else{
-    // actualizar firebase
     if(dataRest && ipKey){
       const total = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
       set(ref(db, `carrito/${dataRest.cat}/${dataRest.id}/${ipKey}`), {
@@ -214,7 +231,7 @@ function guardar(){
   }
   render();
 }
-render();
+obtenerLogo();
 </script>
 </body>
 </html>
