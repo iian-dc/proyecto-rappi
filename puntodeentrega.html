@@ -13,10 +13,9 @@ body{background:#fff;min-height:100vh;display:flex;flex-direction:column;height:
 .header h1{font-size:16px;font-weight:800}
 .mapa-wrap{position:relative;width:100%;flex:1;background:#E5E7EB;overflow:hidden}
 #map{width:100%;height:100%;position:absolute;top:0;left:0;z-index:1}
-/* Pin fijo al centro visual */
 .pin-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-100%);z-index:500;pointer-events:none}
 .pin-center .pin{width:48px;height:48px;background:#E30613;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,0.35);border:3px solid white}
-.pin-center .pin span{transform:rotate(45deg);color:white;font-size:20px;font-weight:900}
+.pin-center .pin svg{transform:rotate(45deg)}
 .btn-recenter{position:absolute;bottom:20px;right:16px;width:46px;height:46px;background:white;border-radius:50%;border:none;box-shadow:0 4px 12px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;z-index:600;cursor:pointer}
 .info-bottom{padding:14px 16px 6px 16px;background:white;z-index:10}
 .info-bottom p{font-size:13px;color:#222;font-weight:600}
@@ -37,16 +36,20 @@ body{background:#fff;min-height:100vh;display:flex;flex-direction:column;height:
 
 <div class="mapa-wrap">
   <div id="map"></div>
+  <!-- ICONO UBICACION COMO LO TENIAS -->
   <div class="pin-center">
-    <div class="pin"><span>📍</span></div>
+    <div class="pin">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5 2.5 2.5 2.5-1.12 2.5-2.5-1.12-2.5-2.5z"/></svg>
+    </div>
   </div>
+  <!-- ICONO RESTABLECER -->
   <button class="btn-recenter" onclick="recenterMap()">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.2"><path d="M21 12a9 9 0 1 0-9-9c0 2.5 2 4.5 4.5 4.5S21 9.5 21 12z"/><path d="M21 3v6h-6"/></svg>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
   </button>
 </div>
 
 <div class="info-bottom">
-  <p>Ubica el punto en el que DoloYa entregará tu pedido.</p>
+  <p>ubicación de entrega de tu pedido</p>
 </div>
 
 <div class="direccion-preview">
@@ -67,6 +70,10 @@ let nuevaDireccion = direccionActual;
 let nuevoLat = lat;
 let nuevoLng = lng;
 
+// Guardamos la primera ubicación original para restablecer
+const latOriginal = lat;
+const lngOriginal = lng;
+
 let map;
 let geocoder;
 
@@ -78,28 +85,22 @@ function initMap() {
     zoom: 18,
     disableDefaultUI: true,
     zoomControl: false,
-    clickableIcons: false,
-    styles: [
-      { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }
-    ]
+    clickableIcons: false
   });
 
   geocoder = new google.maps.Geocoder();
 
-  // Cargar dirección inicial
   if(direccionActual){
     document.getElementById('txtDir').textContent = direccionActual;
   } else {
     reverseGeocode(initialPos);
   }
 
-  // Cuando el usuario mueve el mapa (arrastra)
   map.addListener("idle", () => {
     const center = map.getCenter();
     reverseGeocode({ lat: center.lat(), lng: center.lng() });
   });
 
-  // Cuando le da click en cualquier parte del mapa
   map.addListener("click", (e) => {
     map.panTo(e.latLng);
     reverseGeocode({ lat: e.latLng.lat(), lng: e.latLng.lng() });
@@ -121,10 +122,12 @@ function reverseGeocode(latlng){
   });
 }
 
+// RESTABLECE A LA UBICACION ORIGINAL
 function recenterMap(){
-  const pos = { lat: lat, lng: lng };
+  const pos = { lat: latOriginal, lng: lngOriginal };
   map.panTo(pos);
   map.setZoom(18);
+  reverseGeocode(pos);
 }
 
 function guardarUbicacion(){
@@ -138,7 +141,7 @@ function guardarUbicacion(){
 }
 </script>
 
-<!-- AQUI PEGA TU API KEY DE GOOGLE -->
+<!-- PEGA TU API KEY AQUI -->
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCTV1sm6McEIkv-cheaVFCD_svp_a--6wg&callback=initMap"></script>
 
 </body>
