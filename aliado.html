@@ -152,9 +152,7 @@ let carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 let restauranteActualCarrito = localStorage.getItem('doloya_carrito_restaurante')||null;
 let restauranteAnteriorData = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
 
-function irAlInicio(){
-  window.location.href = 'inicio.html';
-}
+function irAlInicio(){ window.location.href = 'inicio.html'; }
 window.irAlInicio = irAlInicio;
 
 async function obtenerIPyGPS(){
@@ -205,7 +203,6 @@ function calcularValoracion(likes){
   if(valor>5.0) valor=5.0;
   return valor.toFixed(1);
 }
-
 function guardarCarrito(){
   localStorage.setItem('doloya_carrito_v2', JSON.stringify(carrito));
   if(carrito.length>0){
@@ -380,10 +377,10 @@ else {
 window.handleAdd=(nombre, precio, imagen)=>{ addProducto(nombre, precio, imagen); }
 window.handleRestar=(nombre)=>{ restarProducto(nombre); }
 
-document.getElementById('btnLike').onclick=toggleLike;
+// AQUI EL CAMBIO QUE PEDISTE -> MANDAR A carrito.html
 document.getElementById('btnVerCarrito').onclick=()=>{
   if(carrito.length===0) return;
-  alert(`Carrito: ${carrito.length} productos`);
+  window.location.href = 'carrito.html';
 }
 
 document.getElementById('btnConservar').onclick=()=>{
