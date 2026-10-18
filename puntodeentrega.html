@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ajustar punto de entrega</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
+body{background:#fff;min-height:100vh;display:flex;flex-direction:column}
+.header{padding:12px 16px;display:flex;align-items:center;gap:12px;background:#fff;z-index:1000;border-bottom:1px solid #F5F5F5;position:sticky;top:0}
+.btn-back{width:40px;height:40px;background:#F3F4F6;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.header h1{font-size:16px;font-weight:800}
+.mapa-wrap{position:relative;flex:1;height:62vh;min-height:420px;background:#E5E7EB}
+#map{width:100%;height:100%;z-index:1}
+.pin-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-100%);z-index:500;pointer-events:none}
+.pin-center .pin{width:46px;height:46px;background:#E30613;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.3)}
+.pin-center .pin::after{content:'';width:18px;height:18px;background:white;border-radius:50%;position:absolute}
+.pin-center .pin svg{transform:rotate(45deg);z-index:2;position:relative}
+.pin-shadow{width:18px;height:6px;background:rgba(0,0,0,0.2);border-radius:50%;margin:0 auto;margin-top:6px}
+.btn-recenter{position:absolute;bottom:16px;right:16px;width:48px;height:48px;background:white;border-radius:50%;border:none;box-shadow:0 4px 12px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;z-index:600;cursor:pointer}
+.google-badge{position:absolute;bottom:10px;left:10px;background:white;padding:3px 6px;border-radius:4px;font-size:12px;font-weight:800;z-index:600;box-shadow:0 1px 4px rgba(0,0,0,0.2)}
+.info-bottom{padding:18px 16px 12px 16px;background:white}
+.info-bottom p{font-size:13px;color:#333;font-weight:600;line-height:1.4}
+.direccion-preview{padding:0 16px 8px 16px;display:flex;gap:8px;align-items:flex-start;background:white}
+.direccion-preview svg{flex-shrink:0;margin-top:2px}
+.direccion-preview span{font-size:13px;color:#555;line-height:1.3;font-weight:500}
+.footer{padding:16px;background:white;margin-top:auto}
+.btn-guardar{width:100%;padding:16px;background:#E30613;color:white;border:none;border-radius:999px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(227,6,19,0.3)}
+.btn-guardar:disabled{background:#ccc;box-shadow:none}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="btn-back" onclick="window.location.href='resumen.html'">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+  <h1>Ajustar punto de entrega</h1>
+</div>
+
+<div class="mapa-wrap">
+  <div id="map"></div>
+  <div class="pin-center">
+    <div class="pin">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M6 10a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1a2 2 0 0 1-1 1.73l-3 1.73a2 2 0 0 1-2 0l-3-1.73A2 2 0 0 1 8 11v-1z"/><path d="M6 11v3a2 2 0 0 0 1 1.73l3 1.73a2 2 0 0 0 2 0l3-1.73A2 2 0 0 0 16 14v-3"/></svg>
+    </div>
+    <div class="pin-shadow"></div>
+  </div>
+  <button class="btn-recenter" onclick="recenterMap()">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.5 2 4.5 4.5S16.5 12 12 12S7.5 10 7.5 7.5"/><path d="M21 3v6h-6"/></svg>
+  </button>
+  <div class="google-badge">Google</div>
+</div>
+
+<div class="info-bottom">
+  <p>Ubica el punto en el que DoloYa entregará tu pedido.</p>
+</div>
+
+<div class="direccion-preview" id="direccionPreview">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+  <span id="txtDir">Cargando dirección...</span>
+</div>
+
+<div class="footer">
+  <button class="btn-guardar" id="btnGuardar" onclick="guardarUbicacion()">Guardar</button>
+</div>
+
+<script>
+const ubicacionGuardada = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
+let lat = ubicacionGuardada?.ubicacion?.lat || 21.1576;
+let lng = ubicacionGuardada?.ubicacion?.lng || -100.9306;
+let direccionActual = ubicacionGuardada?.direccion || '';
+let nuevaDireccion = direccionActual;
+let nuevoLat = lat;
+let nuevoLng = lng;
+
+const map = L.map('map', {zoomControl:false}).setView([lat, lng], 18);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  maxZoom: 19,
+  attribution: ''
+}).addTo(map);
+
+let timeout;
+
+function reverseGeocode(lat, lng){
+  document.getElementById('txtDir').textContent = 'Obteniendo dirección...';
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`)
+  .then(r=>r.json()).then(data=>{
+    const a = data.address || {};
+    const dir = `${a.road||''} ${a.house_number||''}, ${a.suburb||a.neighbourhood||''}, ${a.city||a.town||a.village||''}, ${a.state||''}, Mexico`.replace(/ ,/g,',').replace(/\s+/g,' ').trim().replace(/^,|,$/g,'');
+    nuevaDireccion = dir || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    document.getElementById('txtDir').textContent = nuevaDireccion;
+    nuevoLat = lat;
+    nuevoLng = lng;
+  }).catch(()=>{
+    nuevaDireccion = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    document.getElementById('txtDir').textContent = nuevaDireccion;
+  });
+}
+
+map.on('moveend', ()=>{
+  const center = map.getCenter();
+  clearTimeout(timeout);
+  timeout = setTimeout(()=> reverseGeocode(center.lat, center.lng), 500);
+});
+
+map.on('click', (e)=>{
+  map.setView(e.latlng, map.getZoom());
+});
+
+function recenterMap(){
+  map.setView([lat, lng], 18);
+}
+
+function guardarUbicacion(){
+  const data = ubicacionGuardada || {};
+  data.ubicacion = {lat: nuevoLat, lng: nuevoLng};
+  data.direccion = nuevaDireccion;
+  data.lat = nuevoLat;
+  data.lng = nuevoLng;
+  localStorage.setItem('doloya_ubicacion', JSON.stringify(data));
+  // También actualiza cache para resumen
+  window.location.href = 'resumen.html';
+}
+
+// inicial
+reverseGeocode(lat, lng);
+document.getElementById('txtDir').textContent = direccionActual || 'Mueve el mapa para ajustar tu punto de entrega';
+</script>
+</body>
+</html>
