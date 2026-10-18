@@ -16,22 +16,12 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
 .label{font-size:13px;font-weight:700;margin-bottom:6px;display:block;margin-top:18px}
 .input-wrap{position:relative;width:100%}
 .input-wrap input, .input-wrap select, .input-wrap textarea{width:100%;padding:16px 44px 16px 16px;border:1.5px solid #E5E7EB;border-radius:16px;font-size:15px;font-weight:600;background:#fff;outline:none;appearance:none}
-.input-wrap input:focus, .input-wrap textarea:focus{border-color:#111}
+.input-wrap input:focus, .input-wrap textarea:focus, .input-wrap select:focus{border-color:#111}
 .input-wrap textarea{resize:none;height:90px;padding-top:14px}
 .btn-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:32px;height:32px;background:#EEF0F2;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .btn-clear.top{top:18px;transform:none}
-.chips{display:flex;gap:10px;margin-top:16px}
-.chip{flex:1;padding:12px;border:1.5px solid #E5E7EB;border-radius:999px;background:#fff;font-size:14px;font-weight:700;text-align:center;cursor:pointer}
-.chip.active{background:#111;color:#fff;border-color:#111}
-.opciones-entrega{margin-top:24px;border-top:1px solid #F0F0F0;padding-top:20px}
-.opciones-entrega h2{font-size:18px;font-weight:900;margin-bottom:16px}
-.card-entrega{display:flex;align-items:center;gap:12px;padding:12px 0;cursor:pointer}
-.card-entrega img{width:64px;height:64px;border-radius:16px;background:#FFEAD6;object-fit:cover}
-.card-entrega b{font-size:14px;font-weight:800;line-height:1.3}
-.card-entrega span{font-size:13px;color:#22C55E;font-weight:700;display:block;margin-top:2px}
 .footer{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:16px;border-top:1px solid #F0F0F0;z-index:30}
 .btn-guardar{width:100%;padding:16px;background:#E30613;color:#fff;border:none;border-radius:999px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(227,6,19,0.25)}
-.btn-guardar:disabled{background:#E5E7EB;color:#999;box-shadow:none}
 </style>
 </head>
 <body>
@@ -58,7 +48,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
   <div class="input-wrap">
     <select id="tipoDireccion">
       <option value="Casa">Casa</option>
-      <option value="Oficina" selected>Oficina</option>
+      <option value="Oficina">Oficina</option>
       <option value="Departamento">Departamento</option>
       <option value="Otro">Otro</option>
     </select>
@@ -91,32 +81,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
     </button>
   </div>
 
-  <label class="label">Etiqueta (Opcional)</label>
-  <div class="input-wrap">
-    <input type="text" id="etiqueta" placeholder="Ej: Oficina">
-    <button class="btn-clear" onclick="clearInput('etiqueta')">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
-    </button>
-  </div>
-
-  <div class="chips">
-    <div class="chip" id="chipCasa" onclick="setChip('Casa')">Casa</div>
-    <div class="chip active" id="chipOficina" onclick="setChip('Oficina')">Oficina</div>
-    <div class="chip" id="chipPareja" onclick="setChip('Pareja')">Pareja</div>
-  </div>
-
-  <div class="opciones-entrega">
-    <h2>Opciones de entrega</h2>
-    <div class="card-entrega">
-      <img src="https://cdn-icons-png.flaticon.com/512/3081/3081840.png" alt="">
-      <div style="flex:1">
-        <b>Yo recibo el pedido en la recepción</b>
-        <span>Más opciones disponibles</span>
-      </div>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
-    </div>
-  </div>
-
   <label class="label" style="margin-top:22px">Instrucciones para tu DoloYa</label>
   <div class="input-wrap">
     <textarea id="instrucciones" placeholder="Ej: casa con portón rojo, tocar timbre"></textarea>
@@ -140,15 +104,6 @@ function clearInput(id){
   document.getElementById(id).focus();
 }
 
-function setChip(tipo){
-  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
-  if(tipo==='Casa') document.getElementById('chipCasa').classList.add('active');
-  if(tipo==='Oficina') document.getElementById('chipOficina').classList.add('active');
-  if(tipo==='Pareja') document.getElementById('chipPareja').classList.add('active');
-  document.getElementById('etiqueta').value = tipo;
-  document.getElementById('tipoDireccion').value = tipo;
-}
-
 // Cargar datos existentes
 if(ubicacion?.direccion){
   document.getElementById('inputDireccion').value = ubicacion.direccion;
@@ -159,10 +114,14 @@ if(detallesGuardados){
   document.getElementById('nombreEdificio').value = detallesGuardados.nombreEdificio || '';
   document.getElementById('piso').value = detallesGuardados.piso || '';
   document.getElementById('celular').value = detallesGuardados.celular || '';
-  document.getElementById('etiqueta').value = detallesGuardados.etiqueta || 'Oficina';
   document.getElementById('instrucciones').value = detallesGuardados.instrucciones || '';
-  document.getElementById('tipoDireccion').value = detallesGuardados.tipoDireccion || 'Oficina';
-  setChip(detallesGuardados.etiqueta || 'Oficina');
+  // CORREGIDO: ahora si carga tipo de direccion guardado
+  if(detallesGuardados.tipoDireccion){
+    document.getElementById('tipoDireccion').value = detallesGuardados.tipoDireccion;
+  }
+} else {
+  // valor por defecto si no hay nada guardado
+  document.getElementById('tipoDireccion').value = 'Oficina';
 }
 
 function guardarDetalles(){
@@ -170,7 +129,6 @@ function guardarDetalles(){
   const nombreEdificio = document.getElementById('nombreEdificio').value.trim();
   const piso = document.getElementById('piso').value.trim();
   const celular = document.getElementById('celular').value.trim();
-  const etiqueta = document.getElementById('etiqueta').value.trim();
   const instrucciones = document.getElementById('instrucciones').value.trim();
   const tipoDireccion = document.getElementById('tipoDireccion').value;
 
@@ -179,17 +137,15 @@ function guardarDetalles(){
     return;
   }
 
-  // Actualiza direccion principal
   const dataUbi = ubicacion || {};
   dataUbi.direccion = direccion;
   localStorage.setItem('doloya_ubicacion', JSON.stringify(dataUbi));
 
-  // Guarda detalles completos
-  const full = {direccion, nombreEdificio, piso, celular, etiqueta, instrucciones, tipoDireccion};
+  // CORREGIDO: guarda tipoDireccion correctamente
+  const full = {direccion, nombreEdificio, piso, celular, instrucciones, tipoDireccion};
   localStorage.setItem('doloya_detalles_full', JSON.stringify(full));
   
-  // Para resumen.html compatibilidad
-  let refTexto = `${nombreEdificio ? nombreEdificio+', ' : ''}${piso ? piso+', ' : ''}${instrucciones ? instrucciones : ''}`.replace(/, $/,'');
+  let refTexto = `${tipoDireccion ? tipoDireccion+', ' : ''}${nombreEdificio ? nombreEdificio+', ' : ''}${piso ? piso+', ' : ''}${instrucciones ? instrucciones : ''}`.replace(/, $/,'');
   localStorage.setItem('doloya_detalles_referencia', refTexto || 'Sin referencia');
   if(celular) localStorage.setItem('doloya_celular', celular);
 
