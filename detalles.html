@@ -30,6 +30,14 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
 .sug-text span{font-size:11.5px;color:#777;display:block;margin-top:2px;line-height:1.3}
 .footer{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:16px;border-top:1px solid #F0F0F0;z-index:30}
 .btn-guardar{width:100%;padding:16px;background:#E30613;color:#fff;border:none;border-radius:999px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(227,6,19,0.25)}
+
+/* NUEVO: ROJO NEON */
+.error-neon{border-color:#FF0000 !important;box-shadow:0 0 6px #FF0000, 0 0 12px #FF0000, 0 0 20px rgba(255,0,0,0.5) !important;animation:shake 0.4s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+
+/* NUEVO: TOAST CENTRO */
+.toast-validacion{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.9);background:#111;color:#fff;padding:16px 22px;border-radius:16px;font-size:14px;font-weight:800;z-index:9999;box-shadow:0 10px 30px rgba(0,0,0,0.4);opacity:0;pointer-events:none;transition:all 0.25s ease;text-align:center;max-width:80%}
+.toast-validacion.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 </style>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCTV1sm6McEIkv-cheaVFCD_svp_a--6wg&libraries=places&language=es&region=MX"></script>
 </head>
@@ -42,7 +50,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
 </div>
 <div class="container">
   <div class="sub-direccion" id="subDir">Dolores Hidalgo México</div>
-  <label class="label">Dirección</label>
+  <label class="label">Dirección *</label>
   <div class="input-wrap" id="wrapDireccion">
     <input type="text" id="inputDireccion" placeholder="Ej: Calle Allende #45, Colonia Centro" autocomplete="off">
     <button class="btn-clear" onclick="clearInput('inputDireccion')">
@@ -50,9 +58,10 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
     </button>
     <div class="sugerencias-box" id="sugerenciasBox"></div>
   </div>
-  <label class="label">Tipo de dirección</label>
+  <label class="label">Tipo de dirección *</label>
   <div class="input-wrap">
     <select id="tipoDireccion">
+      <option value="">Selecciona tipo</option>
       <option value="Casa">Casa</option>
       <option value="Oficina">Oficina</option>
       <option value="Departamento">Departamento</option>
@@ -76,7 +85,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </button>
   </div>
-  <label class="label">Número de celular</label>
+  <label class="label">Número de celular *</label>
   <div class="input-wrap">
     <input type="tel" id="celular" placeholder="Ej: 418 123 4567" maxlength="15">
     <button class="btn-clear" onclick="clearInput('celular')">
@@ -94,6 +103,9 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
 <div class="footer">
   <button class="btn-guardar" onclick="guardarDetalles()">Guardar</button>
 </div>
+
+<div class="toast-validacion" id="toastValidacion">Debes llenar todos los datos obligatorios</div>
+
 <script>
 const ubicacion = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
 const detallesGuardados = JSON.parse(localStorage.getItem('doloya_detalles_full')||'null');
@@ -110,8 +122,10 @@ function initGoogle(){
 if(window.google){ initGoogle(); } else { window.addEventListener('load', initGoogle); }
 
 function clearInput(id){
-  document.getElementById(id).value='';
-  document.getElementById(id).focus();
+  const el = document.getElementById(id);
+  el.value='';
+  el.classList.remove('error-neon');
+  el.focus();
   if(id==='inputDireccion'){ ocultarSugerencias(); }
 }
 
@@ -120,7 +134,7 @@ function clearInput(id){
   const dirDetalles = detallesGuardados?.direccion || null;
   const latMapa = ubicacion?.lat || ubicacion?.ubicacion?.lat || null;
   const lngMapa = ubicacion?.lng || ubicacion?.ubicacion?.lng || null;
-  let direccionFinal = dirMapa || dirDetalles || 'Dolores Hidalgo México';
+  let direccionFinal = dirMapa || dirDetalles || '';
   let latFinal = latMapa || detallesGuardados?.lat || latSeleccionado;
   let lngFinal = lngMapa || detallesGuardados?.lng || lngSeleccionado;
   if(dirMapa && latMapa && lngMapa){
@@ -131,7 +145,7 @@ function clearInput(id){
   latSeleccionado = latFinal;
   lngSeleccionado = lngFinal;
   document.getElementById('inputDireccion').value = direccionFinal;
-  document.getElementById('subDir').textContent = direccionFinal;
+  document.getElementById('subDir').textContent = direccionFinal || 'Dolores Hidalgo México';
 })();
 
 if(detallesGuardados){
@@ -142,17 +156,19 @@ if(detallesGuardados){
   if(detallesGuardados.tipoDireccion){
     document.getElementById('tipoDireccion').value = detallesGuardados.tipoDireccion;
   }
-} else {
-  document.getElementById('tipoDireccion').value = 'Oficina';
 }
 
 const inputDir = document.getElementById('inputDireccion');
 inputDir.addEventListener('input', function(){
+  this.classList.remove('error-neon');
   const texto = this.value.trim();
   if(timeoutBusqueda) clearTimeout(timeoutBusqueda);
   if(texto.length < 3){ ocultarSugerencias(); return; }
   timeoutBusqueda = setTimeout(()=>{ buscarGoogle(texto); }, 300);
 });
+
+document.getElementById('tipoDireccion').addEventListener('change', function(){ this.classList.remove('error-neon'); });
+document.getElementById('celular').addEventListener('input', function(){ this.classList.remove('error-neon'); });
 
 function buscarGoogle(texto){
   if(!autocompleteService){ ocultarSugerencias(); return; }
@@ -242,16 +258,40 @@ document.addEventListener('click', (e)=>{
   }
 });
 
+function mostrarToast(mensaje){
+  const toast = document.getElementById('toastValidacion');
+  toast.textContent = mensaje;
+  toast.classList.add('show');
+  setTimeout(()=>{ toast.classList.remove('show'); }, 2000);
+}
+
 function guardarDetalles(){
   const direccion = document.getElementById('inputDireccion').value.trim();
   const nombreEdificio = document.getElementById('nombreEdificio').value.trim();
   const piso = document.getElementById('piso').value.trim();
   const celular = document.getElementById('celular').value.trim();
   const instrucciones = document.getElementById('instrucciones').value.trim();
-  const tipoDireccion = document.getElementById('tipoDireccion').value;
+  const tipoDireccion = document.getElementById('tipoDireccion').value.trim();
 
-  if(!direccion){
-    alert('Por favor escribe tu dirección');
+  let faltan = [];
+  const elDireccion = document.getElementById('inputDireccion');
+  const elTipo = document.getElementById('tipoDireccion');
+  const elCelular = document.getElementById('celular');
+
+  elDireccion.classList.remove('error-neon');
+  elTipo.classList.remove('error-neon');
+  elCelular.classList.remove('error-neon');
+
+  if(!direccion){ faltan.push('dirección'); elDireccion.classList.add('error-neon'); }
+  if(!tipoDireccion){ faltan.push('tipo de dirección'); elTipo.classList.add('error-neon'); }
+  if(!celular){ faltan.push('celular'); elCelular.classList.add('error-neon'); }
+
+  if(faltan.length > 0){
+    mostrarToast('Debes llenar todos los datos obligatorios: ' + faltan.join(', '));
+    // Vibrar y hacer focus al primero
+    if(!direccion) elDireccion.focus();
+    else if(!tipoDireccion) elTipo.focus();
+    else if(!celular) elCelular.focus();
     return;
   }
 
@@ -269,7 +309,6 @@ function guardarDetalles(){
   localStorage.setItem('doloya_detalles_referencia', refTexto || 'Sin referencia');
   if(celular) localStorage.setItem('doloya_celular', celular);
 
-  // ACTUALIZADO: FLAGS PARA QUE RESUMEN SEPA QUE SE EDITÓ MANUAL
   localStorage.setItem('doloya_direccion_editada', '1');
   localStorage.setItem('doloya_viene_de_detalles', '1');
 
