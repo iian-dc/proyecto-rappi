@@ -141,53 +141,81 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 
 <div class="footer">
   <div><span>Total a pagar</span><b id="totalFooter">$0.00 MXN</b></div>
-  <button class="btn-continuar" onclick="window.location.href='metododepago.html'">Continuar</button>
+  <button class="btn-continuar" id="btnContinuar" onclick="irAPagar()">Continuar</button>
 </div>
 
 <script>
-const ubicacion = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
+// --- CORREGIDO: LECTURA ROBUSTA SIN BORRAR DATOS ---
+const ubicacionRaw = localStorage.getItem('doloya_ubicacion');
+const detallesFullRaw = localStorage.getItem('doloya_detalles_full');
+let ubicacion = null;
+let detallesFull = null;
+try{ ubicacion = JSON.parse(ubicacionRaw); }catch(e){}
+try{ detallesFull = JSON.parse(detallesFullRaw); }catch(e){}
+
 const detallesRef = localStorage.getItem('doloya_detalles_referencia')||'';
-const metodoSel = JSON.parse(localStorage.getItem('doloya_metodo_pago')||'null');
+const metodoRaw = localStorage.getItem('doloya_metodo_pago');
+let metodoSel = null;
+try{ metodoSel = JSON.parse(metodoRaw); }catch(e){ metodoSel = metodoRaw; } // CORREGIDO: acepta string plano
+
 const carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 const dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
 
-// MAPA Y DIRECCION REAL
-let lat = ubicacion?.ubicacion?.lat || 21.1576;
-let lng = ubicacion?.ubicacion?.lng || -100.9306;
+// --- MAPA CORREGIDO: soporta {lat,lng} y {ubicacion:{lat,lng}} ---
+let lat = ubicacion?.lat || ubicacion?.ubicacion?.lat || detallesFull?.lat || 21.1576;
+let lng = ubicacion?.lng || ubicacion?.ubicacion?.lng || detallesFull?.lng || -100.9306;
+if(ubicacion?.direccion && ubicacion?.direccion.includes(',')) {
+  // si ya hay direccion no hacer reverse
+}
 document.getElementById('mapaIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
 
 function cargarDireccion(){
+  // PRIORIDAD: detallesFull.direccion > ubicacion.direccion > reverse geocode
+  if(detallesFull?.direccion){
+    document.getElementById('txtDireccion').textContent = detallesFull.direccion;
+    return;
+  }
   if(ubicacion?.direccion){
     document.getElementById('txtDireccion').textContent = ubicacion.direccion;
-  }else{
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`)
-    .then(r=>r.json()).then(d=>{
-      const a=d.address||{};
-      const dir = `${a.road||''} ${a.house_number||''}, ${a.suburb||''}, ${a.city||a.town||a.village||''}, ${a.state||''}, Mexico`.replace(/ ,/g,',').replace(/\s+/g,' ').trim();
-      document.getElementById('txtDireccion').textContent = dir;
-      if(ubicacion){
-        ubicacion.direccion = dir;
-        localStorage.setItem('doloya_ubicacion', JSON.stringify(ubicacion));
-      }
-    }).catch(()=>{
-      document.getElementById('txtDireccion').textContent = `${lat}, ${lng}`;
-    });
+    return;
   }
+  // fallback reverse
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`)
+  .then(r=>r.json()).then(d=>{
+    const a=d.address||{};
+    const dir = `${a.road||''} ${a.house_number||''}, ${a.suburb||''}, ${a.city||a.town||a.village||''}, ${a.state||''}, Mexico`.replace(/ ,/g,',').replace(/\s+/g,' ').trim();
+    document.getElementById('txtDireccion').textContent = dir;
+  }).catch(()=>{
+    document.getElementById('txtDireccion').textContent = `Dolores Hidalgo, ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  });
 }
 cargarDireccion();
 
-if(detallesRef){
+// --- DETALLES CORREGIDO: muestra tipo + piso + referencia + celular ---
+if(detallesFull){
+  let txt = '';
+  if(detallesFull.tipoDireccion) txt += detallesFull.tipoDireccion + ' - ';
+  if(detallesFull.nombreEdificio) txt += detallesFull.nombreEdificio + ', ';
+  if(detallesFull.piso) txt += detallesFull.piso + ', ';
+  if(detallesFull.instrucciones) txt += detallesFull.instrucciones;
+  if(detallesFull.celular) txt += (txt ? ' | ' : '') + 'Cel: ' + detallesFull.celular;
+  if(txt){
+    document.getElementById('txtDetalles').textContent = txt;
+  }
+} else if(detallesRef){
   document.getElementById('txtDetalles').textContent = detallesRef;
 }
+
 if(metodoSel){
-  document.getElementById('txtMetodo').textContent = metodoSel.nombre || metodoSel;
+  let nombreMetodo = typeof metodoSel === 'string' ? metodoSel : (metodoSel.nombre || metodoSel.banco || JSON.stringify(metodoSel));
+  document.getElementById('txtMetodo').textContent = nombreMetodo;
   document.getElementById('badgeMetodo').textContent = '✓';
   document.getElementById('badgeMetodo').style.background = '#E6F9ED';
   document.getElementById('badgeMetodo').style.color = '#0A7D2E';
 }
 
 let tipoActual = localStorage.getItem('doloya_tipo_entrega') || 'rapido';
-let costoProductos = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
+let costoProductos = carrito.reduce((s,i)=>s+(i.precio||0)*(i.cantidad||0),0);
 
 function actualizarResumen(){
   const costoProdEl = document.getElementById('costoProd');
@@ -205,6 +233,7 @@ function actualizarResumen(){
   
   localStorage.setItem('doloya_tipo_entrega', tipoActual);
   localStorage.setItem('doloya_costo_entrega', envio);
+  localStorage.setItem('doloya_total', total.toFixed(2));
 }
 
 function selEntrega(tipo){
@@ -235,15 +264,26 @@ function toggleResumen(){
   }
 }
 
+function irAPagar(){
+  // si no hay metodo, manda a metodo pago, si no, manda a confirmar
+  if(!metodoSel){
+    window.location.href='metododepago.html';
+  } else {
+    // aqui puedes poner tu siguiente pantalla
+    window.location.href='metododepago.html';
+  }
+}
+
 if(dataRest){
   document.getElementById('nombreRest').textContent = dataRest.nombre || 'Restaurante';
-  document.getElementById('cantProductos').textContent = `${carrito.reduce((s,i)=>s+i.cantidad,0)} Productos`;
+  document.getElementById('cantProductos').textContent = `${carrito.reduce((s,i)=>s+(i.cantidad||0),0)} Productos`;
   if(dataRest.logo){
     document.getElementById('logoRest').innerHTML = `<img src="${dataRest.logo}">`;
   }
 }
 
 if(tipoActual==='ahorra') selEntrega('ahorra'); else selEntrega('rapido');
+actualizarResumen();
 </script>
 </body>
 </html>
