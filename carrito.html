@@ -71,6 +71,11 @@ let productosAbiertos = true;
 let logoRestaurante = dataRest?.logo || null;
 const TIEMPO_EXPIRACION = 3 * 60 * 60 * 1000;
 
+// CONFIG TARIFAS
+const TARIFA_BASE_KM = 30;
+const PRECIO_POR_KM = 4;
+const TARIFA_SERVICIO_PORC = 0.03; // 3%
+
 async function obtenerIP(){
   try{
     const r = await fetch('https://api.ipify.org?format=json');
@@ -196,13 +201,49 @@ async function obtenerDatosRestaurante(){
   }
   return dataRest;
 }
+function haversine(lat1, lon1, lat2, lon2){
+  const R = 6371;
+  const dLat = (lat2-lat1)*Math.PI/180;
+  const dLon = (lon2-lon1)*Math.PI/180;
+  const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  const c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R*c;
+}
+async function calcularDistanciaKm(restLat, restLng, cliLat, cliLng){
+  if(!restLat || !restLng || !cliLat || !cliLng) return 0.3;
+  try{
+    const url = `https://router.project-osrm.org/route/v1/driving/${restLng},${restLat};${cliLng},${cliLat}?overview=false`;
+    const r = await fetch(url);
+    const j = await r.json();
+    if(j.routes && j.routes[0]) return j.routes[0].distance / 1000;
+  }catch(e){}
+  return haversine(restLat, restLng, cliLat, cliLng);
+}
+function calcularCostos(costoProductos, distanciaKm){
+  let dist = distanciaKm;
+  if(dist < 0.3) dist = 0.3;
+  const costoEnvio = TARIFA_BASE_KM + (dist * PRECIO_POR_KM);
+  const tarifaServicio = costoProductos * TARIFA_SERVICIO_PORC;
+  const totalFinal = costoProductos + costoEnvio + tarifaServicio;
+  return {
+    distanciaKm: parseFloat(dist.toFixed(2)),
+    costoEnvio: parseFloat(costoEnvio.toFixed(2)),
+    tarifaServicio: parseFloat(tarifaServicio.toFixed(2)),
+    totalFinal: parseFloat(totalFinal.toFixed(2))
+  };
+}
 window.irSiguiente = async ()=>{
   if(carrito.length===0) return;
   if(!ipKey) await obtenerIP();
   const clienteUbi = obtenerUbicacionCliente();
   const restFull = await obtenerDatosRestaurante();
+  const costoProductos = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
+  let distanciaKm = 0.3;
+  if(restFull.lat && restFull.lng && clienteUbi.lat && clienteUbi.lng){
+    distanciaKm = await calcularDistanciaKm(restFull.lat, restFull.lng, clienteUbi.lat, clienteUbi.lng);
+  }
+  const costos = calcularCostos(costoProductos, distanciaKm);
   if(dataRest && ipKey){
-    const total = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
     const ts = localStorage.getItem('doloya_carrito_timestamp');
     let dataCarrito = {
       restauranteId: restFull.id,
@@ -216,7 +257,13 @@ window.irSiguiente = async ()=>{
       clienteLng: clienteUbi.lng || null,
       clienteUbicacion: clienteUbi.raw || null,
       productos: carrito,
-      total: total,
+      costoProductos: parseFloat(costoProductos.toFixed(2)),
+      distanciaKm: costos.distanciaKm,
+      costoEnvio: costos.costoEnvio,
+      costoEnvioDetalle: `$${TARIFA_BASE_KM} base + $${PRECIO_POR_KM} x ${costos.distanciaKm}km`,
+      tarifaServicio: costos.tarifaServicio,
+      tarifaServicioPorcentaje: "3%",
+      total: costos.totalFinal,
       cantidadTotal: carrito.reduce((s,i)=>s+i.cantidad,0),
       ip: ipKey,
       fecha: ts ? parseInt(ts) : Date.now()
@@ -228,6 +275,9 @@ window.irSiguiente = async ()=>{
     await set(ref(db, `carrito/${restFull.cat}/${restFull.id}/${ipKey}`), dataCarrito);
     await set(ref(db, `doloya_aliados/${restFull.cat}/${restFull.id}/carritos/${ipKey}`), dataCarrito);
     localStorage.setItem('doloya_carrito_restaurante_data', JSON.stringify(restFull));
+    localStorage.setItem('doloya_distancia_km', costos.distanciaKm);
+    localStorage.setItem('doloya_costo_envio', costos.costoEnvio);
+    localStorage.setItem('doloya_tarifa_servicio', costos.tarifaServicio);
   }
   window.location.href='resumen.html';
 }
@@ -244,10 +294,15 @@ async function guardar(){
     localStorage.removeItem('doloya_carrito_timestamp');
   }else{
     if(dataRest && ipKey){
-      const total = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
       const ts = localStorage.getItem('doloya_carrito_timestamp');
       const clienteUbi = obtenerUbicacionCliente();
       const restFull = await obtenerDatosRestaurante();
+      const costoProductos = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
+      let distanciaKm = 0.3;
+      if(restFull.lat && restFull.lng && clienteUbi.lat && clienteUbi.lng){
+        distanciaKm = await calcularDistanciaKm(restFull.lat, restFull.lng, clienteUbi.lat, clienteUbi.lng);
+      }
+      const costos = calcularCostos(costoProductos, distanciaKm);
       let dataCarrito = {
         restauranteId: restFull.id,
         restauranteCat: restFull.cat,
@@ -259,7 +314,13 @@ async function guardar(){
         clienteLat: clienteUbi.lat || null,
         clienteLng: clienteUbi.lng || null,
         productos: carrito,
-        total: total,
+        costoProductos: parseFloat(costoProductos.toFixed(2)),
+        distanciaKm: costos.distanciaKm,
+        costoEnvio: costos.costoEnvio,
+        costoEnvioDetalle: `$${TARIFA_BASE_KM} base + $${PRECIO_POR_KM} x ${costos.distanciaKm}km`,
+        tarifaServicio: costos.tarifaServicio,
+        tarifaServicioPorcentaje: "3%",
+        total: costos.totalFinal,
         cantidadTotal: carrito.reduce((s,i)=>s+i.cantidad,0),
         ip: ipKey,
         fecha: ts ? parseInt(ts) : Date.now()
