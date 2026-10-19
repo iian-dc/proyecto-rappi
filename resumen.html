@@ -379,7 +379,7 @@ async function irAPagar(){
   localStorage.setItem('doloya_cliente_nombre', nombre);
   const telefonoGuardado = localStorage.getItem('doloya_celular') || detallesFull?.celular || localStorage.getItem('doloya_cliente_tel') || '';
   const pedidoCompleto = {
-    restaurante: { id: dataRest?.id || 'rest_dolores', nombre: dataRest?.nombre || document.getElementById('nombreRest').textContent, logo: dataRest?.logo || '', lat: restLat, lng: restLng, direccion: dataRest?.direccion || "" },
+    restaurante: { id: dataRest?.id || 'la_catrina_burger', nombre: dataRest?.nombre || document.getElementById('nombreRest').textContent, logo: dataRest?.logo || '', lat: restLat, lng: restLng, direccion: dataRest?.direccion || "" },
     cliente: { nombre: nombre, celular: telefonoGuardado, telefono: telefonoGuardado, direccion: detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent, detalles: detallesFull || {}, referencia: detallesRef, ubicacion: { lat: lat, lng: lng } },
     productos: carrito,
     totales: { costoProductos: parseFloat(costoProductos.toFixed(2)), distanciaKm: parseFloat(distanciaKm.toFixed(2)), costoEnvio: envioFinal, tarifaServicio: tarifaFinal, ahorro: parseFloat(ahorroFinal.toFixed(2)), tipoEntrega: tipoActual, total: parseFloat(totalFinal.toFixed(2)) },
@@ -392,18 +392,25 @@ async function irAPagar(){
     const refDoc = await window.addDoc(window.collection(window.dbConfirmacionFS, "pedidos"), pedidoCompleto);
     localStorage.setItem('doloya_pedido_confirmacion_id', refDoc.id);
     localStorage.setItem('doloya_pedido_final', JSON.stringify(pedidoCompleto));
-    const idAliados = localStorage.getItem('doloya_pedido_id');
-    if(idAliados){
-      try{
-        await window.removeRT(window.refRT(window.dbAliadosRT, "carrito/" + idAliados));
-        localStorage.removeItem('doloya_pedido_id');
-      }catch(delErr){
-        try{ await window.removeRT(window.refRT(window.dbAliadosRT, idAliados)); }catch(e){}
-      }
+
+    // BORRAR COMPLETO DE DOLOYA-ALIADOS REALTIME - ESTRUCTURA carrito/burgers/la_catrina_burger/ID
+    const idPedido = localStorage.getItem('doloya_pedido_id');
+    const idRestaurante = localStorage.getItem('doloya_restaurante_id') || dataRest?.id || "la_catrina_burger";
+
+    if(idPedido){
+      const rutaCompleta = `carrito/burgers/${idRestaurante}/${idPedido}`;
+      console.log("Borrando carpeta completa:", rutaCompleta);
+      await window.removeRT(window.refRT(window.dbAliadosRT, rutaCompleta));
+      console.log("Carpeta borrada");
     }
+
+    localStorage.removeItem('doloya_pedido_id');
+    localStorage.removeItem('doloya_restaurante_id');
+    localStorage.removeItem('doloya_carrito_v2');
     window.location.href='confirmacion.html';
   }catch(e){
     alert("Error: "+e.message);
+    console.log(e);
     btn.textContent = 'Finalizar pedido';
     btn.disabled = false;
   }
