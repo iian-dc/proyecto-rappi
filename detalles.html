@@ -31,21 +31,17 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
 .footer{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:16px;border-top:1px solid #F0F0F0;z-index:30}
 .btn-guardar{width:100%;padding:16px;background:#E30613;color:#fff;border:none;border-radius:999px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(227,6,19,0.25)}
 </style>
-<!-- GOOGLE PLACES API REAL -->
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCTV1sm6McEIkv-cheaVFCD_svp_a--6wg&libraries=places&language=es&region=MX"></script>
 </head>
 <body>
-
 <div class="header">
   <button class="btn-back" onclick="window.location.href='resumen.html'">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
   </button>
   <h1>Editar dirección</h1>
 </div>
-
 <div class="container">
   <div class="sub-direccion" id="subDir">Dolores Hidalgo México</div>
-
   <label class="label">Dirección</label>
   <div class="input-wrap" id="wrapDireccion">
     <input type="text" id="inputDireccion" placeholder="Ej: Calle Allende #45, Colonia Centro" autocomplete="off">
@@ -54,7 +50,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
     </button>
     <div class="sugerencias-box" id="sugerenciasBox"></div>
   </div>
-
   <label class="label">Tipo de dirección</label>
   <div class="input-wrap">
     <select id="tipoDireccion">
@@ -67,7 +62,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>
     </button>
   </div>
-
   <label class="label">Nombre del edificio / Referencia</label>
   <div class="input-wrap">
     <input type="text" id="nombreEdificio" placeholder="Ej: Casa blanca, portón negro">
@@ -75,7 +69,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </button>
   </div>
-
   <label class="label">No. de oficina / Piso</label>
   <div class="input-wrap">
     <input type="text" id="piso" placeholder="Ej: Primer Piso, Segundo Piso, Piso 1, Piso 2">
@@ -83,7 +76,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </button>
   </div>
-
   <label class="label">Número de celular</label>
   <div class="input-wrap">
     <input type="tel" id="celular" placeholder="Ej: 418 123 4567" maxlength="15">
@@ -91,7 +83,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </button>
   </div>
-
   <label class="label" style="margin-top:22px">Instrucciones para tu DoloYa</label>
   <div class="input-wrap">
     <textarea id="instrucciones" placeholder="Ej: casa con portón rojo, tocar timbre"></textarea>
@@ -100,16 +91,14 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
     </button>
   </div>
 </div>
-
 <div class="footer">
   <button class="btn-guardar" onclick="guardarDetalles()">Guardar</button>
 </div>
-
 <script>
 const ubicacion = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
 const detallesGuardados = JSON.parse(localStorage.getItem('doloya_detalles_full')||'null');
-let latSeleccionado = ubicacion?.lat || ubicacion?.ubicacion?.lat || 21.1576;
-let lngSeleccionado = ubicacion?.lng || ubicacion?.ubicacion?.lng || -100.9306;
+let latSeleccionado = ubicacion?.lat || ubicacion?.ubicacion?.lat || detallesGuardados?.lat || 21.1576;
+let lngSeleccionado = ubicacion?.lng || ubicacion?.ubicacion?.lng || detallesGuardados?.lng || -100.9306;
 let timeoutBusqueda = null;
 let autocompleteService, placesService;
 let ultimaPredicciones = [];
@@ -126,10 +115,31 @@ function clearInput(id){
   if(id==='inputDireccion'){ ocultarSugerencias(); }
 }
 
-if(ubicacion?.direccion){
-  document.getElementById('inputDireccion').value = ubicacion.direccion;
-  document.getElementById('subDir').textContent = ubicacion.direccion;
-}
+// CORREGIDO: SIEMPRE MOSTRAR LA DIRECCION DEL MAPA/CLIENTE ACTUAL
+(function inicializarDireccion(){
+  const dirMapa = ubicacion?.direccion || null;
+  const dirDetalles = detallesGuardados?.direccion || null;
+  const latMapa = ubicacion?.lat || ubicacion?.ubicacion?.lat || null;
+  const lngMapa = ubicacion?.lng || ubicacion?.ubicacion?.lng || null;
+
+  let direccionFinal = dirMapa || dirDetalles || 'Dolores Hidalgo México';
+  let latFinal = latMapa || detallesGuardados?.lat || latSeleccionado;
+  let lngFinal = lngMapa || detallesGuardados?.lng || lngSeleccionado;
+
+  // Si hay ubicacion de mapa, esa manda (es la del cliente)
+  if(dirMapa && latMapa && lngMapa){
+    direccionFinal = dirMapa;
+    latFinal = latMapa;
+    lngFinal = lngMapa;
+  }
+
+  latSeleccionado = latFinal;
+  lngSeleccionado = lngFinal;
+
+  document.getElementById('inputDireccion').value = direccionFinal;
+  document.getElementById('subDir').textContent = direccionFinal;
+})();
+
 if(detallesGuardados){
   document.getElementById('nombreEdificio').value = detallesGuardados.nombreEdificio || '';
   document.getElementById('piso').value = detallesGuardados.piso || '';
@@ -142,7 +152,6 @@ if(detallesGuardados){
   document.getElementById('tipoDireccion').value = 'Oficina';
 }
 
-// MOTOR REAL DE GOOGLE PRIORIZANDO DOLORES HIDALGO
 const inputDir = document.getElementById('inputDireccion');
 inputDir.addEventListener('input', function(){
   const texto = this.value.trim();
@@ -153,14 +162,11 @@ inputDir.addEventListener('input', function(){
 
 function buscarGoogle(texto){
   if(!autocompleteService){ ocultarSugerencias(); return; }
-
-  // Bias a Dolores Hidalgo, Guanajuato
   const doloresLocation = new google.maps.LatLng(21.1576, -100.9306);
   const bounds = new google.maps.LatLngBounds(
     new google.maps.LatLng(21.05, -101.05),
     new google.maps.LatLng(21.25, -100.80)
   );
-
   autocompleteService.getPlacePredictions({
     input: texto,
     componentRestrictions: {country: 'mx'},
@@ -171,7 +177,6 @@ function buscarGoogle(texto){
     if(status !== google.maps.places.PlacesServiceStatus.OK || !predictions){
       ocultarSugerencias(); return;
     }
-    // Ordenar: primero los que tengan Dolores Hidalgo
     predictions.sort((a,b)=>{
       const aDol = a.description.toLowerCase().includes('dolores hidalgo') ? 0 : 1;
       const bDol = b.description.toLowerCase().includes('dolores hidalgo') ? 0 : 1;
@@ -216,7 +221,6 @@ function mostrarSugerenciasGoogle(lista){
 }
 
 function seleccionarGoogle(placeId, description){
-  // Obtener detalles con lat/lng reales de Google
   placesService.getDetails({placeId: placeId, fields: ['formatted_address','geometry','name']}, (place, status)=>{
     if(status === google.maps.places.PlacesServiceStatus.OK && place){
       document.getElementById('inputDireccion').value = place.formatted_address || description;
