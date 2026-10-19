@@ -78,19 +78,38 @@ const db = getDatabase(app);
 
 let carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 let dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
-let ipKey = localStorage.getItem('doloya_device_id') || null;
+let ipKey = null;
+let ipCliente = null;
 let productosAbiertos = true;
 let logoRestaurante = dataRest?.logo || null;
+const TIEMPO_EXPIRACION = 3 * 60 * 60 * 1000;
 
-if(!ipKey){
-  fetch('https://api.ipify.org?format=json').then(r=>r.json()).then(d=>{
+async function obtenerIP(){
+  try{
+    const r = await fetch('https://api.ipify.org?format=json');
+    const d = await r.json();
+    ipCliente = d.ip;
     ipKey = d.ip.replace(/\./g,'_');
-  }).catch(()=>{
-    ipKey = localStorage.getItem('doloya_device_id');
-  });
+  }catch(e){
+    ipKey = localStorage.getItem('doloya_device_id') || null;
+    if(!ipKey){
+      const devId = localStorage.getItem('doloya_device_id');
+      if(devId) ipKey = devId;
+    }
+  if(!ipKey){
+    const guardado = localStorage.getItem('doloya_carrito_restaurante_data');
+    if(guardado){
+      try{
+        const snap = await get(ref(db, `carrito/${dataRest.cat}/${dataRest.id}`));
+        if(snap.exists()){
+          const keys = Object.keys(snap.val());
+          if(keys.length>0) ipKey = keys[0];
+        }
+      }catch(e){}
+    }
+  }
 }
 
-// CORRECCION LOGO - traer logo de Firebase si no existe
 async function obtenerLogo(){
   if(logoRestaurante) { render(); return; }
   if(dataRest?.cat && dataRest?.id){
@@ -101,19 +120,17 @@ async function obtenerLogo(){
         logoRestaurante = data.logo;
         dataRest.logo = data.logo;
         localStorage.setItem('doloya_carrito_restaurante_data', JSON.stringify(dataRest));
-        render();
       }else if(data && data.portada){
         logoRestaurante = data.portada;
-        render();
       }
-    }catch(e){ render(); }
-  }else{ render(); }
+    }catch(e){}
+  }
+  render();
 }
 
 function render(){
   const cont = document.getElementById('contenido');
   const foot = document.getElementById('footer');
-  
   if(carrito.length===0){
     cont.innerHTML = `<div class="vacio"><b>Tu canasta está vacía</b>Agrega productos de un restaurante</div>`;
     foot.style.display='none';
@@ -123,7 +140,6 @@ function render(){
   const totalCant = carrito.reduce((s,i)=>s+i.cantidad,0);
   const nombreRest = dataRest?.nombre || 'Restaurante';
   const inicial = nombreRest.charAt(0).toUpperCase();
-
   cont.innerHTML = `
     <div class="restaurante-box">
       <div class="restaurante-left">
@@ -165,20 +181,13 @@ function render(){
   `;
 }
 
-window.toggleProductos = ()=>{
-  productosAbiertos = !productosAbiertos;
-  render();
-}
+window.toggleProductos = ()=>{ productosAbiertos = !productosAbiertos; render(); }
 window.toggleDesc = (idx)=>{
   const el = document.getElementById(`desc-${idx}`);
-  if(el.style.whiteSpace==='normal'){
-    el.style.whiteSpace='nowrap';
-    el.style.overflow='hidden';
-  }else{
-    el.style.whiteSpace='normal';
-    el.style.overflow='visible';
-  }
+  if(el.style.whiteSpace==='normal'){ el.style.whiteSpace='nowrap'; el.style.overflow='hidden'; }
+  else{ el.style.whiteSpace='normal'; el.style.overflow='visible'; }
 }
+
 window.cambiarCant = (idx, delta)=>{
   carrito[idx].cantidad += delta;
   if(carrito[idx].cantidad<=0){ carrito.splice(idx,1); }
@@ -188,50 +197,73 @@ window.eliminarItem = (idx)=>{
   carrito.splice(idx,1);
   guardar();
 }
-window.vaciarTodo = ()=>{
+
+// VACIA TODO - AHORA BORRA EN FIREBASE SIEMPRE
+window.vaciarTodo = async ()=>{
   if(carrito.length===0) return;
-  carrito=[];
-  guardar();
+  if(!ipKey) await obtenerIP();
   if(dataRest && ipKey){
-    set(ref(db, `carrito/${dataRest.cat}/${dataRest.id}/${ipKey}`), null);
-    set(ref(db, `doloya_aliados/${dataRest.cat}/${dataRest.id}/carritos/${ipKey}`), null);
+    try{
+      await set(ref(db, `carrito/${dataRest.cat}/${dataRest.id}/${ipKey}`), null);
+      await set(ref(db, `doloya_aliados/${dataRest.cat}/${dataRest.id}/carritos/${ipKey}`), null);
+    }catch(e){ console.log("Error borrando", e); }
   }
+  carrito=[];
+  localStorage.setItem('doloya_carrito_v2', JSON.stringify([]));
   localStorage.removeItem('doloya_carrito_restaurante');
   localStorage.removeItem('doloya_carrito_restaurante_data');
+  localStorage.removeItem('doloya_carrito_timestamp');
+  render();
   window.location.href='inicio.html';
 }
+
 window.irSiguiente = ()=>{
   if(carrito.length===0) return;
   window.location.href='resumen.html';
 }
-function guardar(){
+
+// GUARDAR CORREGIDO - BORRA EN FIREBASE SI SE VACIA
+async function guardar(){
   localStorage.setItem('doloya_carrito_v2', JSON.stringify(carrito));
+  if(!ipKey) await obtenerIP();
   if(carrito.length===0){
+    if(dataRest && ipKey){
+      try{
+        await set(ref(db, `carrito/${dataRest.cat}/${dataRest.id}/${ipKey}`), null);
+        await set(ref(db, `doloya_aliados/${dataRest.cat}/${dataRest.id}/carritos/${ipKey}`), null);
+      }catch(e){}
+    }
     localStorage.removeItem('doloya_carrito_restaurante');
     localStorage.removeItem('doloya_carrito_restaurante_data');
-    const foot = document.getElementById('footer');
-    if(foot) foot.style.display='none';
-    if(dataRest && ipKey){
-      set(ref(db, `carrito/${dataRest.cat}/${dataRest.id}/${ipKey}`), null);
-      set(ref(db, `doloya_aliados/${dataRest.cat}/${dataRest.id}/carritos/${ipKey}`), null);
-    }
+    localStorage.removeItem('doloya_carrito_timestamp');
   }else{
     if(dataRest && ipKey){
       const total = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
-      set(ref(db, `carrito/${dataRest.cat}/${dataRest.id}/${ipKey}`), {
+      const ts = localStorage.getItem('doloya_carrito_timestamp');
+      let dataCarrito = {
         restauranteId: dataRest.id,
         restauranteCat: dataRest.cat,
         restauranteNombre: dataRest.nombre,
         productos: carrito,
         total: total,
         cantidadTotal: carrito.reduce((s,i)=>s+i.cantidad,0),
-        fecha: Date.now()
-      });
+        ip: ipCliente || ipKey,
+        fecha: ts ? parseInt(ts) : Date.now()
+      };
+      if(ts){
+        dataCarrito.fechaExpiracion = parseInt(ts) + TIEMPO_EXPIRACION;
+        dataCarrito.expiraEn = new Date(dataCarrito.fechaExpiracion).toISOString();
+      }
+      try{
+        await set(ref(db, `carrito/${dataRest.cat}/${dataRest.id}/${ipKey}`), dataCarrito);
+        await set(ref(db, `doloya_aliados/${dataRest.cat}/${dataRest.id}/carritos/${ipKey}`), dataCarrito);
+      }catch(e){}
     }
   }
   render();
 }
-obtenerLogo();
+
+obtenerIP().then(()=>{ obtenerLogo(); });
 </script>
 </body>
 </html>
