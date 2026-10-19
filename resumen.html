@@ -15,7 +15,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .mapa-wrap iframe{width:100%;height:100%;border:0}
 .pin-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-80%);width:54px;height:54px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,0.25);z-index:2}
 .btn-ajustar{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:white;padding:8px 14px;border-radius:999px;border:none;box-shadow:0 4px 12px rgba(0,0,0,0.18);font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:6px;z-index:3;cursor:pointer}
-.item-row{padding:18px 16px;display:flex;align-items:flex-start;gap:14px;border-bottom:1px solid #F0F0F0;cursor:pointer}
+.item-row{padding:18px 16px;display:flex;align-items:flex-start;gap:14px;border-bottom:1px solid #F0F0F0;cursor:pointer;transition:all 0.2s}
 .item-row.no-click{cursor:default}
 .item-row .icono{width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#F3F4F6;border-radius:50%}
 .item-row .info{flex:1;min-width:0}
@@ -71,6 +71,12 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .modal-card input:focus{border-color:#111}
 .btn-finalizar{width:100%;margin-top:18px;padding:16px;background:#E30613;color:white;border:none;border-radius:999px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(227,6,19,0.3)}
 .btn-cancel{width:100%;margin-top:10px;padding:12px;background:white;color:#111;border:1.5px solid #E5E7EB;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer}
+
+/* NUEVO VALIDACION ROJO NEON */
+.error-detalles{border:2px solid #FF0000 !important;box-shadow:0 0 8px #FF0000, 0 0 16px #FF0000, 0 0 24px rgba(255,0,0,0.4) !important;background:#FFF0F0 !important;animation:shakeRed 0.45s ease;border-radius:12px}
+@keyframes shakeRed{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.toast-resumen{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);background:#111;color:#fff;padding:14px 20px;border-radius:14px;font-size:13px;font-weight:800;z-index:10000;opacity:0;pointer-events:none;transition:all 0.3s ease;text-align:center;box-shadow:0 8px 20px rgba(0,0,0,0.3)}
+.toast-resumen.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
@@ -87,7 +93,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
   <div class="icono"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
   <div class="info"><b>Dirección</b><span id="txtDireccion">Obteniendo tu ubicación GPS...</span><span id="txtDistancia"></span></div>
 </div>
-<div class="item-row" onclick="window.location.href='detalles.html'">
+<div class="item-row" id="filaDetalles" onclick="window.location.href='detalles.html'">
   <div class="icono"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
   <div class="info"><b>Detalles</b><span id="txtDetalles">Agrega referencias de entrega</span></div>
   <div class="flecha"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg></div>
@@ -144,6 +150,8 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
     <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
   </div>
 </div>
+
+<div class="toast-resumen" id="toastResumen">Completa tu dirección y celular en Detalles</div>
 
 <script type="module">
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -263,8 +271,6 @@ function calcularAhorro(){
 function actualizarMapaIframe(){
   document.getElementById('mapaIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
 }
-
-// NUEVO: REVERSE GEOCODE PARA GPS
 async function obtenerDireccionPorGPS(latGPS, lngGPS){
   try{
     const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latGPS}&lon=${lngGPS}&zoom=18&addressdetails=1`);
@@ -275,17 +281,13 @@ async function obtenerDireccionPorGPS(latGPS, lngGPS){
   }catch(e){}
   return `Ubicación GPS ${latGPS.toFixed(5)}, ${lngGPS.toFixed(5)}`;
 }
-
-// NUEVO: OBTENER GPS REAL AL ENTRAR DESDE CARRITO
 async function obtenerGPSReal(){
-  // Si el cliente ya editó manualmente en detalles.html, respetar eso y no pisar con GPS
   const ubiCheck = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
   const detCheck = JSON.parse(localStorage.getItem('doloya_detalles_full')||'null');
   const vieneDeDetalles = detCheck && detCheck.direccion && detCheck.lat && detCheck.lng;
   const edicionReciente = localStorage.getItem('doloya_direccion_editada') === '1';
 
   if(vieneDeDetalles && edicionReciente){
-    // Ya editó en detalles, usar esa
     lat = detCheck.lat;
     lng = detCheck.lng;
     direccionBase = detCheck.direccion;
@@ -307,22 +309,17 @@ async function obtenerGPSReal(){
     lng = lngGPS;
     gpsObtenido = true;
     direccionBase = await obtenerDireccionPorGPS(latGPS, lngGPS);
-    
-    // Guardar GPS como base oficial
     const nuevaUbi = { direccion: direccionBase, lat: latGPS, lng: lngGPS, ubicacion: {lat: latGPS, lng: lngGPS} };
     localStorage.setItem('doloya_ubicacion', JSON.stringify(nuevaUbi));
     localStorage.removeItem('doloya_direccion_editada');
     ubicacion = nuevaUbi;
-
     document.getElementById('txtDireccion').textContent = direccionBase;
     actualizarMapaIframe();
     calcularDistanciaYActualizar();
   }, (err)=>{
-    // Si no da permiso GPS, usar lo guardado
     cargarDireccionYDistanciaSinGPS();
   }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
 }
-
 async function calcularDistanciaYActualizar(){
   document.getElementById('txtDistancia').innerHTML = `<span style="color:#E30613;font-weight:800;display:flex;align-items:center;gap:4px">Calculando distancia...</span>`;
   const realKm = await obtenerDistanciaRealGoogle(restLat, restLng, lat, lng);
@@ -331,7 +328,6 @@ async function calcularDistanciaYActualizar(){
   document.getElementById('txtDistancia').innerHTML = `<span style="color:#E30613;font-weight:800;display:flex;align-items:center;gap:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> Estás a ${distanciaKm.toFixed(2)} km del restaurante</span>`;
   actualizarResumen();
 }
-
 async function cargarDireccionYDistanciaSinGPS(){
   const { ubicacion: ubiFresh, detallesFull: detFresh } = leerUbicacionStorage();
   ubicacion = ubiFresh;
@@ -355,15 +351,12 @@ async function cargarDireccionYDistanciaSinGPS(){
   }
   calcularDistanciaYActualizar();
 }
-
-// INICIALIZAR: SI VIENE DEL CARRITO, GPS. SI VIENE DE DETALLES, RESPETAR.
 (function init(){
   const detCheck = JSON.parse(localStorage.getItem('doloya_detalles_full')||'null');
   const flagEdit = localStorage.getItem('doloya_direccion_editada') === '1';
   if(detCheck && flagEdit){
     cargarDireccionYDistanciaSinGPS();
   } else {
-    // Limpiar flag para forzar GPS cuando viene de carrito
     const referrer = document.referrer || '';
     const vieneDeDetalles = localStorage.getItem('doloya_viene_de_detalles') === '1';
     if(vieneDeDetalles){
@@ -374,7 +367,6 @@ async function cargarDireccionYDistanciaSinGPS(){
     }
   }
 })();
-
 window.addEventListener('focus', ()=>{
   const ubiCheck = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
   if(ubiCheck && (Math.abs((ubiCheck.lat||ubiCheck.ubicacion?.lat||0) - lat) > 0.00001 || Math.abs((ubiCheck.lng||ubiCheck.ubicacion?.lng||0) - lng) > 0.00001 || ubiCheck.direccion !== direccionBase)){
@@ -442,7 +434,42 @@ function toggleResumen(){
   const det = document.getElementById('detalleResumen');
   det.style.display = det.style.display==='none' ? 'block' : 'none';
 }
+
+// NUEVO: VALIDAR DETALLES OBLIGATORIOS
+function validarDetallesObligatorios(){
+  const det = JSON.parse(localStorage.getItem('doloya_detalles_full')||'null');
+  const ubi = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
+  const dirTxt = document.getElementById('txtDireccion').textContent || '';
+  const tieneDireccion = (det && det.direccion && det.direccion.trim().length > 3) || (ubi && ubi.direccion && ubi.direccion.trim().length > 3) || (dirTxt && dirTxt.length > 10 && !dirTxt.includes('Obteniendo'));
+  const tieneCelular = (det && det.celular && det.celular.trim().length >= 8) || (localStorage.getItem('doloya_celular') && localStorage.getItem('doloya_celular').trim().length >= 8);
+  
+  let faltan = [];
+  if(!tieneDireccion) faltan.push('dirección');
+  if(!tieneCelular) faltan.push('celular');
+  
+  return { ok: faltan.length===0, faltan };
+}
+
+function mostrarErrorDetalles(mensaje){
+  const fila = document.getElementById('filaDetalles');
+  fila.classList.remove('error-detalles');
+  void fila.offsetWidth;
+  fila.classList.add('error-detalles');
+  if(navigator.vibrate) navigator.vibrate(200);
+  const toast = document.getElementById('toastResumen');
+  toast.textContent = mensaje;
+  toast.classList.add('show');
+  setTimeout(()=>{ toast.classList.remove('show'); fila.classList.remove('error-detalles'); }, 2500);
+  setTimeout(()=>{ window.location.href='detalles.html'; }, 800);
+}
+
 function abrirModal(){
+  // PRIMERO VALIDAR DETALLES
+  const val = validarDetallesObligatorios();
+  if(!val.ok){
+    mostrarErrorDetalles('Completa tu ' + val.faltan.join(' y ') + ' en Detalles');
+    return;
+  }
   if(!metodoSel){ window.location.href='metododepago.html'; return; }
   const nombreGuardado = localStorage.getItem('doloya_cliente_nombre')||'';
   document.getElementById('inputNombre').value = nombreGuardado;
