@@ -100,7 +100,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 <div class="section">
   <h3><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Entrega estimada</h3>
   <div class="entrega-op active" id="opRapido" onclick="selEntrega('rapido')">
-    <div class="entrega-left"><div class="circle active" id="cRapido"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg></div><div><b style="display:flex;align-items:center;gap:4px"><span style="color:#E30613">⚡</span><span style="color:#E30613">Más rápido</span></b><span>34 - 49 min</span></div></div>
+    <div class="entrega-left"><div class="circle active" id="cRapido"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg></div><div><b style="display:flex;align-items:center;gap:4px"><span style="color:#E30613"><svg width="14" height="14" viewBox="0 0 24 24" fill="#E30613"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg></span><span style="color:#E30613">Más rápido</span></b><span>34 - 49 min</span></div></div>
     <div class="entrega-right verde" id="txtRapido">$0.00 MXN</div>
   </div>
   <div class="entrega-op" id="opAhorra" onclick="selEntrega('ahorra')">
@@ -132,7 +132,9 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
     <div class="costo-row total"><b>Total a pagar</b><b id="totalPagar">$0.00</b></div>
   </div>
   <div class="ahorro-banner">
-    <div style="width:22px;height:22px;background:#DBEAFE;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:14px">💰</span></div>
+    <div style="width:24px;height:24px;background:#DBEAFE;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1E40AF" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.5 16.5L8 21l-2-3 7.5-1.5z"/><path d="M8 12a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2z"/></svg>
+    </div>
     <b id="txtAhorroBanner">Has ahorrado $0.00</b>
   </div>
 </div>
@@ -154,8 +156,9 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 </div>
 
 <script type="module">
-import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getDatabase, ref, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfigAliados = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
@@ -176,20 +179,19 @@ const firebaseConfigConfirmacion = {
   appId: "1:832228761099:web:ddd4b6a0ee0d7f0494b10e"
 };
 
-let dbAliados, dbConfirmacion;
 const appAliados = getApps().find(a=>a.name==="aliados") || initializeApp(firebaseConfigAliados, "aliados");
-dbAliados = getFirestore(appAliados);
 const appConf = getApps().find(a=>a.name==="confirmacion") || initializeApp(firebaseConfigConfirmacion, "confirmacion");
-dbConfirmacion = getFirestore(appConf);
 
-window.dbAliados = dbAliados;
-window.dbConfirmacion = dbConfirmacion;
+const dbAliadosRT = getDatabase(appAliados);
+const dbConfirmacionFS = getFirestore(appConf);
+
+window.dbAliadosRT = dbAliadosRT;
+window.dbConfirmacionFS = dbConfirmacionFS;
 window.addDoc = addDoc;
-window.deleteDoc = deleteDoc;
-window.doc = doc;
 window.collection = collection;
+window.refRT = ref;
+window.removeRT = remove;
 window.serverTimestamp = serverTimestamp;
-console.log("Firebase listo aliados y confirmacion");
 </script>
 
 <script>
@@ -280,11 +282,11 @@ async function cargarDireccionYDistancia(){
   } else if(ubicacion?.direccion){
     document.getElementById('txtDireccion').textContent = ubicacion.direccion;
   }
-  document.getElementById('txtDistancia').innerHTML = `<span style="color:#E30613;font-weight:800">Calculando...</span>`;
+  document.getElementById('txtDistancia').innerHTML = `<span style="color:#E30613;font-weight:800;display:flex;align-items:center;gap:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> Calculando...</span>`;
   const realKm = await obtenerDistanciaRealGoogle(restLat, restLng, lat, lng);
   distanciaKm = realKm;
   if(distanciaKm < 0.3) distanciaKm = 0.3;
-  document.getElementById('txtDistancia').innerHTML = `<span style="color:#E30613;font-weight:800">Estás a ${distanciaKm.toFixed(2)} km del restaurante</span>`;
+  document.getElementById('txtDistancia').innerHTML = `<span style="color:#E30613;font-weight:800;display:flex;align-items:center;gap:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> Estás a ${distanciaKm.toFixed(2)} km del restaurante</span>`;
   actualizarResumen();
 }
 cargarDireccionYDistancia();
@@ -307,7 +309,7 @@ if(detallesFull){
 if(metodoSel){
   let nombreMetodo = typeof metodoSel === 'string' ? metodoSel : (metodoSel.nombre || metodoSel.banco || metodoSel.tipo || JSON.stringify(metodoSel));
   document.getElementById('txtMetodo').textContent = nombreMetodo;
-  document.getElementById('badgeMetodo').textContent = '✓';
+  document.getElementById('badgeMetodo').textContent = 'Listo';
   document.getElementById('badgeMetodo').style.background = '#E6F9ED';
   document.getElementById('badgeMetodo').style.color = '#0A7D2E';
 }
@@ -364,22 +366,18 @@ function abrirModal(){
 function cerrarModal(){
   document.getElementById('modalCliente').classList.remove('active');
 }
-
-// UNICA PARTE MODIFICADA - FIREBASE CORREGIDO
 async function irAPagar(){
   const nombre = document.getElementById('inputNombre').value.trim();
   if(!nombre){ alert('Por favor ingresa tu nombre completo'); return; }
   const btn = document.getElementById('btnFinalizar');
   btn.textContent = 'Finalizando...';
   btn.disabled = true;
-
   let envioFinal = calcularEnvio();
   let tarifaFinal = calcularTarifa();
   let ahorroFinal = calcularAhorro();
   let totalFinal = costoProductos + envioFinal + tarifaFinal;
   localStorage.setItem('doloya_cliente_nombre', nombre);
   const telefonoGuardado = localStorage.getItem('doloya_celular') || detallesFull?.celular || localStorage.getItem('doloya_cliente_tel') || '';
-
   const pedidoCompleto = {
     restaurante: { id: dataRest?.id || 'rest_dolores', nombre: dataRest?.nombre || document.getElementById('nombreRest').textContent, logo: dataRest?.logo || '', lat: restLat, lng: restLng, direccion: dataRest?.direccion || "" },
     cliente: { nombre: nombre, celular: telefonoGuardado, telefono: telefonoGuardado, direccion: detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent, detalles: detallesFull || {}, referencia: detallesRef, ubicacion: { lat: lat, lng: lng } },
@@ -390,31 +388,26 @@ async function irAPagar(){
     fecha: new Date().toISOString(),
     timestamp: window.serverTimestamp ? window.serverTimestamp() : new Date()
   };
-
   try{
-    console.log("Guardando en confirmacion...", pedidoCompleto);
-    const ref = await window.addDoc(window.collection(window.dbConfirmacion, "pedidos"), pedidoCompleto);
-    console.log("✅ Guardado en doloya-confirmacion id:", ref.id);
-    localStorage.setItem('doloya_pedido_confirmacion_id', ref.id);
+    const refDoc = await window.addDoc(window.collection(window.dbConfirmacionFS, "pedidos"), pedidoCompleto);
+    localStorage.setItem('doloya_pedido_confirmacion_id', refDoc.id);
     localStorage.setItem('doloya_pedido_final', JSON.stringify(pedidoCompleto));
-
     const idAliados = localStorage.getItem('doloya_pedido_id');
     if(idAliados){
       try{
-        await window.deleteDoc(window.doc(window.dbAliados, "carrito", idAliados));
-        console.log("🗑️ Borrado de doloya-aliados:", idAliados);
-      }catch(delErr){ console.log("Error borrando aliados", delErr); }
-      localStorage.removeItem('doloya_pedido_id');
+        await window.removeRT(window.refRT(window.dbAliadosRT, "carrito/" + idAliados));
+        localStorage.removeItem('doloya_pedido_id');
+      }catch(delErr){
+        try{ await window.removeRT(window.refRT(window.dbAliadosRT, idAliados)); }catch(e){}
+      }
     }
     window.location.href='confirmacion.html';
   }catch(e){
-    console.error("❌ Error Firebase confirmacion:", e);
-    alert("Error al guardar: "+e.message+" Revisa las reglas de Firestore en doloya-confirmacion");
+    alert("Error: "+e.message);
     btn.textContent = 'Finalizar pedido';
     btn.disabled = false;
   }
 }
-
 if(dataRest){
   document.getElementById('nombreRest').textContent = dataRest.nombre || dataRest.restauranteNombre || 'Restaurante';
   document.getElementById('cantProductos').textContent = `${carrito.reduce((s,i)=>s+(i.cantidad||0),0)} Productos`;
