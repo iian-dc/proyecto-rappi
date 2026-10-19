@@ -21,6 +21,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .item-row .info{flex:1;min-width:0}
 .item-row .info b{font-size:14px;font-weight:700;display:block}
 .item-row .info span{font-size:12.5px;color:#555;line-height:1.3;display:block;margin-top:2px}
+#txtDistancia{color:#E30613 !important;font-weight:800 !important}
 .section{padding:18px 16px}
 .section h3{font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:14px}
 .entrega-op{border:1.5px solid #E5E7EB;border-radius:16px;padding:14px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:pointer}
@@ -87,7 +88,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 
 <div class="item-row no-click">
   <div class="icono"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
-  <div class="info"><b>Dirección</b><span id="txtDireccion">Cargando dirección...</span><span id="txtDistancia" style="color:#111;font-weight:700;margin-top:6px;display:flex;align-items:center;gap:6px"></span></div>
+  <div class="info"><b>Dirección</b><span id="txtDireccion">Cargando dirección...</span><span id="txtDistancia"></span></div>
 </div>
 
 <div class="item-row" onclick="window.location.href='detalles.html'">
@@ -131,7 +132,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
     <div class="costo-row total"><b>Total a pagar</b><b id="totalPagar">$0.00</b></div>
   </div>
   <div class="ahorro-banner">
-    <div style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1E40AF" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.5 16.5L8 21l-2-3 7.5-1.5z"/><path d="M8 12a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2z"/></svg></div>
+    <div style="width:22px;height:22px;background:#DBEAFE;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:14px">💰</span></div>
     <b id="txtAhorroBanner">Has ahorrado $0.00</b>
   </div>
 </div>
@@ -153,10 +154,9 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// Firebase 1: DOLOYA ALIADOS
 const firebaseConfigAliados = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
   authDomain: "doloya-aliados.firebaseapp.com",
@@ -164,37 +164,23 @@ const firebaseConfigAliados = {
   projectId: "doloya-aliados",
   storageBucket: "doloya-aliados.firebasestorage.app",
   messagingSenderId: "122314467740",
-  appId: "1:122314467740:web:9947a0a9560557e3a00059",
-  measurementId: "G-5HETSEL4PT"
+  appId: "1:122314467740:web:9947a0a9560557e3a00059"
 };
 
-// Firebase 2: DOLOYA CONFIRMACION
 const firebaseConfigConfirmacion = {
   apiKey: "AIzaSyDLKngPyi_SWAXEQwdrHO5h8L8OufulAR4",
   authDomain: "doloya-confirmacion.firebaseapp.com",
   projectId: "doloya-confirmacion",
   storageBucket: "doloya-confirmacion.firebasestorage.app",
   messagingSenderId: "832228761099",
-  appId: "1:832228761099:web:ddd4b6a0ee0d7f0494b10e",
-  measurementId: "G-Y7QF0811Z4"
+  appId: "1:832228761099:web:ddd4b6a0ee0d7f0494b10e"
 };
 
-let dbAliados = null;
-let dbConfirmacion = null;
-try{
-  const appAliados = initializeApp(firebaseConfigAliados, "aliados");
-  dbAliados = getFirestore(appAliados);
-}catch(e){ console.log("aliados init", e); }
-
-try{
-  const appConf = initializeApp(firebaseConfigConfirmacion, "confirmacion");
-  dbConfirmacion = getFirestore(appConf);
-}catch(e){
-  try{
-    const appConf = initializeApp(firebaseConfigConfirmacion);
-    dbConfirmacion = getFirestore(appConf);
-  }catch(err){ console.log("conf init", err); }
-}
+let dbAliados, dbConfirmacion;
+const appAliados = getApps().find(a=>a.name==="aliados") || initializeApp(firebaseConfigAliados, "aliados");
+dbAliados = getFirestore(appAliados);
+const appConf = getApps().find(a=>a.name==="confirmacion") || initializeApp(firebaseConfigConfirmacion, "confirmacion");
+dbConfirmacion = getFirestore(appConf);
 
 window.dbAliados = dbAliados;
 window.dbConfirmacion = dbConfirmacion;
@@ -203,6 +189,7 @@ window.deleteDoc = deleteDoc;
 window.doc = doc;
 window.collection = collection;
 window.serverTimestamp = serverTimestamp;
+console.log("Firebase listo aliados y confirmacion");
 </script>
 
 <script>
@@ -293,11 +280,11 @@ async function cargarDireccionYDistancia(){
   } else if(ubicacion?.direccion){
     document.getElementById('txtDireccion').textContent = ubicacion.direccion;
   }
-  document.getElementById('txtDistancia').innerHTML = `<span style="color:#666;display:flex;align-items:center;gap:6px">Calculando...</span>`;
+  document.getElementById('txtDistancia').innerHTML = `<span style="color:#E30613;font-weight:800">Calculando...</span>`;
   const realKm = await obtenerDistanciaRealGoogle(restLat, restLng, lat, lng);
   distanciaKm = realKm;
   if(distanciaKm < 0.3) distanciaKm = 0.3;
-  document.getElementById('txtDistancia').innerHTML = `Estás a ${distanciaKm.toFixed(2)} km del restaurante`;
+  document.getElementById('txtDistancia').innerHTML = `<span style="color:#E30613;font-weight:800">Estás a ${distanciaKm.toFixed(2)} km del restaurante</span>`;
   actualizarResumen();
 }
 cargarDireccionYDistancia();
@@ -378,7 +365,7 @@ function cerrarModal(){
   document.getElementById('modalCliente').classList.remove('active');
 }
 
-// ====== UNICA PARTE MODIFICADA - TRANSFERENCIA CORRECTA ======
+// UNICA PARTE MODIFICADA - FIREBASE CORREGIDO
 async function irAPagar(){
   const nombre = document.getElementById('inputNombre').value.trim();
   if(!nombre){ alert('Por favor ingresa tu nombre completo'); return; }
@@ -395,15 +382,7 @@ async function irAPagar(){
 
   const pedidoCompleto = {
     restaurante: { id: dataRest?.id || 'rest_dolores', nombre: dataRest?.nombre || document.getElementById('nombreRest').textContent, logo: dataRest?.logo || '', lat: restLat, lng: restLng, direccion: dataRest?.direccion || "" },
-    cliente: { 
-      nombre: nombre,
-      celular: telefonoGuardado,
-      telefono: telefonoGuardado,
-      direccion: detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent, 
-      detalles: detallesFull || {}, 
-      referencia: detallesRef, 
-      ubicacion: { lat: lat, lng: lng } 
-    },
+    cliente: { nombre: nombre, celular: telefonoGuardado, telefono: telefonoGuardado, direccion: detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent, detalles: detallesFull || {}, referencia: detallesRef, ubicacion: { lat: lat, lng: lng } },
     productos: carrito,
     totales: { costoProductos: parseFloat(costoProductos.toFixed(2)), distanciaKm: parseFloat(distanciaKm.toFixed(2)), costoEnvio: envioFinal, tarifaServicio: tarifaFinal, ahorro: parseFloat(ahorroFinal.toFixed(2)), tipoEntrega: tipoActual, total: parseFloat(totalFinal.toFixed(2)) },
     metodoPago: metodoSel,
@@ -413,29 +392,28 @@ async function irAPagar(){
   };
 
   try{
-    // 1. GUARDAR EN DOLOYA-CONFIRMACION (donde ve el aliado)
-    if(window.dbConfirmacion){
-      const ref = await window.addDoc(window.collection(window.dbConfirmacion, "pedidos"), pedidoCompleto);
-      localStorage.setItem('doloya_pedido_confirmacion_id', ref.id);
-      console.log("✅ Guardado en confirmacion:", ref.id);
-    }
-    // 2. ELIMINAR DE DOLOYA-ALIADOS / CARRITO
+    console.log("Guardando en confirmacion...", pedidoCompleto);
+    const ref = await window.addDoc(window.collection(window.dbConfirmacion, "pedidos"), pedidoCompleto);
+    console.log("✅ Guardado en doloya-confirmacion id:", ref.id);
+    localStorage.setItem('doloya_pedido_confirmacion_id', ref.id);
+    localStorage.setItem('doloya_pedido_final', JSON.stringify(pedidoCompleto));
+
     const idAliados = localStorage.getItem('doloya_pedido_id');
-    if(idAliados && window.dbAliados){
-      await window.deleteDoc(window.doc(window.dbAliados, "carrito", idAliados));
-      console.log("🗑️ Eliminado de aliados:", idAliados);
+    if(idAliados){
+      try{
+        await window.deleteDoc(window.doc(window.dbAliados, "carrito", idAliados));
+        console.log("🗑️ Borrado de doloya-aliados:", idAliados);
+      }catch(delErr){ console.log("Error borrando aliados", delErr); }
       localStorage.removeItem('doloya_pedido_id');
     }
+    window.location.href='confirmacion.html';
   }catch(e){
-    console.error("Error en transferencia", e);
-    // Guardamos temporal para no perder pedido
-    localStorage.setItem('doloya_pedido_temp', JSON.stringify(pedidoCompleto));
+    console.error("❌ Error Firebase confirmacion:", e);
+    alert("Error al guardar: "+e.message+" Revisa las reglas de Firestore en doloya-confirmacion");
+    btn.textContent = 'Finalizar pedido';
+    btn.disabled = false;
   }
-
-  localStorage.setItem('doloya_pedido_final', JSON.stringify(pedidoCompleto));
-  window.location.href='confirmacion.html';
 }
-// ====== FIN PARTE MODIFICADA ======
 
 if(dataRest){
   document.getElementById('nombreRest').textContent = dataRest.nombre || dataRest.restauranteNombre || 'Restaurante';
