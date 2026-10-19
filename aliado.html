@@ -154,7 +154,6 @@ let carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 let restauranteActualCarrito = localStorage.getItem('doloya_carrito_restaurante')||null;
 let restauranteAnteriorData = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
 let productoPendiente = null;
-
 const TIEMPO_EXPIRACION = 3 * 60 * 60 * 1000;
 
 function irAlInicio(){ window.location.href = 'inicio.html'; }
@@ -166,16 +165,14 @@ async function obtenerIPyGPS(){
     const d = await r.json();
     ipCliente = d.ip;
     ipKey = d.ip.replace(/\./g,'_');
-    verificarLike();
-    verificarExpiracion();
   }catch(e){
     let devId = localStorage.getItem('doloya_device_id');
     if(!devId){ devId='dev_'+Math.random().toString(36).slice(2); localStorage.setItem('doloya_device_id', devId); }
     ipCliente = devId;
     ipKey = devId;
-    verificarLike();
-    verificarExpiracion();
   }
+  verificarLike();
+  verificarExpiracion();
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(pos=>{
       ubicacionGPS.lat = pos.coords.latitude;
@@ -183,14 +180,17 @@ async function obtenerIPyGPS(){
     });
   }
 }
+
 function verificarLike(){
   if(!cat || !id || !ipKey) return;
   get(ref(db, `doloya_likes/${cat}_${id}/${ipKey}`)).then(snap=>{
     if(snap.exists()){ document.getElementById('btnLike').classList.add('liked'); }
+    else{ document.getElementById('btnLike').classList.remove('liked'); }
   });
 }
+
 async function toggleLike(){
-  if(!ipKey){ obtenerIPyGPS(); return; }
+  if(!ipKey){ await obtenerIPyGPS(); }
   const likeRef = ref(db, `doloya_likes/${cat}_${id}/${ipKey}`);
   const countRef = ref(db, `doloya_aliados/${cat}/${id}/likes`);
   const snap = await get(likeRef);
@@ -200,7 +200,7 @@ async function toggleLike(){
     await runTransaction(countRef, (curr)=> (curr||1)-1 );
     btn.classList.remove('liked');
   }else{
-    await set(likeRef, {fecha: Date.now()});
+    await set(likeRef, {fecha: Date.now(), ip: ipCliente});
     await runTransaction(countRef, (curr)=> (curr||0)+1 );
     btn.classList.add('liked');
   }
@@ -212,6 +212,7 @@ function calcularValoracion(likes){
   if(valor>5.0) valor=5.0;
   return valor.toFixed(1);
 }
+
 function guardarCarrito(){
   localStorage.setItem('doloya_carrito_v2', JSON.stringify(carrito));
   if(carrito.length>0){
@@ -228,8 +229,7 @@ function guardarCarrito(){
   guardarCarritoFirebase(false);
 }
 
-// NUEVA LÓGICA: si esFinal=true, se activa el conteo de 3 horas
-function guardarCarritoFirebase(esFinal = false){
+async function guardarCarritoFirebase(esFinal){
   if(!cat || !id || !ipKey) return;
   const total = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
   let dataCarrito = {
@@ -240,7 +240,8 @@ function guardarCarritoFirebase(esFinal = false){
     total: total,
     cantidadTotal: carrito.reduce((s,i)=>s+i.cantidad,0),
     ip: ipCliente,
-    ubicacion: ubicacionGPS
+    ubicacion: ubicacionGPS,
+    fecha: Date.now()
   };
 
   if(esFinal){
@@ -251,37 +252,28 @@ function guardarCarritoFirebase(esFinal = false){
     dataCarrito.expiraEn = new Date(expira).toISOString();
     localStorage.setItem('doloya_carrito_timestamp', ahora.toString());
   } else {
-    // Si aún no ha dado click en Ver carrito, no poner tiempo
-    const timestampGuardado = localStorage.getItem('doloya_carrito_timestamp');
-    if(timestampGuardado){
-      const ahora = parseInt(timestampGuardado);
+    const ts = localStorage.getItem('doloya_carrito_timestamp');
+    if(ts){
+      const ahora = parseInt(ts);
       dataCarrito.fecha = ahora;
       dataCarrito.fechaExpiracion = ahora + TIEMPO_EXPIRACION;
-      dataCarrito.expiraEn = new Date(ahora + TIEMPO_EXPIRACION).toISOString();
-    } else {
-      dataCarrito.fecha = Date.now();
+      dataCarrito.expiraEn = new Date(dataCarrito.fechaExpiracion).toISOString();
     }
   }
 
   if(carrito.length>0){
-    set(ref(db, `carrito/${cat}/${id}/${ipKey}`), dataCarrito);
-    set(ref(db, `doloya_aliados/${cat}/${id}/carritos/${ipKey}`), dataCarrito);
+    await set(ref(db, `carrito/${cat}/${id}/${ipKey}`), dataCarrito);
+    await set(ref(db, `doloya_aliados/${cat}/${id}/carritos/${ipKey}`), dataCarrito);
   }else{
-    set(ref(db, `carrito/${cat}/${id}/${ipKey}`), null);
-    set(ref(db, `doloya_aliados/${cat}/${id}/carritos/${ipKey}`), null);
+    await set(ref(db, `carrito/${cat}/${id}/${ipKey}`), null);
+    await set(ref(db, `doloya_aliados/${cat}/${id}/carritos/${ipKey}`), null);
   }
 }
 
-async function eliminarCarritoFirebaseCompleto(catBorrar, idBorrar, ipKeyBorrar, ipOriginal){
+async function eliminarCarritoFirebaseCompleto(catBorrar, idBorrar, ipKeyBorrar){
   try{
     await set(ref(db, `carrito/${catBorrar}/${idBorrar}/${ipKeyBorrar}`), null);
     await set(ref(db, `doloya_aliados/${catBorrar}/${idBorrar}/carritos/${ipKeyBorrar}`), null);
-    if(ipOriginal){
-      const snapshot = await getDocs(query(collection(dbFirestore, "carrito"), where("restaurante.id", "==", idBorrar)));
-      snapshot.forEach(async (d)=>{
-        await deleteDoc(doc(dbFirestore, "carrito", d.id));
-      });
-    }
   }catch(e){ console.log("Error borrando firebase:", e); }
 }
 
@@ -298,23 +290,11 @@ async function verificarExpiracion(){
       await set(ref(db, `carrito/${cat}/${id}/${ipKey}`), null);
       await set(ref(db, `doloya_aliados/${cat}/${id}/carritos/${ipKey}`), null);
     }
-    try{
-      const snapshot = await getDocs(collection(dbFirestore, "carrito"));
-      snapshot.forEach(async (d)=>{
-        const data = d.data();
-        if(data.fecha && (ahora - data.fecha) > TIEMPO_EXPIRACION){
-          await deleteDoc(doc(dbFirestore, "carrito", d.id));
-        }
-      });
-    }catch(e){}
     carrito=[];
     localStorage.setItem('doloya_carrito_v2', JSON.stringify([]));
     localStorage.removeItem('doloya_carrito_restaurante');
     localStorage.removeItem('doloya_carrito_restaurante_data');
     localStorage.removeItem('doloya_carrito_timestamp');
-    localStorage.removeItem('doloya_pedido_id');
-    localStorage.removeItem('doloya_pedido_temp');
-    localStorage.removeItem('doloya_pedido_final');
     renderBarraCarrito();
   }
 }
@@ -461,13 +441,12 @@ else {
 window.handleAdd=(nombre, precio, imagen)=>{ addProducto(nombre, precio, imagen); }
 window.handleRestar=(nombre)=>{ restarProducto(nombre); }
 
-document.getElementById('btnVerCarrito').onclick=()=>{
+document.getElementById('btnVerCarrito').onclick = async ()=>{
   if(carrito.length===0) return;
-  // AQUÍ EMPIEZA EL CONTEO DE 3 HORAS
-  guardarCarritoFirebase(true);
-  setTimeout(()=>{
-    window.location.href = 'carrito.html';
-  }, 400);
+  const btn = document.getElementById('btnVerCarrito');
+  btn.textContent = 'Guardando...';
+  await guardarCarritoFirebase(true);
+  window.location.href = 'carrito.html';
 }
 
 document.getElementById('btnConservar').onclick=()=>{
@@ -483,18 +462,9 @@ document.getElementById('btnConservar').onclick=()=>{
 document.getElementById('btnEliminar').onclick=async ()=>{
   const btn = document.getElementById('btnEliminar');
   btn.textContent = 'Eliminando...';
-  
   if(restauranteAnteriorData && ipKey){
-    await eliminarCarritoFirebaseCompleto(
-      restauranteAnteriorData.cat,
-      restauranteAnteriorData.id,
-      ipKey,
-      ipCliente
-    );
-    await set(ref(db, `carrito/${restauranteAnteriorData.cat}/${restauranteAnteriorData.id}/${ipKey}`), null);
-    await set(ref(db, `doloya_aliados/${restauranteAnteriorData.cat}/${restauranteAnteriorData.id}/carritos/${ipKey}`), null);
+    await eliminarCarritoFirebaseCompleto(restauranteAnteriorData.cat, restauranteAnteriorData.id, ipKey);
   }
-
   carrito=[];
   localStorage.setItem('doloya_carrito_v2', JSON.stringify([]));
   localStorage.removeItem('doloya_carrito_restaurante');
@@ -505,10 +475,8 @@ document.getElementById('btnEliminar').onclick=async ()=>{
   localStorage.removeItem('doloya_pedido_final');
   restauranteActualCarrito=null;
   restauranteAnteriorData=null;
-
   document.getElementById('modalCambio').classList.remove('show');
   renderBarraCarrito();
-
   if(productoPendiente){
     setTimeout(()=>{
       addProducto(productoPendiente.nombre, productoPendiente.precio, productoPendiente.imagen);
