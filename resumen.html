@@ -40,8 +40,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .metodo-info b{font-size:14px;font-weight:700}
 .metodo-info span{font-size:12px;color:#888;display:block;margin-top:2px}
 .badge-obli{border:1.5px solid #E5E7EB;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700}
-
-/* RESUMEN COMO IMAGEN */
 .resumen-titulo{padding:18px 16px 10px 16px;font-size:18px;font-weight:900;color:#111}
 .resumen-header{padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer}
 .logo-sub{width:52px;height:52px;border-radius:50%;background:#00684A;display:flex;align-items:center;justify-content:center;color:#FFC72C;font-weight:900;font-size:12px;overflow:hidden;flex-shrink:0}
@@ -54,11 +52,10 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .lista-costos{padding:6px 16px}
 .costo-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;font-size:14px;color:#444;font-weight:500}
 .costo-row b{color:#111;font-weight:800;font-size:14.5px}
-.costo-row.total{padding-top:16px;margin-top:4px;border-top:none}
+.costo-row.total{padding-top:16px;margin-top:4px}
 .costo-row.total b{font-size:15px;font-weight:900}
 .precio-rojo{color:#E30613 !important;font-weight:900 !important}
 .icono-info{width:18px;height:18px;border:1.5px solid #6B7280;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#6B7280;margin-left:6px;vertical-align:middle}
-
 .ahorro-banner{background:#EAF4FF;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-top:14px}
 .ahorro-banner b{font-size:13px;color:#1E40AF;line-height:1.3}
 .footer{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #EEE;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;z-index:999;box-shadow:0 -4px 12px rgba(0,0,0,0.06)}
@@ -111,11 +108,10 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
 </div>
 
-<!-- RESUMEN TAL CUAL IMAGEN -->
 <div class="resumen-titulo">Resumen del pedido</div>
 <div class="resumen-header" onclick="toggleResumen()">
   <div class="logo-sub" id="logoRest">SUBWAY</div>
-  <div class="resumen-info"><b id="nombreRest">Subway</b><span id="cantProductos">3 Productos</span></div>
+  <div class="resumen-info"><b id="nombreRest">Subway</b><span id="cantProductos">0 Productos</span></div>
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>
 </div>
 
@@ -158,23 +154,30 @@ window.db = db; window.addDoc = addDoc; window.collection = collection; window.s
 
 <script>
 const GOOGLE_API_KEY = "AIzaSyCTV1sm6McEIkv-cheaVFCD_svp_a--6wg";
-const ubicacionRaw = localStorage.getItem('doloya_ubicacion');
-const detallesFullRaw = localStorage.getItem('doloya_detalles_full');
+
 let ubicacion = null, detallesFull = null;
-try{ ubicacion = JSON.parse(ubicacionRaw); }catch(e){}
-try{ detallesFull = JSON.parse(detallesFullRaw); }catch(e){}
+function leerUbicacionStorage(){
+  try{ ubicacion = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null'); }catch(e){ ubicacion=null; }
+  try{ detallesFull = JSON.parse(localStorage.getItem('doloya_detalles_full')||'null'); }catch(e){ detallesFull=null; }
+  return { ubicacion, detallesFull };
+}
+leerUbicacionStorage();
+
 const detallesRef = localStorage.getItem('doloya_detalles_referencia')||'';
 const metodoRaw = localStorage.getItem('doloya_metodo_pago');
 let metodoSel = null;
 try{ metodoSel = JSON.parse(metodoRaw); }catch(e){ metodoSel = metodoRaw; }
 const carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 const dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
-let lat = ubicacion?.lat || ubicacion?.ubicacion?.lat || detallesFull?.lat || 21.1576;
-let lng = ubicacion?.lng || ubicacion?.ubicacion?.lng || detallesFull?.lng || -100.9306;
-document.getElementById('mapaIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
+
+let { ubicacion: ubiInit, detallesFull: detInit } = leerUbicacionStorage();
+let lat = ubiInit?.lat || ubiInit?.ubicacion?.lat || detInit?.lat || 21.1576;
+let lng = ubiInit?.lng || ubiInit?.ubicacion?.lng || detInit?.lng || -100.9306;
+
 const TARIFA_BASE = 30;
 const PRECIO_POR_KM = 4;
 const TARIFA_SERVICIO_PORC = 0.03;
+
 function haversine(lat1, lon1, lat2, lon2){
   const R = 6371;
   const dLat = (lat2-lat1)*Math.PI/180;
@@ -187,9 +190,9 @@ let restLat = dataRest?.lat || dataRest?.restauranteLat || 21.1569;
 let restLng = dataRest?.lng || dataRest?.restauranteLng || -100.9310;
 if(dataRest?.restauranteLat) restLat = dataRest.restauranteLat;
 if(dataRest?.restauranteLng) restLng = dataRest.restauranteLng;
-let distanciaKm = parseFloat(localStorage.getItem('doloya_distancia_km')||'0.3');
-let costoEnvioGuardado = parseFloat(localStorage.getItem('doloya_costo_envio')||'0');
-let tarifaServicioGuardada = parseFloat(localStorage.getItem('doloya_tarifa_servicio')||'0');
+
+let distanciaKm = 0.3;
+
 async function obtenerDistanciaRealGoogle(oLat, oLng, dLat, dLng){
   if(GOOGLE_API_KEY && GOOGLE_API_KEY.length > 10){
     try{
@@ -209,15 +212,15 @@ async function obtenerDistanciaRealGoogle(oLat, oLng, dLat, dLng){
   }catch(e){}
   return haversine(oLat, oLng, dLat, dLng);
 }
+
 let tipoActual = localStorage.getItem('doloya_tipo_entrega') || 'ahorra';
 let costoProductos = carrito.reduce((s,i)=>s+(i.precio||0)*(i.cantidad||0),0);
+
 function getCostosBase(){
   let dist = distanciaKm;
   if(dist < 0.3) dist = 0.3;
   let envioBase = TARIFA_BASE + (dist * PRECIO_POR_KM);
   let tarifa = costoProductos * TARIFA_SERVICIO_PORC;
-  if(costoEnvioGuardado > 0) envioBase = costoEnvioGuardado;
-  if(tarifaServicioGuardada > 0) tarifa = tarifaServicioGuardada;
   return { envioBase, tarifa, dist };
 }
 function calcularEnvio(){
@@ -232,19 +235,51 @@ function calcularTarifa(){
   let { tarifa } = getCostosBase();
   return parseFloat(tarifa.toFixed(2));
 }
-async function cargarDireccionYDistancia(){
-  if(detallesFull?.direccion) document.getElementById('txtDireccion').textContent = detallesFull.direccion;
-  else if(ubicacion?.direccion) document.getElementById('txtDireccion').textContent = ubicacion.direccion;
+
+function actualizarMapaIframe(){
+  document.getElementById('mapaIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
+}
+
+async function cargarDireccionYDistancia(forzarRecalculo = false){
+  // Re-leer storage por si viene de puntodeentrega.html
+  const { ubicacion: ubiFresh, detallesFull: detFresh } = leerUbicacionStorage();
+  ubicacion = ubiFresh;
+  detallesFull = detFresh;
+  lat = ubiFresh?.lat || ubiFresh?.ubicacion?.lat || detFresh?.lat || lat;
+  lng = ubiFresh?.lng || ubiFresh?.ubicacion?.lng || detFresh?.lng || lng;
+
+  actualizarMapaIframe();
+
+  if(detallesFull?.direccion){
+    document.getElementById('txtDireccion').textContent = detallesFull.direccion;
+  } else if(ubicacion?.direccion){
+    document.getElementById('txtDireccion').textContent = ubicacion.direccion;
+  } else {
+    document.getElementById('txtDireccion').textContent = `Dolores Hidalgo ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  }
+
   document.getElementById('txtDistancia').innerHTML = `<span style="color:#666;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/></svg>Calculando distancia real...</span>`;
+  document.getElementById('txtAhorroBanner').textContent = `Calculando ruta...`;
+
   const realKm = await obtenerDistanciaRealGoogle(restLat, restLng, lat, lng);
   distanciaKm = realKm;
   if(distanciaKm < 0.3) distanciaKm = 0.3;
-  if(!costoEnvioGuardado){ costoEnvioGuardado = TARIFA_BASE + (distanciaKm * PRECIO_POR_KM); }
-  if(!tarifaServicioGuardada){ tarifaServicioGuardada = costoProductos * TARIFA_SERVICIO_PORC; }
+
   document.getElementById('txtDistancia').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> Estás a ${distanciaKm.toFixed(2)} km del restaurante`;
   actualizarResumen();
 }
+
 cargarDireccionYDistancia();
+
+// CORRECCIÓN: Cuando vuelves de ajustar punto de entrega, actualizar todo
+window.addEventListener('focus', ()=>{
+  const ubiCheck = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
+  if(ubiCheck && (Math.abs(ubiCheck.lat - lat) > 0.00001 || Math.abs(ubiCheck.lng - lng) > 0.00001)){
+    cargarDireccionYDistancia(true);
+  }
+});
+window.addEventListener('pageshow', ()=>{ cargarDireccionYDistancia(true); });
+
 if(detallesFull){
   let txt = '';
   if(detallesFull.tipoDireccion) txt += detallesFull.tipoDireccion + ' - ';
@@ -279,7 +314,7 @@ function actualizarResumen(){
   let total = costoProductos + envio + tarifaServicio;
   document.getElementById('totalPagar').textContent = `$${total.toFixed(2)}`;
   document.getElementById('totalFooter').textContent = `$${total.toFixed(2)} MXN`;
-  document.getElementById('txtAhorroBanner').textContent = `Estás a ${distanciaKm.toFixed(2)} km del restaurante • $30 + $4/km + 3% servicio`;
+  document.getElementById('txtAhorroBanner').textContent = `Estás a ${distanciaKm.toFixed(2)} km del restaurante • $30 base + $4/km + 3% servicio`;
   localStorage.setItem('doloya_tipo_entrega', tipoActual);
   localStorage.setItem('doloya_costo_entrega', envio);
   localStorage.setItem('doloya_distancia_km', distanciaKm.toFixed(2));
@@ -303,8 +338,7 @@ function selEntrega(tipo){
 }
 function toggleResumen(){
   const det = document.getElementById('detalleResumen');
-  if(det.style.display==='none'){ det.style.display='block'; }
-  else{ det.style.display='none'; }
+  det.style.display = det.style.display==='none' ? 'block' : 'none';
 }
 async function irAPagar(){
   if(!metodoSel){ window.location.href='metododepago.html'; return; }
