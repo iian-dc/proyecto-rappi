@@ -80,7 +80,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 
 <div class="item-row no-click">
   <div class="icono"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
-  <div class="info"><b>Dirección</b><span id="txtDireccion">Cargando dirección...</span></div>
+  <div class="info"><b>Dirección</b><span id="txtDireccion">Cargando dirección...</span><span id="txtDistancia" style="color:#E30613;font-weight:700;margin-top:4px"></span></div>
 </div>
 
 <div class="item-row" onclick="window.location.href='detalles.html'">
@@ -100,7 +100,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
       <div class="circle active" id="cRapido"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg></div>
       <div><b style="display:flex;align-items:center;gap:4px"><span style="color:#E30613">⚡</span><span style="color:#E30613">Más rápido</span></b><span>34 - 49 min</span></div>
     </div>
-    <div class="entrega-right verde">+ $45.00 MXN</div>
+    <div class="entrega-right verde" id="txtRapido">$45.00 MXN</div>
   </div>
 
   <div class="entrega-op" id="opAhorra" onclick="selEntrega('ahorra')">
@@ -108,7 +108,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
       <div class="circle" id="cAhorra"></div>
       <div><b>Ahorra sin prisas</b><span>54 - 74 min</span></div>
     </div>
-    <div class="entrega-right rojo">+ $35.00 MXN</div>
+    <div class="entrega-right rojo" id="txtAhorra">$35.00 MXN</div>
   </div>
 </div>
 
@@ -132,11 +132,11 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
   <div class="lista-costos">
     <div style="padding:8px 0;border-top:1px solid #F0F0F0"></div>
     <div class="costo-row"><span>Costo de productos</span><b id="costoProd">$0.00 MXN</b></div>
-    <div class="costo-row"><span>Costo de envío</span><b id="costoEnvio">$45.00 MXN</b></div>
+    <div class="costo-row"><span id="labelEnvio">Costo de envío (0 km)</span><b id="costoEnvio">$35.00 MXN</b></div>
     <div class="costo-row"><span>Tarifa de Servicio</span><b>$0.00 MXN</b></div>
     <div class="costo-row total" style="padding-top:12px;border-top:1px solid #F0F0F0;margin-top:8px"><b>Total a pagar</b><b id="totalPagar">$0.00 MXN</b></div>
   </div>
-  <div class="ahorro-banner"><div style="font-size:28px">🪙</div><b>Ahorras $26.90 con descuentos exclusivos del App</b></div>
+  <div class="ahorro-banner"><div style="font-size:28px">🪙</div><b id="txtAhorroBanner">Calculando envío por distancia...</b></div>
 </div>
 
 <div class="footer">
@@ -144,8 +144,34 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
   <button class="btn-continuar" id="btnContinuar" onclick="irAPagar()">Continuar</button>
 </div>
 
+<script type="module">
+// --- FIREBASE IMPORT ---
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  // PEGA AQUI TU CONFIG DE FIREBASE - TU_API_KEY_AQUI
+  apiKey: "TU_API_KEY_FIREBASE",
+  authDomain: "doloya-xxxxx.firebaseapp.com",
+  projectId: "doloya-xxxxx",
+  storageBucket: "doloya-xxxxx.appspot.com",
+  messagingSenderId: "xxxx",
+  appId: "xxxx"
+};
+
+let db;
+try{
+  const app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+}catch(e){ console.log("Firebase no configurado aun", e); }
+
+window.db = db;
+window.addDoc = addDoc;
+window.collection = collection;
+window.serverTimestamp = serverTimestamp;
+</script>
+
 <script>
-// --- CORREGIDO: LECTURA ROBUSTA SIN BORRAR DATOS ---
 const ubicacionRaw = localStorage.getItem('doloya_ubicacion');
 const detallesFullRaw = localStorage.getItem('doloya_detalles_full');
 let ubicacion = null;
@@ -156,42 +182,64 @@ try{ detallesFull = JSON.parse(detallesFullRaw); }catch(e){}
 const detallesRef = localStorage.getItem('doloya_detalles_referencia')||'';
 const metodoRaw = localStorage.getItem('doloya_metodo_pago');
 let metodoSel = null;
-try{ metodoSel = JSON.parse(metodoRaw); }catch(e){ metodoSel = metodoRaw; } // CORREGIDO: acepta string plano
+try{ metodoSel = JSON.parse(metodoRaw); }catch(e){ metodoSel = metodoRaw; }
 
 const carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 const dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
 
-// --- MAPA CORREGIDO: soporta {lat,lng} y {ubicacion:{lat,lng}} ---
+// MAPA
 let lat = ubicacion?.lat || ubicacion?.ubicacion?.lat || detallesFull?.lat || 21.1576;
 let lng = ubicacion?.lng || ubicacion?.ubicacion?.lng || detallesFull?.lng || -100.9306;
-if(ubicacion?.direccion && ubicacion?.direccion.includes(',')) {
-  // si ya hay direccion no hacer reverse
-}
 document.getElementById('mapaIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
 
+// CALCULO KM - TARIFA BASE 35 + 4 POR KM
+const TARIFA_BASE = 35;
+const PRECIO_POR_KM = 4;
+
+function haversine(lat1, lon1, lat2, lon2){
+  const R = 6371;
+  const dLat = (lat2-lat1)*Math.PI/180;
+  const dLon = (lon2-lon1)*Math.PI/180;
+  const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  const c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R*c;
+}
+
+// Lat/Lng del restaurante - si no tiene, usa centro Dolores
+let restLat = dataRest?.lat || dataRest?.ubicacion?.lat || dataRest?.latitude || 21.1569;
+let restLng = dataRest?.lng || dataRest?.ubicacion?.lng || dataRest?.longitude || -100.9310;
+
+let distanciaKm = haversine(restLat, restLng, lat, lng);
+if(distanciaKm < 0.3) distanciaKm = 0.3; // minimo
+
+let tipoActual = localStorage.getItem('doloya_tipo_entrega') || 'ahorra';
+let costoProductos = carrito.reduce((s,i)=>s+(i.precio||0)*(i.cantidad||0),0);
+
+function calcularEnvio(){
+  let base = TARIFA_BASE + (distanciaKm * PRECIO_POR_KM);
+  if(tipoActual==='rapido') base += 10; // rapido +10 como tenias 35 vs 45
+  return parseFloat(base.toFixed(2));
+}
+
 function cargarDireccion(){
-  // PRIORIDAD: detallesFull.direccion > ubicacion.direccion > reverse geocode
   if(detallesFull?.direccion){
     document.getElementById('txtDireccion').textContent = detallesFull.direccion;
-    return;
-  }
-  if(ubicacion?.direccion){
+  } else if(ubicacion?.direccion){
     document.getElementById('txtDireccion').textContent = ubicacion.direccion;
-    return;
+  } else {
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`)
+    .then(r=>r.json()).then(d=>{
+      const a=d.address||{};
+      const dir = `${a.road||''} ${a.house_number||''}, ${a.suburb||''}, ${a.city||a.town||a.village||''}`.trim();
+      document.getElementById('txtDireccion').textContent = dir || `Dolores Hidalgo ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }).catch(()=>{
+      document.getElementById('txtDireccion').textContent = `Dolores Hidalgo, ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    });
   }
-  // fallback reverse
-  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`)
-  .then(r=>r.json()).then(d=>{
-    const a=d.address||{};
-    const dir = `${a.road||''} ${a.house_number||''}, ${a.suburb||''}, ${a.city||a.town||a.village||''}, ${a.state||''}, Mexico`.replace(/ ,/g,',').replace(/\s+/g,' ').trim();
-    document.getElementById('txtDireccion').textContent = dir;
-  }).catch(()=>{
-    document.getElementById('txtDireccion').textContent = `Dolores Hidalgo, ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-  });
+  document.getElementById('txtDistancia').textContent = `📍 A ${distanciaKm.toFixed(2)} km del restaurante - Base $35 + $4/km`;
 }
 cargarDireccion();
 
-// --- DETALLES CORREGIDO: muestra tipo + piso + referencia + celular ---
 if(detallesFull){
   let txt = '';
   if(detallesFull.tipoDireccion) txt += detallesFull.tipoDireccion + ' - ';
@@ -199,40 +247,38 @@ if(detallesFull){
   if(detallesFull.piso) txt += detallesFull.piso + ', ';
   if(detallesFull.instrucciones) txt += detallesFull.instrucciones;
   if(detallesFull.celular) txt += (txt ? ' | ' : '') + 'Cel: ' + detallesFull.celular;
-  if(txt){
-    document.getElementById('txtDetalles').textContent = txt;
-  }
+  if(txt) document.getElementById('txtDetalles').textContent = txt;
 } else if(detallesRef){
   document.getElementById('txtDetalles').textContent = detallesRef;
 }
 
 if(metodoSel){
-  let nombreMetodo = typeof metodoSel === 'string' ? metodoSel : (metodoSel.nombre || metodoSel.banco || JSON.stringify(metodoSel));
+  let nombreMetodo = typeof metodoSel === 'string' ? metodoSel : (metodoSel.nombre || metodoSel.banco || metodoSel.tipo || JSON.stringify(metodoSel));
   document.getElementById('txtMetodo').textContent = nombreMetodo;
   document.getElementById('badgeMetodo').textContent = '✓';
   document.getElementById('badgeMetodo').style.background = '#E6F9ED';
   document.getElementById('badgeMetodo').style.color = '#0A7D2E';
 }
 
-let tipoActual = localStorage.getItem('doloya_tipo_entrega') || 'rapido';
-let costoProductos = carrito.reduce((s,i)=>s+(i.precio||0)*(i.cantidad||0),0);
-
 function actualizarResumen(){
-  const costoProdEl = document.getElementById('costoProd');
-  const costoEnvioEl = document.getElementById('costoEnvio');
-  const totalEl = document.getElementById('totalPagar');
-  const totalF = document.getElementById('totalFooter');
-  
-  let envio = tipoActual==='rapido' ? 45 : 35;
-  costoProdEl.textContent = `$${costoProductos.toFixed(2)} MXN`;
-  costoEnvioEl.textContent = `$${envio.toFixed(2)} MXN`;
+  const envioRapido = (TARIFA_BASE + (distanciaKm * PRECIO_POR_KM) + 10).toFixed(2);
+  const envioAhorra = (TARIFA_BASE + (distanciaKm * PRECIO_POR_KM)).toFixed(2);
+  document.getElementById('txtRapido').textContent = `+ $${envioRapido} MXN`;
+  document.getElementById('txtAhorra').textContent = `+ $${envioAhorra} MXN`;
+
+  let envio = calcularEnvio();
+  document.getElementById('costoProd').textContent = `$${costoProductos.toFixed(2)} MXN`;
+  document.getElementById('labelEnvio').textContent = `Costo de envío (${distanciaKm.toFixed(2)} km)`;
+  document.getElementById('costoEnvio').textContent = `$${envio.toFixed(2)} MXN`;
   
   let total = costoProductos + envio;
-  totalEl.textContent = `$${total.toFixed(2)} MXN`;
-  totalF.textContent = `$${total.toFixed(2)} MXN`;
+  document.getElementById('totalPagar').textContent = `$${total.toFixed(2)} MXN`;
+  document.getElementById('totalFooter').textContent = `$${total.toFixed(2)} MXN`;
+  document.getElementById('txtAhorroBanner').textContent = `Envío: Base $35 + $${PRECIO_POR_KM} x ${distanciaKm.toFixed(2)} km = $${envio.toFixed(2)}`;
   
   localStorage.setItem('doloya_tipo_entrega', tipoActual);
   localStorage.setItem('doloya_costo_entrega', envio);
+  localStorage.setItem('doloya_distancia_km', distanciaKm.toFixed(2));
   localStorage.setItem('doloya_total', total.toFixed(2));
 }
 
@@ -264,14 +310,74 @@ function toggleResumen(){
   }
 }
 
-function irAPagar(){
-  // si no hay metodo, manda a metodo pago, si no, manda a confirmar
+async function irAPagar(){
   if(!metodoSel){
     window.location.href='metododepago.html';
-  } else {
-    // aqui puedes poner tu siguiente pantalla
-    window.location.href='metododepago.html';
+    return;
   }
+
+  const btn = document.getElementById('btnContinuar');
+  btn.textContent = 'Guardando...';
+  btn.disabled = true;
+
+  let envioFinal = calcularEnvio();
+  let totalFinal = costoProductos + envioFinal;
+
+  // OBJETO COMPLETO PARA FIREBASE - CARRITO
+  const pedidoCompleto = {
+    restaurante: {
+      id: dataRest?.id || dataRest?.uid || dataRest?.restauranteId || 'rest_dolores',
+      nombre: dataRest?.nombre || document.getElementById('nombreRest').textContent,
+      logo: dataRest?.logo || '',
+      ip: dataRest?.ip || dataRest?.direccionIP || dataRest?.id || '0.0.0.0', // IP del restaurante
+      lat: restLat,
+      lng: restLng,
+      direccion: dataRest?.direccion || ''
+    },
+    cliente: {
+      direccion: detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent,
+      detalles: detallesFull || {},
+      referencia: detallesRef,
+      celular: detallesFull?.celular || localStorage.getItem('doloya_celular') || '',
+      ubicacion: { lat: lat, lng: lng },
+      instrucciones: detallesFull?.instrucciones || '',
+      tipoDireccion: detallesFull?.tipoDireccion || '',
+      nombreEdificio: detallesFull?.nombreEdificio || '',
+      piso: detallesFull?.piso || ''
+    },
+    productos: carrito,
+    totales: {
+      costoProductos: parseFloat(costoProductos.toFixed(2)),
+      distanciaKm: parseFloat(distanciaKm.toFixed(2)),
+      tarifaBase: TARIFA_BASE,
+      precioPorKm: PRECIO_POR_KM,
+      costoEnvio: envioFinal,
+      tipoEntrega: tipoActual,
+      total: parseFloat(totalFinal.toFixed(2))
+    },
+    metodoPago: metodoSel,
+    estado: 'pendiente',
+    fecha: new Date().toISOString(),
+    timestamp: window.serverTimestamp ? window.serverTimestamp() : new Date()
+  };
+
+  try{
+    if(window.db){
+      const ref = await window.addDoc(window.collection(window.db, "carrito"), pedidoCompleto);
+      localStorage.setItem('doloya_pedido_id', ref.id);
+      console.log("Guardado en carrito con ID:", ref.id);
+    } else {
+      localStorage.setItem('doloya_pedido_temp', JSON.stringify(pedidoCompleto));
+      console.log("Firebase no configurado, guardado local");
+    }
+  }catch(err){
+    console.error("Error guardando en Firebase:", err);
+    localStorage.setItem('doloya_pedido_temp', JSON.stringify(pedidoCompleto));
+  }
+
+  // Guardar para siguiente pantalla
+  localStorage.setItem('doloya_pedido_final', JSON.stringify(pedidoCompleto));
+  window.location.href='confirmacion.html'; // o tu pantalla de pago final
 }
 
 if(dataRest){
