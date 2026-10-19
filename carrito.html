@@ -40,26 +40,19 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:140px}
 </style>
 </head>
 <body>
-
 <div class="header">
-  <button class="btn-back" onclick="window.location.href='inicio.html'">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
-  </button>
+  <button class="btn-back" onclick="window.location.href='inicio.html'"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></button>
   <h1>Tu canasta</h1>
   <button class="btn-vaciar-top" onclick="vaciarTodo()">Vaciar</button>
 </div>
-
 <div id="contenido"></div>
-
 <div class="footer" id="footer" style="display:none">
   <button class="btn-vaciar-canasta" onclick="vaciarTodo()">Vaciar canasta</button>
   <button class="btn-siguiente" onclick="irSiguiente()">Siguiente</button>
 </div>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
 const firebaseConfig = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
   authDomain: "doloya-aliados.firebaseapp.com",
@@ -71,7 +64,6 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-
 let carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 let dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
 let ipKey = null;
@@ -88,25 +80,26 @@ async function obtenerIP(){
     ipKey = localStorage.getItem('doloya_device_id');
   }
 }
-
 async function obtenerLogo(){
   if(logoRestaurante){ render(); return; }
   if(dataRest?.cat && dataRest?.id){
     try{
       const snap = await get(ref(db, `doloya_aliados/${dataRest.cat}/${dataRest.id}`));
       const data = snap.val();
-      if(data && data.logo){
-        logoRestaurante = data.logo;
-        dataRest.logo = data.logo;
+      if(data){
+        if(data.logo){ logoRestaurante = data.logo; dataRest.logo = data.logo; }
+        else if(data.portada){ logoRestaurante = data.portada; }
+        if(data.direccion) dataRest.direccion = data.direccion;
+        if(data.lat) dataRest.lat = data.lat;
+        if(data.lng) dataRest.lng = data.lng;
+        if(data.ubicacion?.lat) dataRest.lat = data.ubicacion.lat;
+        if(data.ubicacion?.lng) dataRest.lng = data.ubicacion.lng;
         localStorage.setItem('doloya_carrito_restaurante_data', JSON.stringify(dataRest));
-      }else if(data && data.portada){
-        logoRestaurante = data.portada;
       }
     }catch(e){}
   }
   render();
 }
-
 function render(){
   const cont = document.getElementById('contenido');
   const foot = document.getElementById('footer');
@@ -127,9 +120,7 @@ function render(){
       </div>
       <div class="restaurante-right">
         <div class="badge-count">${totalCant}</div>
-        <button class="btn-toggle ${!productosAbiertos?'cerrado':''}" onclick="toggleProductos()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>
-        </button>
+        <button class="btn-toggle ${!productosAbiertos?'cerrado':''}" onclick="toggleProductos()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg></button>
       </div>
     </div>
     <div class="productos ${!productosAbiertos?'oculto':''}" id="listaProds">
@@ -142,41 +133,24 @@ function render(){
             <div class="prod-desc" id="desc-${idx}">${p.descripcion || p.nombre}</div>
           </div>
           <div class="prod-controls">
-            ${p.cantidad===1 ? 
-              `<button class="ctrl-btn" onclick="eliminarItem(${idx})">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-              </button>` :
-              `<button class="ctrl-btn" onclick="cambiarCant(${idx}, -1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M5 12h14"/></svg></button>`
-            }
+            ${p.cantidad===1 ? `<button class="ctrl-btn" onclick="eliminarItem(${idx})"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>` : `<button class="ctrl-btn" onclick="cambiarCant(${idx}, -1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M5 12h14"/></svg></button>`}
             <span class="ctrl-num">${p.cantidad}</span>
             <button class="ctrl-btn" onclick="cambiarCant(${idx}, 1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
           </div>
-          <button class="btn-desc-toggle" onclick="toggleDesc(${idx})">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
-          </button>
+          <button class="btn-desc-toggle" onclick="toggleDesc(${idx})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></button>
         </div>
       `).join('')}
     </div>
   `;
 }
-
 window.toggleProductos = ()=>{ productosAbiertos = !productosAbiertos; render(); }
 window.toggleDesc = (idx)=>{
   const el = document.getElementById(`desc-${idx}`);
   if(el.style.whiteSpace==='normal'){ el.style.whiteSpace='nowrap'; el.style.overflow='hidden'; }
   else{ el.style.whiteSpace='normal'; el.style.overflow='visible'; }
 }
-window.cambiarCant = (idx, delta)=>{
-  carrito[idx].cantidad += delta;
-  if(carrito[idx].cantidad<=0){ carrito.splice(idx,1); }
-  guardar();
-}
-window.eliminarItem = (idx)=>{
-  carrito.splice(idx,1);
-  guardar();
-}
-
-// ESTOS 2 BOTONES AHORA BORRAN EN FIREBASE
+window.cambiarCant = (idx, delta)=>{ carrito[idx].cantidad += delta; if(carrito[idx].cantidad<=0){ carrito.splice(idx,1); } guardar(); }
+window.eliminarItem = (idx)=>{ carrito.splice(idx,1); guardar(); }
 window.vaciarTodo = async ()=>{
   if(carrito.length===0) return;
   if(!ipKey) await obtenerIP();
@@ -192,17 +166,74 @@ window.vaciarTodo = async ()=>{
   render();
   window.location.href='inicio.html';
 }
-
-window.irSiguiente = ()=>{
+function obtenerUbicacionCliente(){
+  try{
+    const ubiRaw = localStorage.getItem('doloya_ubicacion');
+    const detFullRaw = localStorage.getItem('doloya_detalles_full');
+    let ubi = null, det = null;
+    try{ ubi = JSON.parse(ubiRaw); }catch(e){}
+    try{ det = JSON.parse(detFullRaw); }catch(e){}
+    let lat = ubi?.lat || ubi?.ubicacion?.lat || det?.lat || null;
+    let lng = ubi?.lng || ubi?.ubicacion?.lng || det?.lng || null;
+    let direccion = det?.direccion || ubi?.direccion || "";
+    return { lat, lng, direccion, raw: { ubi, det } };
+  }catch(e){ return { lat:null, lng:null, direccion:"" }; }
+}
+async function obtenerDatosRestaurante(){
+  if(dataRest?.cat && dataRest?.id){
+    try{
+      const snap = await get(ref(db, `doloya_aliados/${dataRest.cat}/${dataRest.id}`));
+      const d = snap.val();
+      if(d){
+        return {
+          ...dataRest,
+          direccion: d.direccion || dataRest.direccion || "",
+          lat: d.lat || d.ubicacion?.lat || dataRest.lat || null,
+          lng: d.lng || d.ubicacion?.lng || dataRest.lng || null
+        };
+      }
+    }catch(e){}
+  }
+  return dataRest;
+}
+window.irSiguiente = async ()=>{
   if(carrito.length===0) return;
+  if(!ipKey) await obtenerIP();
+  const clienteUbi = obtenerUbicacionCliente();
+  const restFull = await obtenerDatosRestaurante();
+  if(dataRest && ipKey){
+    const total = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
+    const ts = localStorage.getItem('doloya_carrito_timestamp');
+    let dataCarrito = {
+      restauranteId: restFull.id,
+      restauranteCat: restFull.cat,
+      restauranteNombre: restFull.nombre,
+      restauranteDireccion: restFull.direccion || "",
+      restauranteLat: restFull.lat || null,
+      restauranteLng: restFull.lng || null,
+      clienteDireccion: clienteUbi.direccion || "",
+      clienteLat: clienteUbi.lat || null,
+      clienteLng: clienteUbi.lng || null,
+      clienteUbicacion: clienteUbi.raw || null,
+      productos: carrito,
+      total: total,
+      cantidadTotal: carrito.reduce((s,i)=>s+i.cantidad,0),
+      ip: ipKey,
+      fecha: ts ? parseInt(ts) : Date.now()
+    };
+    if(ts){
+      dataCarrito.fechaExpiracion = parseInt(ts) + TIEMPO_EXPIRACION;
+      dataCarrito.expiraEn = new Date(dataCarrito.fechaExpiracion).toISOString();
+    }
+    await set(ref(db, `carrito/${restFull.cat}/${restFull.id}/${ipKey}`), dataCarrito);
+    await set(ref(db, `doloya_aliados/${restFull.cat}/${restFull.id}/carritos/${ipKey}`), dataCarrito);
+    localStorage.setItem('doloya_carrito_restaurante_data', JSON.stringify(restFull));
+  }
   window.location.href='resumen.html';
 }
-
-// GUARDAR CORREGIDO - SIEMPRE REFLEJA EN FIREBASE
 async function guardar(){
   localStorage.setItem('doloya_carrito_v2', JSON.stringify(carrito));
   if(!ipKey) await obtenerIP();
-  
   if(carrito.length===0){
     if(dataRest && ipKey){
       await set(ref(db, `carrito/${dataRest.cat}/${dataRest.id}/${ipKey}`), null);
@@ -215,10 +246,18 @@ async function guardar(){
     if(dataRest && ipKey){
       const total = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
       const ts = localStorage.getItem('doloya_carrito_timestamp');
+      const clienteUbi = obtenerUbicacionCliente();
+      const restFull = await obtenerDatosRestaurante();
       let dataCarrito = {
-        restauranteId: dataRest.id,
-        restauranteCat: dataRest.cat,
-        restauranteNombre: dataRest.nombre,
+        restauranteId: restFull.id,
+        restauranteCat: restFull.cat,
+        restauranteNombre: restFull.nombre,
+        restauranteDireccion: restFull.direccion || "",
+        restauranteLat: restFull.lat || null,
+        restauranteLng: restFull.lng || null,
+        clienteDireccion: clienteUbi.direccion || "",
+        clienteLat: clienteUbi.lat || null,
+        clienteLng: clienteUbi.lng || null,
         productos: carrito,
         total: total,
         cantidadTotal: carrito.reduce((s,i)=>s+i.cantidad,0),
@@ -229,13 +268,12 @@ async function guardar(){
         dataCarrito.fechaExpiracion = parseInt(ts) + TIEMPO_EXPIRACION;
         dataCarrito.expiraEn = new Date(dataCarrito.fechaExpiracion).toISOString();
       }
-      await set(ref(db, `carrito/${dataRest.cat}/${dataRest.id}/${ipKey}`), dataCarrito);
-      await set(ref(db, `doloya_aliados/${dataRest.cat}/${dataRest.id}/carritos/${ipKey}`), dataCarrito);
+      await set(ref(db, `carrito/${restFull.cat}/${restFull.id}/${ipKey}`), dataCarrito);
+      await set(ref(db, `doloya_aliados/${restFull.cat}/${restFull.id}/carritos/${ipKey}`), dataCarrito);
     }
   }
   render();
 }
-
 obtenerIP().then(()=>{ obtenerLogo(); });
 </script>
 </body>
