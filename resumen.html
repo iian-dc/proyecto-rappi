@@ -198,9 +198,13 @@ let metodoSel = null;
 try{ metodoSel = JSON.parse(metodoRaw); }catch(e){ metodoSel = metodoRaw; }
 const carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 const dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
+
+// GPS BASE - SIEMPRE DOLOYA_UBICACION ES LA FUENTE PRINCIPAL
 let { ubicacion: ubiInit, detallesFull: detInit } = leerUbicacionStorage();
-let lat = ubiInit?.lat || ubiInit?.ubicacion?.lat || detInit?.lat || 21.1576;
-let lng = ubiInit?.lng || ubiInit?.ubicacion?.lng || detInit?.lng || -100.9306;
+let lat = ubiInit?.lat || ubiInit?.ubicacion?.lat || 21.1576;
+let lng = ubiInit?.lng || ubiInit?.ubicacion?.lng || -100.9306;
+let direccionBase = ubiInit?.direccion || '';
+
 const TARIFA_BASE = 30;
 const PRECIO_POR_KM = 4;
 const TARIFA_SERVICIO_PORC = 0.03;
@@ -263,14 +267,32 @@ async function cargarDireccionYDistancia(){
   const { ubicacion: ubiFresh, detallesFull: detFresh } = leerUbicacionStorage();
   ubicacion = ubiFresh;
   detallesFull = detFresh;
-  lat = ubiFresh?.lat || ubiFresh?.ubicacion?.lat || detFresh?.lat || lat;
-  lng = ubiFresh?.lng || ubiFresh?.ubicacion?.lng || detFresh?.lng || lng;
-  actualizarMapaIframe();
-  if(detallesFull?.direccion){
-    document.getElementById('txtDireccion').textContent = detallesFull.direccion;
-  } else if(ubicacion?.direccion){
-    document.getElementById('txtDireccion').textContent = ubicacion.direccion;
+
+  // --- CORREGIDO: GPS MANDA SIEMPRE COMO BASE ---
+  if(ubiFresh && (ubiFresh.lat || ubiFresh.ubicacion?.lat)){
+    lat = ubiFresh.lat || ubiFresh.ubicacion.lat;
+    lng = ubiFresh.lng || ubiFresh.ubicacion.lng;
+    direccionBase = ubiFresh.direccion || direccionBase;
+  } else if(detFresh && detFresh.lat && detFresh.lng){
+    // Solo si no hay GPS, usar detalles (cuando cliente modificó)
+    lat = detFresh.lat;
+    lng = detFresh.lng;
+    direccionBase = detFresh.direccion || direccionBase;
   }
+
+  actualizarMapaIframe();
+
+  // TEXTO UNIDO AL MAPA
+  if(direccionBase){
+    document.getElementById('txtDireccion').textContent = direccionBase;
+  } else if(ubiFresh?.direccion){
+    document.getElementById('txtDireccion').textContent = ubiFresh.direccion;
+  } else if(detFresh?.direccion){
+    document.getElementById('txtDireccion').textContent = detFresh.direccion;
+  } else {
+    document.getElementById('txtDireccion').textContent = 'Ubicación GPS detectada';
+  }
+
   document.getElementById('txtDistancia').innerHTML = `<span style="color:#E30613;font-weight:800;display:flex;align-items:center;gap:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> Calculando...</span>`;
   const realKm = await obtenerDistanciaRealGoogle(restLat, restLng, lat, lng);
   distanciaKm = realKm;
@@ -281,7 +303,7 @@ async function cargarDireccionYDistancia(){
 cargarDireccionYDistancia();
 window.addEventListener('focus', ()=>{
   const ubiCheck = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
-  if(ubiCheck && (Math.abs(ubiCheck.lat - lat) > 0.00001 || Math.abs(ubiCheck.lng - lng) > 0.00001)){
+  if(ubiCheck && (Math.abs((ubiCheck.lat||ubiCheck.ubicacion?.lat||0) - lat) > 0.00001 || Math.abs((ubiCheck.lng||ubiCheck.ubicacion?.lng||0) - lng) > 0.00001 || ubiCheck.direccion !== direccionBase)){
     cargarDireccionYDistancia();
   }
 });
@@ -381,9 +403,12 @@ async function irAPagar(){
   localStorage.setItem('doloya_cliente_nombre', nombre);
   const telefonoGuardado = localStorage.getItem('doloya_celular') || detallesFull?.celular || localStorage.getItem('doloya_cliente_tel') || '';
 
+  // CLIENTE USA DIRECCION BASE DEL GPS
+  const direccionClienteFinal = direccionBase || detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent;
+
   const pedidoCompleto = {
     restaurante: { id: dataRest?.id || 'la_catrina_burger', cat: dataRest?.cat || 'burgers', nombre: dataRest?.nombre || document.getElementById('nombreRest').textContent, logo: dataRest?.logo || '', lat: restLat, lng: restLng, direccion: dataRest?.direccion || "" },
-    cliente: { nombre: nombre, celular: telefonoGuardado, telefono: telefonoGuardado, direccion: detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent, detalles: detallesFull || {}, referencia: detallesRef, ubicacion: { lat: lat, lng: lng } },
+    cliente: { nombre: nombre, celular: telefonoGuardado, telefono: telefonoGuardado, direccion: direccionClienteFinal, detalles: detallesFull || {}, referencia: detallesRef, ubicacion: { lat: lat, lng: lng } },
     productos: carrito,
     totales: { costoProductos: parseFloat(costoProductos.toFixed(2)), distanciaKm: parseFloat(distanciaKm.toFixed(2)), costoEnvio: envioFinal, tarifaServicio: tarifaFinal, ahorro: parseFloat(ahorroFinal.toFixed(2)), tipoEntrega: tipoActual, total: parseFloat(totalFinal.toFixed(2)) },
     metodoPago: metodoSel,
@@ -397,23 +422,19 @@ async function irAPagar(){
     localStorage.setItem('doloya_pedido_confirmacion_id', refDoc.id);
     localStorage.setItem('doloya_pedido_final', JSON.stringify(pedidoCompleto));
 
-    // BORRAR REALTIME DE DOLOYA-ALIADOS - carrito/burgers/la_catrina_burger/148_224_32_27
     const ipKey = await obtenerIpKey();
     const cat = dataRest?.cat || 'burgers';
     const idRest = dataRest?.id || 'la_catrina_burger';
 
     if(ipKey && cat && idRest){
-      console.log("Intentando borrar:", `carrito/${cat}/${idRest}/${ipKey}`);
       await window.setRT(window.refRT(window.dbAliadosRT, `carrito/${cat}/${idRest}/${ipKey}`), null);
       await window.setRT(window.refRT(window.dbAliadosRT, `doloya_aliados/${cat}/${idRest}/carritos/${ipKey}`), null);
-      console.log("BORRADO EXITOSO");
     }
 
     localStorage.removeItem('doloya_carrito_v2');
     window.location.href='confirmacion.html';
   }catch(e){
     alert("Error: "+e.message);
-    console.log(e);
     btn.textContent = 'Finalizar pedido';
     btn.disabled = false;
   }
