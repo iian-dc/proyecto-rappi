@@ -40,16 +40,25 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .metodo-info b{font-size:14px;font-weight:700}
 .metodo-info span{font-size:12px;color:#888;display:block;margin-top:2px}
 .badge-obli{border:1.5px solid #E5E7EB;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700}
-.resumen-header{padding:18px 16px;display:flex;align-items:center;gap:12px;cursor:pointer}
+
+/* RESUMEN COMO IMAGEN */
+.resumen-titulo{padding:18px 16px 10px 16px;font-size:18px;font-weight:900;color:#111}
+.resumen-header{padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer}
 .logo-sub{width:52px;height:52px;border-radius:50%;background:#00684A;display:flex;align-items:center;justify-content:center;color:#FFC72C;font-weight:900;font-size:12px;overflow:hidden;flex-shrink:0}
 .logo-sub img{width:100%;height:100%;object-fit:cover}
 .resumen-info{flex:1}
 .resumen-info b{font-size:15px;font-weight:800}
-.resumen-info span{font-size:12.5px;color:#666}
-.lista-costos{padding:0 16px}
-.costo-row{display:flex;justify-content:space-between;padding:9px 0;font-size:14px;color:#444;font-weight:500}
-.costo-row b{color:#111;font-weight:800}
-.costo-row.total b{font-size:15px}
+.resumen-info span{font-size:13px;color:#555;font-weight:500}
+.fila-regalo{padding:18px 16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #F0F0F0;border-bottom:1px solid #F0F0F0;cursor:default}
+.fila-regalo b{font-size:15px;font-weight:800}
+.lista-costos{padding:6px 16px}
+.costo-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;font-size:14px;color:#444;font-weight:500}
+.costo-row b{color:#111;font-weight:800;font-size:14.5px}
+.costo-row.total{padding-top:16px;margin-top:4px;border-top:none}
+.costo-row.total b{font-size:15px;font-weight:900}
+.precio-rojo{color:#E30613 !important;font-weight:900 !important}
+.icono-info{width:18px;height:18px;border:1.5px solid #6B7280;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#6B7280;margin-left:6px;vertical-align:middle}
+
 .ahorro-banner{background:#EAF4FF;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-top:14px}
 .ahorro-banner b{font-size:13px;color:#1E40AF;line-height:1.3}
 .footer{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #EEE;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;z-index:999;box-shadow:0 -4px 12px rgba(0,0,0,0.06)}
@@ -67,9 +76,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 
 <div class="mapa-wrap">
   <iframe id="mapaIframe" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
-  <div class="pin-center">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M6 10a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1a2 2 0 0 1-1 1.73l-3 1.73a2 2 0 0 1-2 0l-3-1.73A2 2 0 0 1 8 11v-1z"/><path d="M6 11v3a2 2 0 0 0 1 1.73l3 1.73a2 2 0 0 0 2 0l3-1.73A2 2 0 0 0 16 14v-3"/></svg>
-  </div>
+  <div class="pin-center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M6 10a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1a2 2 0 0 1-1 1.73l-3 1.73a2 2 0 0 1-2 0l-3-1.73A2 2 0 0 1 8 11v-1z"/><path d="M6 11v3a2 2 0 0 0 1 1.73l3 1.73a2 2 0 0 0 2 0l3-1.73A2 2 0 0 0 16 14v-3"/></svg></div>
   <button class="btn-ajustar" onclick="window.location.href='puntodeentrega.html'">Ajustar punto de entrega<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a5 5 0 0 0-5 5c0 5 5 11 5 11s5-6 5-11a5 5 0 0 0-5-5z"/><circle cx="12" cy="7" r="1.5"/></svg></button>
 </div>
 
@@ -104,22 +111,26 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
 </div>
 
-<div class="section" style="padding-bottom:0"><h3>Resumen del pedido</h3></div>
+<!-- RESUMEN TAL CUAL IMAGEN -->
+<div class="resumen-titulo">Resumen del pedido</div>
 <div class="resumen-header" onclick="toggleResumen()">
   <div class="logo-sub" id="logoRest">SUBWAY</div>
-  <div class="resumen-info"><b id="nombreRest">Subway</b><span id="cantProductos">0 Productos</span></div>
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5" id="flechaResumen"><path d="M6 9l6 6 6-6"/></svg>
+  <div class="resumen-info"><b id="nombreRest">Subway</b><span id="cantProductos">3 Productos</span></div>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>
 </div>
 
 <div id="detalleResumen" style="display:block">
-  <div class="lista-costos">
-    <div style="padding:8px 0;border-top:1px solid #F0F0F0"></div>
-    <div class="costo-row"><span>Costo de productos</span><b id="costoProd">$0.00 MXN</b></div>
-    <div class="costo-row"><span id="labelEnvio">Costo de envío (30 + 4 x km)</span><b id="costoEnvio">$0.00 MXN</b></div>
-    <div class="costo-row"><span>Tarifa de Servicio (3%)</span><b id="costoTarifa">$0.00 MXN</b></div>
-    <div class="costo-row total" style="padding-top:12px;border-top:1px solid #F0F0F0;margin-top:8px"><b>Total a pagar</b><b id="totalPagar">$0.00 MXN</b></div>
+  <div class="fila-regalo">
+    <b>Enviar como regalo</b>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.8"><path d="M9 18l6-6-6-6"/></svg>
   </div>
-  <div class="ahorro-banner"><div style="font-size:22px">📍</div><b id="txtAhorroBanner">Calculando distancia al restaurante...</b></div>
+  <div class="lista-costos">
+    <div class="costo-row"><span>Costo de productos</span><b id="costoProd">$0.00</b></div>
+    <div class="costo-row"><span style="display:flex;align-items:center">Costo de envío <span class="icono-info">i</span></span><b id="costoEnvio">$0.00</b></div>
+    <div class="costo-row"><span>Tarifa de Servicio</span><b id="costoTarifa" class="precio-rojo">$0.00</b></div>
+    <div class="costo-row total"><b>Total a pagar</b><b id="totalPagar">$0.00</b></div>
+  </div>
+  <div class="ahorro-banner"><div style="width:22px;height:22px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1E40AF" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div><b id="txtAhorroBanner">Calculando distancia...</b></div>
 </div>
 
 <div class="footer">
@@ -147,7 +158,6 @@ window.db = db; window.addDoc = addDoc; window.collection = collection; window.s
 
 <script>
 const GOOGLE_API_KEY = "AIzaSyCTV1sm6McEIkv-cheaVFCD_svp_a--6wg";
-
 const ubicacionRaw = localStorage.getItem('doloya_ubicacion');
 const detallesFullRaw = localStorage.getItem('doloya_detalles_full');
 let ubicacion = null, detallesFull = null;
@@ -159,16 +169,12 @@ let metodoSel = null;
 try{ metodoSel = JSON.parse(metodoRaw); }catch(e){ metodoSel = metodoRaw; }
 const carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 const dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
-
 let lat = ubicacion?.lat || ubicacion?.ubicacion?.lat || detallesFull?.lat || 21.1576;
 let lng = ubicacion?.lng || ubicacion?.ubicacion?.lng || detallesFull?.lng || -100.9306;
 document.getElementById('mapaIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
-
-// NUEVA TARIFA: 30 + 4 x KM y 3% servicio
 const TARIFA_BASE = 30;
 const PRECIO_POR_KM = 4;
 const TARIFA_SERVICIO_PORC = 0.03;
-
 function haversine(lat1, lon1, lat2, lon2){
   const R = 6371;
   const dLat = (lat2-lat1)*Math.PI/180;
@@ -181,11 +187,9 @@ let restLat = dataRest?.lat || dataRest?.restauranteLat || 21.1569;
 let restLng = dataRest?.lng || dataRest?.restauranteLng || -100.9310;
 if(dataRest?.restauranteLat) restLat = dataRest.restauranteLat;
 if(dataRest?.restauranteLng) restLng = dataRest.restauranteLng;
-
 let distanciaKm = parseFloat(localStorage.getItem('doloya_distancia_km')||'0.3');
 let costoEnvioGuardado = parseFloat(localStorage.getItem('doloya_costo_envio')||'0');
 let tarifaServicioGuardada = parseFloat(localStorage.getItem('doloya_tarifa_servicio')||'0');
-
 async function obtenerDistanciaRealGoogle(oLat, oLng, dLat, dLng){
   if(GOOGLE_API_KEY && GOOGLE_API_KEY.length > 10){
     try{
@@ -205,17 +209,13 @@ async function obtenerDistanciaRealGoogle(oLat, oLng, dLat, dLng){
   }catch(e){}
   return haversine(oLat, oLng, dLat, dLng);
 }
-
 let tipoActual = localStorage.getItem('doloya_tipo_entrega') || 'ahorra';
 let costoProductos = carrito.reduce((s,i)=>s+(i.precio||0)*(i.cantidad||0),0);
-
 function getCostosBase(){
-  // Si ya viene del carrito Firebase guardado, usarlo
   let dist = distanciaKm;
   if(dist < 0.3) dist = 0.3;
   let envioBase = TARIFA_BASE + (dist * PRECIO_POR_KM);
   let tarifa = costoProductos * TARIFA_SERVICIO_PORC;
-  // Si ya hay valores guardados de carrito.html, priorizarlos
   if(costoEnvioGuardado > 0) envioBase = costoEnvioGuardado;
   if(tarifaServicioGuardada > 0) tarifa = tarifaServicioGuardada;
   return { envioBase, tarifa, dist };
@@ -232,26 +232,19 @@ function calcularTarifa(){
   let { tarifa } = getCostosBase();
   return parseFloat(tarifa.toFixed(2));
 }
-
 async function cargarDireccionYDistancia(){
   if(detallesFull?.direccion) document.getElementById('txtDireccion').textContent = detallesFull.direccion;
   else if(ubicacion?.direccion) document.getElementById('txtDireccion').textContent = ubicacion.direccion;
-  document.getElementById('txtDistancia').innerHTML = `<span style="color:#666">📍 Calculando distancia real...</span>`;
+  document.getElementById('txtDistancia').innerHTML = `<span style="color:#666;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/></svg>Calculando distancia real...</span>`;
   const realKm = await obtenerDistanciaRealGoogle(restLat, restLng, lat, lng);
   distanciaKm = realKm;
   if(distanciaKm < 0.3) distanciaKm = 0.3;
-  // Si no hay costo guardado, recalcular con nueva distancia
-  if(!costoEnvioGuardado){
-    costoEnvioGuardado = TARIFA_BASE + (distanciaKm * PRECIO_POR_KM);
-  }
-  if(!tarifaServicioGuardada){
-    tarifaServicioGuardada = costoProductos * TARIFA_SERVICIO_PORC;
-  }
+  if(!costoEnvioGuardado){ costoEnvioGuardado = TARIFA_BASE + (distanciaKm * PRECIO_POR_KM); }
+  if(!tarifaServicioGuardada){ tarifaServicioGuardada = costoProductos * TARIFA_SERVICIO_PORC; }
   document.getElementById('txtDistancia').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> Estás a ${distanciaKm.toFixed(2)} km del restaurante`;
   actualizarResumen();
 }
 cargarDireccionYDistancia();
-
 if(detallesFull){
   let txt = '';
   if(detallesFull.tipoDireccion) txt += detallesFull.tipoDireccion + ' - ';
@@ -270,42 +263,29 @@ if(metodoSel){
   document.getElementById('badgeMetodo').style.background = '#E6F9ED';
   document.getElementById('badgeMetodo').style.color = '#0A7D2E';
 }
-
 function actualizarResumen(){
   let { envioBase, tarifa, dist } = getCostosBase();
-  // Actualizar la variable global distancia
   if(dist) distanciaKm = dist;
   let envioRapido = envioBase + 10;
   let envioAhorra = envioBase - 5;
   if(envioAhorra < 15) envioAhorra = 15;
   document.getElementById('txtRapido').textContent = `$${envioRapido.toFixed(2)} MXN`;
   document.getElementById('txtAhorra').textContent = `$${envioAhorra.toFixed(2)} MXN`;
-
   let envio = calcularEnvio();
   let tarifaServicio = calcularTarifa();
-
-  document.getElementById('costoProd').textContent = `$${costoProductos.toFixed(2)} MXN`;
-  document.getElementById('costoEnvio').textContent = `$${envio.toFixed(2)} MXN`;
-  document.getElementById('labelEnvio').textContent = `Costo de envío ($30 + $4 x ${distanciaKm.toFixed(2)}km)`;
-  document.getElementById('costoTarifa').textContent = `$${tarifaServicio.toFixed(2)} MXN`;
-
+  document.getElementById('costoProd').textContent = `$${costoProductos.toFixed(2)}`;
+  document.getElementById('costoEnvio').textContent = `$${envio.toFixed(2)}`;
+  document.getElementById('costoTarifa').textContent = `$${tarifaServicio.toFixed(2)}`;
   let total = costoProductos + envio + tarifaServicio;
-  document.getElementById('totalPagar').textContent = `$${total.toFixed(2)} MXN`;
+  document.getElementById('totalPagar').textContent = `$${total.toFixed(2)}`;
   document.getElementById('totalFooter').textContent = `$${total.toFixed(2)} MXN`;
-
-  if(tipoActual==='rapido'){
-    document.getElementById('txtAhorroBanner').textContent = `Estás a ${distanciaKm.toFixed(2)} km • Envío $30 + $4/km + 3% servicio • Entrega más rápida (+$10)`;
-  } else {
-    document.getElementById('txtAhorroBanner').textContent = `Estás a ${distanciaKm.toFixed(2)} km • Envío $30 + $4/km + 3% servicio • Ahorras $5`;
-  }
-
+  document.getElementById('txtAhorroBanner').textContent = `Estás a ${distanciaKm.toFixed(2)} km del restaurante • $30 + $4/km + 3% servicio`;
   localStorage.setItem('doloya_tipo_entrega', tipoActual);
   localStorage.setItem('doloya_costo_entrega', envio);
   localStorage.setItem('doloya_distancia_km', distanciaKm.toFixed(2));
   localStorage.setItem('doloya_tarifa_servicio', tarifaServicio.toFixed(2));
   localStorage.setItem('doloya_total', total.toFixed(2));
 }
-
 function selEntrega(tipo){
   tipoActual = tipo;
   document.querySelectorAll('.entrega-op').forEach(e=>e.classList.remove('active'));
@@ -323,9 +303,8 @@ function selEntrega(tipo){
 }
 function toggleResumen(){
   const det = document.getElementById('detalleResumen');
-  const flecha = document.getElementById('flechaResumen');
-  if(det.style.display==='none'){ det.style.display='block'; flecha.style.transform='rotate(0deg)'; }
-  else{ det.style.display='none'; flecha.style.transform='rotate(180deg)'; }
+  if(det.style.display==='none'){ det.style.display='block'; }
+  else{ det.style.display='none'; }
 }
 async function irAPagar(){
   if(!metodoSel){ window.location.href='metododepago.html'; return; }
@@ -339,7 +318,7 @@ async function irAPagar(){
     restaurante: { id: dataRest?.id || 'rest_dolores', nombre: dataRest?.nombre || document.getElementById('nombreRest').textContent, logo: dataRest?.logo || '', lat: restLat, lng: restLng, direccion: dataRest?.direccion || "" },
     cliente: { direccion: detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent, detalles: detallesFull || {}, referencia: detallesRef, celular: detallesFull?.celular || '', ubicacion: { lat: lat, lng: lng } },
     productos: carrito,
-    totales: { costoProductos: parseFloat(costoProductos.toFixed(2)), distanciaKm: parseFloat(distanciaKm.toFixed(2)), costoEnvio: envioFinal, costoEnvioFormula: `30 + 4*${distanciaKm.toFixed(2)}`, tarifaServicio: tarifaFinal, tarifaServicioPorc: "3%", tipoEntrega: tipoActual, total: parseFloat(totalFinal.toFixed(2)) },
+    totales: { costoProductos: parseFloat(costoProductos.toFixed(2)), distanciaKm: parseFloat(distanciaKm.toFixed(2)), costoEnvio: envioFinal, tarifaServicio: tarifaFinal, tipoEntrega: tipoActual, total: parseFloat(totalFinal.toFixed(2)) },
     metodoPago: metodoSel,
     estado: 'pendiente',
     fecha: new Date().toISOString(),
