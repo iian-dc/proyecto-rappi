@@ -41,27 +41,37 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .metodo-info span{font-size:12px;color:#888;display:block;margin-top:2px}
 .badge-obli{border:1.5px solid #E5E7EB;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700}
 .resumen-titulo{padding:18px 16px 10px 16px;font-size:18px;font-weight:900;color:#111}
-.resumen-header{padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.resumen-header{padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;border-bottom:1px solid #F0F0F0}
 .logo-sub{width:52px;height:52px;border-radius:50%;background:#00684A;display:flex;align-items:center;justify-content:center;color:#FFC72C;font-weight:900;font-size:12px;overflow:hidden;flex-shrink:0}
 .logo-sub img{width:100%;height:100%;object-fit:cover}
-.resumen-info{flex:1}
+.resumen-info{flex:1;display:flex;flex-direction:column;gap:4px}
 .resumen-info b{font-size:15px;font-weight:800}
-.resumen-info span{font-size:13px;color:#555;font-weight:500}
-.fila-regalo{padding:18px 16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #F0F0F0;border-bottom:1px solid #F0F0F0;cursor:default}
-.fila-regalo b{font-size:15px;font-weight:800}
+.resumen-info span{font-size:13px;color:#555;font-weight:500;margin-left:2px}
 .lista-costos{padding:6px 16px}
 .costo-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;font-size:14px;color:#444;font-weight:500}
 .costo-row b{color:#111;font-weight:800;font-size:14.5px}
-.costo-row.total{padding-top:16px;margin-top:4px}
+.costo-row.total{padding-top:16px;margin-top:4px;border-top:1px solid #F0F0F0}
 .costo-row.total b{font-size:15px;font-weight:900}
 .precio-rojo{color:#E30613 !important;font-weight:900 !important}
 .icono-info{width:18px;height:18px;border:1.5px solid #6B7280;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#6B7280;margin-left:6px;vertical-align:middle}
 .ahorro-banner{background:#EAF4FF;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-top:14px}
-.ahorro-banner b{font-size:13px;color:#1E40AF;line-height:1.3}
+.ahorro-banner b{font-size:13.5px;color:#1E40AF;line-height:1.3;font-weight:800}
 .footer{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #EEE;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;z-index:999;box-shadow:0 -4px 12px rgba(0,0,0,0.06)}
 .footer b{font-size:22px;font-weight:900;line-height:1}
 .footer span{font-size:12px;color:#555;font-weight:600}
 .btn-continuar{padding:15px 28px;background:#E30613;color:white;border:none;border-radius:999px;font-size:15px;font-weight:800;box-shadow:0 6px 18px rgba(227,6,19,0.3);cursor:pointer;min-width:160px}
+/* MODAL FINALIZAR PEDIDO */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.modal-overlay.active{display:flex}
+.modal-card{background:white;width:100%;max-width:360px;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(0,0,0,0.2);animation:pop .2s ease}
+@keyframes pop{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-card h2{font-size:18px;font-weight:900;margin-bottom:6px}
+.modal-card p{font-size:13px;color:#666;margin-bottom:16px;line-height:1.3}
+.modal-card label{font-size:13px;font-weight:700;display:block;margin:10px 0 6px 2px}
+.modal-card input{width:100%;padding:14px 14px;border:1.5px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;outline:none}
+.modal-card input:focus{border-color:#111}
+.btn-finalizar{width:100%;margin-top:18px;padding:16px;background:#E30613;color:white;border:none;border-radius:999px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(227,6,19,0.3)}
+.btn-cancel{width:100%;margin-top:10px;padding:12px;background:white;color:#111;border:1.5px solid #E5E7EB;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -116,22 +126,37 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 </div>
 
 <div id="detalleResumen" style="display:block">
-  <div class="fila-regalo">
-    <b>Enviar como regalo</b>
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.8"><path d="M9 18l6-6-6-6"/></svg>
-  </div>
   <div class="lista-costos">
     <div class="costo-row"><span>Costo de productos</span><b id="costoProd">$0.00</b></div>
     <div class="costo-row"><span style="display:flex;align-items:center">Costo de envío <span class="icono-info">i</span></span><b id="costoEnvio">$0.00</b></div>
     <div class="costo-row"><span>Tarifa de Servicio</span><b id="costoTarifa" class="precio-rojo">$0.00</b></div>
     <div class="costo-row total"><b>Total a pagar</b><b id="totalPagar">$0.00</b></div>
   </div>
-  <div class="ahorro-banner"><div style="width:22px;height:22px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1E40AF" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div><b id="txtAhorroBanner">Calculando distancia...</b></div>
+  <div class="ahorro-banner">
+    <div style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1E40AF" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.5 16.5L8 21l-2-3 7.5-1.5z"/><path d="M8 12a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2z"/></svg>
+    </div>
+    <b id="txtAhorroBanner">Has ahorrado $0.00</b>
+  </div>
 </div>
 
 <div class="footer">
   <div><span>Total a pagar  </span><b id="totalFooter"> $0.00 MXN</b></div>
-  <button class="btn-continuar" id="btnContinuar" onclick="irAPagar()">Continuar</button>
+  <button class="btn-continuar" id="btnContinuar" onclick="abrirModal()">Continuar</button>
+</div>
+
+<!-- MODAL NOMBRE Y TELEFONO -->
+<div class="modal-overlay" id="modalCliente">
+  <div class="modal-card">
+    <h2>Finalizar pedido</h2>
+    <p>Ingresa tus datos para que el repartidor pueda contactarte</p>
+    <label>Nombre completo</label>
+    <input id="inputNombre" type="text" placeholder="Ej: Juan Pérez">
+    <label>Número de teléfono</label>
+    <input id="inputTelefono" type="tel" placeholder="Ej: 418 123 4567">
+    <button class="btn-finalizar" id="btnFinalizar" onclick="irAPagar()">Finalizar pedido</button>
+    <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+  </div>
 </div>
 
 <script type="module">
@@ -154,7 +179,6 @@ window.db = db; window.addDoc = addDoc; window.collection = collection; window.s
 
 <script>
 const GOOGLE_API_KEY = "AIzaSyCTV1sm6McEIkv-cheaVFCD_svp_a--6wg";
-
 let ubicacion = null, detallesFull = null;
 function leerUbicacionStorage(){
   try{ ubicacion = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null'); }catch(e){ ubicacion=null; }
@@ -162,22 +186,18 @@ function leerUbicacionStorage(){
   return { ubicacion, detallesFull };
 }
 leerUbicacionStorage();
-
 const detallesRef = localStorage.getItem('doloya_detalles_referencia')||'';
 const metodoRaw = localStorage.getItem('doloya_metodo_pago');
 let metodoSel = null;
 try{ metodoSel = JSON.parse(metodoRaw); }catch(e){ metodoSel = metodoRaw; }
 const carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 const dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
-
 let { ubicacion: ubiInit, detallesFull: detInit } = leerUbicacionStorage();
 let lat = ubiInit?.lat || ubiInit?.ubicacion?.lat || detInit?.lat || 21.1576;
 let lng = ubiInit?.lng || ubiInit?.ubicacion?.lng || detInit?.lng || -100.9306;
-
 const TARIFA_BASE = 30;
 const PRECIO_POR_KM = 4;
 const TARIFA_SERVICIO_PORC = 0.03;
-
 function haversine(lat1, lon1, lat2, lon2){
   const R = 6371;
   const dLat = (lat2-lat1)*Math.PI/180;
@@ -190,9 +210,7 @@ let restLat = dataRest?.lat || dataRest?.restauranteLat || 21.1569;
 let restLng = dataRest?.lng || dataRest?.restauranteLng || -100.9310;
 if(dataRest?.restauranteLat) restLat = dataRest.restauranteLat;
 if(dataRest?.restauranteLng) restLng = dataRest.restauranteLng;
-
 let distanciaKm = 0.3;
-
 async function obtenerDistanciaRealGoogle(oLat, oLng, dLat, dLng){
   if(GOOGLE_API_KEY && GOOGLE_API_KEY.length > 10){
     try{
@@ -212,10 +230,8 @@ async function obtenerDistanciaRealGoogle(oLat, oLng, dLat, dLng){
   }catch(e){}
   return haversine(oLat, oLng, dLat, dLng);
 }
-
 let tipoActual = localStorage.getItem('doloya_tipo_entrega') || 'ahorra';
 let costoProductos = carrito.reduce((s,i)=>s+(i.precio||0)*(i.cantidad||0),0);
-
 function getCostosBase(){
   let dist = distanciaKm;
   if(dist < 0.3) dist = 0.3;
@@ -235,51 +251,45 @@ function calcularTarifa(){
   let { tarifa } = getCostosBase();
   return parseFloat(tarifa.toFixed(2));
 }
-
+function calcularAhorro(){
+  let monto = costoProductos;
+  let porc = 0.04;
+  if(monto > 0 && monto <= 100) porc = 0.04;
+  else if(monto > 100 && monto <= 200) porc = 0.06;
+  else if(monto > 200 && monto <= 400) porc = 0.08;
+  else if(monto > 400) porc = 0.10;
+  let ahorro = monto * porc;
+  return ahorro;
+}
 function actualizarMapaIframe(){
   document.getElementById('mapaIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
 }
-
-async function cargarDireccionYDistancia(forzarRecalculo = false){
-  // Re-leer storage por si viene de puntodeentrega.html
+async function cargarDireccionYDistancia(){
   const { ubicacion: ubiFresh, detallesFull: detFresh } = leerUbicacionStorage();
   ubicacion = ubiFresh;
   detallesFull = detFresh;
   lat = ubiFresh?.lat || ubiFresh?.ubicacion?.lat || detFresh?.lat || lat;
   lng = ubiFresh?.lng || ubiFresh?.ubicacion?.lng || detFresh?.lng || lng;
-
   actualizarMapaIframe();
-
   if(detallesFull?.direccion){
     document.getElementById('txtDireccion').textContent = detallesFull.direccion;
   } else if(ubicacion?.direccion){
     document.getElementById('txtDireccion').textContent = ubicacion.direccion;
-  } else {
-    document.getElementById('txtDireccion').textContent = `Dolores Hidalgo ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
   }
-
-  document.getElementById('txtDistancia').innerHTML = `<span style="color:#666;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/></svg>Calculando distancia real...</span>`;
-  document.getElementById('txtAhorroBanner').textContent = `Calculando ruta...`;
-
+  document.getElementById('txtDistancia').innerHTML = `<span style="color:#666;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/></svg>Calculando distancia...</span>`;
   const realKm = await obtenerDistanciaRealGoogle(restLat, restLng, lat, lng);
   distanciaKm = realKm;
   if(distanciaKm < 0.3) distanciaKm = 0.3;
-
   document.getElementById('txtDistancia').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> Estás a ${distanciaKm.toFixed(2)} km del restaurante`;
   actualizarResumen();
 }
-
 cargarDireccionYDistancia();
-
-// CORRECCIÓN: Cuando vuelves de ajustar punto de entrega, actualizar todo
 window.addEventListener('focus', ()=>{
   const ubiCheck = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
   if(ubiCheck && (Math.abs(ubiCheck.lat - lat) > 0.00001 || Math.abs(ubiCheck.lng - lng) > 0.00001)){
-    cargarDireccionYDistancia(true);
+    cargarDireccionYDistancia();
   }
 });
-window.addEventListener('pageshow', ()=>{ cargarDireccionYDistancia(true); });
-
 if(detallesFull){
   let txt = '';
   if(detallesFull.tipoDireccion) txt += detallesFull.tipoDireccion + ' - ';
@@ -308,17 +318,19 @@ function actualizarResumen(){
   document.getElementById('txtAhorra').textContent = `$${envioAhorra.toFixed(2)} MXN`;
   let envio = calcularEnvio();
   let tarifaServicio = calcularTarifa();
+  let ahorro = calcularAhorro();
   document.getElementById('costoProd').textContent = `$${costoProductos.toFixed(2)}`;
   document.getElementById('costoEnvio').textContent = `$${envio.toFixed(2)}`;
   document.getElementById('costoTarifa').textContent = `$${tarifaServicio.toFixed(2)}`;
   let total = costoProductos + envio + tarifaServicio;
   document.getElementById('totalPagar').textContent = `$${total.toFixed(2)}`;
   document.getElementById('totalFooter').textContent = `$${total.toFixed(2)} MXN`;
-  document.getElementById('txtAhorroBanner').textContent = `Estás a ${distanciaKm.toFixed(2)} km del restaurante • $30 base + $4/km + 3% servicio`;
+  document.getElementById('txtAhorroBanner').textContent = `Has ahorrado $${ahorro.toFixed(2)}`;
   localStorage.setItem('doloya_tipo_entrega', tipoActual);
   localStorage.setItem('doloya_costo_entrega', envio);
   localStorage.setItem('doloya_distancia_km', distanciaKm.toFixed(2));
   localStorage.setItem('doloya_tarifa_servicio', tarifaServicio.toFixed(2));
+  localStorage.setItem('doloya_ahorro', ahorro.toFixed(2));
   localStorage.setItem('doloya_total', total.toFixed(2));
 }
 function selEntrega(tipo){
@@ -340,19 +352,49 @@ function toggleResumen(){
   const det = document.getElementById('detalleResumen');
   det.style.display = det.style.display==='none' ? 'block' : 'none';
 }
-async function irAPagar(){
+// MODAL
+function abrirModal(){
   if(!metodoSel){ window.location.href='metododepago.html'; return; }
-  const btn = document.getElementById('btnContinuar');
+  // precargar si ya existe
+  const nombreGuardado = localStorage.getItem('doloya_cliente_nombre')||'';
+  const telGuardado = localStorage.getItem('doloya_cliente_tel')|| detallesFull?.celular || '';
+  document.getElementById('inputNombre').value = nombreGuardado;
+  document.getElementById('inputTelefono').value = telGuardado;
+  document.getElementById('modalCliente').classList.add('active');
+}
+function cerrarModal(){
+  document.getElementById('modalCliente').classList.remove('active');
+}
+async function irAPagar(){
+  const nombre = document.getElementById('inputNombre').value.trim();
+  const telefono = document.getElementById('inputTelefono').value.trim();
+  if(!nombre){ alert('Por favor ingresa tu nombre'); return; }
+  if(!telefono || telefono.length < 8){ alert('Por favor ingresa un teléfono válido'); return; }
+  const btn = document.getElementById('btnFinalizar');
   btn.textContent = 'Guardando...';
   btn.disabled = true;
   let envioFinal = calcularEnvio();
   let tarifaFinal = calcularTarifa();
+  let ahorroFinal = calcularAhorro();
   let totalFinal = costoProductos + envioFinal + tarifaFinal;
+  // Guardar local para futuro
+  localStorage.setItem('doloya_cliente_nombre', nombre);
+  localStorage.setItem('doloya_cliente_tel', telefono);
+  localStorage.setItem('doloya_celular', telefono);
+
   const pedidoCompleto = {
     restaurante: { id: dataRest?.id || 'rest_dolores', nombre: dataRest?.nombre || document.getElementById('nombreRest').textContent, logo: dataRest?.logo || '', lat: restLat, lng: restLng, direccion: dataRest?.direccion || "" },
-    cliente: { direccion: detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent, detalles: detallesFull || {}, referencia: detallesRef, celular: detallesFull?.celular || '', ubicacion: { lat: lat, lng: lng } },
+    cliente: { 
+      nombre: nombre,
+      celular: telefono,
+      telefono: telefono,
+      direccion: detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent, 
+      detalles: detallesFull || {}, 
+      referencia: detallesRef, 
+      ubicacion: { lat: lat, lng: lng } 
+    },
     productos: carrito,
-    totales: { costoProductos: parseFloat(costoProductos.toFixed(2)), distanciaKm: parseFloat(distanciaKm.toFixed(2)), costoEnvio: envioFinal, tarifaServicio: tarifaFinal, tipoEntrega: tipoActual, total: parseFloat(totalFinal.toFixed(2)) },
+    totales: { costoProductos: parseFloat(costoProductos.toFixed(2)), distanciaKm: parseFloat(distanciaKm.toFixed(2)), costoEnvio: envioFinal, tarifaServicio: tarifaFinal, ahorro: parseFloat(ahorroFinal.toFixed(2)), tipoEntrega: tipoActual, total: parseFloat(totalFinal.toFixed(2)) },
     metodoPago: metodoSel,
     estado: 'pendiente',
     fecha: new Date().toISOString(),
