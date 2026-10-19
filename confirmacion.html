@@ -9,7 +9,6 @@
 .container{max-width:480px;margin:0 auto;padding:20px 20px 40px}
 .check-wrap{display:flex;justify-content:center;margin-top:30px}
 .check-circle{width:96px;height:96px;background:#16a34a;border-radius:50%;display:flex;align-items:center;justify-content:center;animation:pop .6s ease}
-.check-circle::after{content:'✓';color:#fff;font-size:56px;font-weight:700}
 @keyframes pop{0%{transform:scale(.5)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
 h1{text-align:center;font-size:28px;font-weight:800;margin:18px 0 22px}
 .card{background:#fff;border:1px solid #eee;border-radius:16px;padding:18px 20px;box-shadow:0 4px 18px rgba(0,0,0,.06)}
@@ -24,10 +23,10 @@ h1{text-align:center;font-size:28px;font-weight:800;margin:18px 0 22px}
 </head>
 <body>
 <div class="container">
-<div class="check-wrap"><div class="check-circle"></div></div>
+<div class="check-wrap"><div class="check-circle"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div></div>
 <h1>Pedido Confirmado</h1>
 <div class="card">
-<div class="row"><span class="label">Código del pedido</span><span class="value" id="txtCodigo">PED-...</span></div>
+<div class="row"><span class="label">Código del pedido</span><span class="value" id="txtCodigo">ST-0</span></div>
 <div class="row"><span class="label">Nombre del cliente</span><span class="value" id="txtNombre">...</span></div>
 <div class="row"><span class="label">Total a pagar</span><span class="value total" id="txtTotal">$ 0 COP</span></div>
 </div>
@@ -36,7 +35,7 @@ h1{text-align:center;font-size:28px;font-weight:800;margin:18px 0 22px}
 </div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import { getFirestore, doc, onSnapshot, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 const configConfirmacion = {
   apiKey: "AIzaSyDLKngPyi_SWAXEQwdrHO5h8L8OufulAR4",
   authDomain: "doloya-confirmacion.firebaseapp.com",
@@ -49,31 +48,75 @@ const appConf = initializeApp(configConfirmacion, "confirmacion2");
 const dbConf = getFirestore(appConf);
 const pedidoFinal = JSON.parse(localStorage.getItem('doloya_pedido_final')||'null');
 const pedidoId = localStorage.getItem('doloya_pedido_confirmacion_id');
-if(pedidoFinal){
- document.getElementById('txtCodigo').textContent = pedidoId ? pedidoId.substring(0,8).toUpperCase() : 'PED-'+Date.now().toString().slice(-6);
- document.getElementById('txtNombre').textContent = pedidoFinal.cliente?.nombre || 'Cliente';
- document.getElementById('txtTotal').textContent = '$ '+(pedidoFinal.totales?.total || 0).toLocaleString('es-CO')+' COP';
+
+// CONTABILIDAD ST-0, ST-1, ST-2...
+async function obtenerCodigoSecuencial(){
+  let codigoFinal = localStorage.getItem('doloya_codigo_pedido_actual');
+  if(codigoFinal){
+    return codigoFinal;
+  }
+  try{
+    const contadorRef = doc(dbConf, "contadores", "pedidos");
+    const snap = await getDoc(contadorRef);
+    let numero = 0;
+    if(!snap.exists()){
+      numero = 0;
+      await setDoc(contadorRef, { total: 1, ultimo: 0 });
+    }else{
+      numero = snap.data().total || 0;
+      await updateDoc(contadorRef, { total: numero + 1, ultimo: numero });
+    }
+    codigoFinal = `ST-${numero}`;
+    localStorage.setItem('doloya_codigo_pedido_actual', codigoFinal);
+    if(pedidoId){
+      try{ await updateDoc(doc(dbConf, "pedidos", pedidoId), { codigo: codigoFinal }); }catch(e){}
+    }
+    let contadorLocal = parseInt(localStorage.getItem('doloya_contador_local') || '0');
+    if(!snap.exists()){
+      localStorage.setItem('doloya_contador_local', '1');
+    }
+    return codigoFinal;
+  }catch(e){
+    let contadorLocal = parseInt(localStorage.getItem('doloya_contador_local') || '0');
+    let cod = `ST-${contadorLocal}`;
+    localStorage.setItem('doloya_contador_local', (contadorLocal+1).toString());
+    localStorage.setItem('doloya_codigo_pedido_actual', cod);
+    return cod;
+  }
 }
+
+if(pedidoFinal){
+  obtenerCodigoSecuencial().then(cod=>{
+    document.getElementById('txtCodigo').textContent = cod;
+  });
+  document.getElementById('txtNombre').textContent = pedidoFinal.cliente?.nombre || 'Cliente';
+  document.getElementById('txtTotal').textContent = '$ '+(pedidoFinal.totales?.total || 0).toLocaleString('es-CO')+' COP';
+}
+
 let estadoActual='confirmado';
 const estados=[
- {key:'confirmado',nombre:'Pedido Confirmado',desc:'Recibido'},
- {key:'aceptado',nombre:'Pedido Aceptado',desc:'Restaurante aceptó'},
- {key:'preparando',nombre:'Preparando',desc:'Cocinando tus alimentos'},
- {key:'en_camino',nombre:'En Camino',desc:'Repartidor en camino'},
- {key:'finalizado',nombre:'Finalizado',desc:'Entregado'},
+ {key:'confirmado',nombre:'Pedido Confirmado',desc:'Recibido', icon:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>`},
+ {key:'aceptado',nombre:'Pedido Aceptado',desc:'Restaurante aceptó', icon:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>`},
+ {key:'preparando',nombre:'Preparando',desc:'Cocinando tus alimentos', icon:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M4 6v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6"/><path d="M8 6V4"/><path d="M12 6V4"/><path d="M16 6V4"/></svg>`},
+ {key:'en_camino',nombre:'En Camino',desc:'Repartidor en camino', icon:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/><path d="M5 18V11h10l2-3h2v10"/><path d="M5 11l1.5-2"/></svg>`},
+ {key:'finalizado',nombre:'Finalizado',desc:'Entregado', icon:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 15l5 5L20 6"/><path d="M4 5l2 2"/><path d="M8 5l2 2"/></svg>`},
 ];
+
 function render(){
  const cont=document.getElementById('timeline');
  const idx=estados.findIndex(e=>e.key===estadoActual);
  cont.innerHTML=estados.map((est,i)=>{
   const done=i<idx; const isCurrent=i===idx;
-  return `<div class="step"><div class="line ${i<idx?'active':''}" style="${i===4?'display:none':''}"></div><div class="icon ${done?'active':''} ${isCurrent?'current':''}">${done?'✓':['✓','📋','🍳','🛵','🏁'][i]}</div><div><div style="font-weight:700">${est.nombre}</div><div style="font-size:13px;color:#666">${est.desc}</div></div></div>`;
+  return `<div class="step"><div class="line ${i<idx?'active':''}" style="${i===4?'display:none':''}"></div><div class="icon ${done?'active':''} ${isCurrent?'current':''}">${done?`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>`:est.icon}</div><div><div style="font-weight:700">${est.nombre}</div><div style="font-size:13px;color:#666">${est.desc}</div></div></div>`;
  }).join('');
 }
 render();
-if(pedidoId){ onSnapshot(doc(dbConf,"pedidos",pedidoId),(snap)=>{ if(snap.exists()&&snap.data().estado){ estadoActual=snap.data().estado; render(); } }); }
+if(pedidoId){ onSnapshot(doc(dbConf,"pedidos",pedidoId),(snap)=>{ if(snap.exists()&&snap.data().estado){ estadoActual=snap.data().estado; if(snap.data().codigo){ document.getElementById('txtCodigo').textContent = snap.data().codigo; localStorage.setItem('doloya_codigo_pedido_actual', snap.data().codigo); } render(); } }); }
 function lanzar(){ const colors=['#16a34a','#ef4444','#f59e0b','#3b82f6','#eab308']; confetti({particleCount:120,spread:90,origin:{y:0.6},colors}); }
 lanzar(); setTimeout(lanzar,1200);
+
+// limpiar contador local cuando se haga nuevo pedido
+window.addEventListener('storage', ()=>{});
 </script>
 </body>
 </html>
