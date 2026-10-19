@@ -20,7 +20,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
 .input-wrap textarea{resize:none;height:90px;padding-top:14px}
 .btn-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:32px;height:32px;background:#EEF0F2;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .btn-clear.top{top:18px;transform:none}
-.sugerencias-box{position:absolute;top:calc(100% + 8px);left:0;right:0;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.15);border:1.5px solid #E5E7EB;z-index:50;max-height:300px;overflow-y:auto;display:none}
+.sugerencias-box{position:absolute;top:calc(100% + 8px);left:0;right:0;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.15);border:1.5px solid #E5E7EB;z-index:50;max-height:320px;overflow-y:auto;display:none}
 .sugerencias-box.show{display:block}
 .sug-item{padding:12px 14px;display:flex;gap:10px;align-items:flex-start;cursor:pointer;border-bottom:1px solid #F5F5F5}
 .sug-item:last-child{border:none}
@@ -31,6 +31,8 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
 .footer{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:16px;border-top:1px solid #F0F0F0;z-index:30}
 .btn-guardar{width:100%;padding:16px;background:#E30613;color:#fff;border:none;border-radius:999px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(227,6,19,0.25)}
 </style>
+<!-- GOOGLE PLACES API REAL -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCTV1sm6McEIkv-cheaVFCD_svp_a--6wg&libraries=places&language=es&region=MX"></script>
 </head>
 <body>
 
@@ -46,7 +48,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
 
   <label class="label">Dirección</label>
   <div class="input-wrap" id="wrapDireccion">
-    <input type="text" id="inputDireccion" placeholder="Ej: Calle Allende #45, Colonia Centro" autocomplete="off" oninput="buscarDireccion(this.value)">
+    <input type="text" id="inputDireccion" placeholder="Ej: Calle Allende #45, Colonia Centro" autocomplete="off">
     <button class="btn-clear" onclick="clearInput('inputDireccion')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </button>
@@ -97,7 +99,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </button>
   </div>
-
 </div>
 
 <div class="footer">
@@ -110,6 +111,14 @@ const detallesGuardados = JSON.parse(localStorage.getItem('doloya_detalles_full'
 let latSeleccionado = ubicacion?.lat || ubicacion?.ubicacion?.lat || 21.1576;
 let lngSeleccionado = ubicacion?.lng || ubicacion?.ubicacion?.lng || -100.9306;
 let timeoutBusqueda = null;
+let autocompleteService, placesService;
+let ultimaPredicciones = [];
+
+function initGoogle(){
+  autocompleteService = new google.maps.places.AutocompleteService();
+  placesService = new google.maps.places.PlacesService(document.createElement('div'));
+}
+if(window.google){ initGoogle(); } else { window.addEventListener('load', initGoogle); }
 
 function clearInput(id){
   document.getElementById(id).value='';
@@ -133,69 +142,95 @@ if(detallesGuardados){
   document.getElementById('tipoDireccion').value = 'Oficina';
 }
 
-// PRIORIDAD DOLORES HIDALGO GUANAJUATO
-function buscarDireccion(texto){
+// MOTOR REAL DE GOOGLE PRIORIZANDO DOLORES HIDALGO
+const inputDir = document.getElementById('inputDireccion');
+inputDir.addEventListener('input', function(){
+  const texto = this.value.trim();
   if(timeoutBusqueda) clearTimeout(timeoutBusqueda);
-  if(!texto || texto.length < 2){ ocultarSugerencias(); return; }
-  timeoutBusqueda = setTimeout(()=>{
-    const qDolores = `${texto}, Dolores Hidalgo, Guanajuato`;
-    const urlDolores = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(qDolores)}&countrycodes=mx&limit=6&addressdetails=1&viewbox=-101.05,21.25,-100.80,21.05&bounded=0`;
-    const urlGeneral = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(texto)}&countrycodes=mx&limit=6&addressdetails=1`;
+  if(texto.length < 3){ ocultarSugerencias(); return; }
+  timeoutBusqueda = setTimeout(()=>{ buscarGoogle(texto); }, 300);
+});
 
-    Promise.all([fetch(urlDolores).then(r=>r.json()).catch(()=>[]), fetch(urlGeneral).then(r=>r.json()).catch(()=>[])])
-    .then(([dataDolores, dataGeneral])=>{
-      let combinados = [...dataDolores];
-      dataGeneral.forEach(g=>{
-        if(!combinados.find(d=>d.place_id===g.place_id)){
-          combinados.push(g);
-        }
-      });
-      combinados.sort((a,b)=>{
-        const aDol = a.display_name.toLowerCase().includes('dolores hidalgo') ? 0 : a.display_name.toLowerCase().includes('guanajuato') ? 1 : 2;
-        const bDol = b.display_name.toLowerCase().includes('dolores hidalgo') ? 0 : b.display_name.toLowerCase().includes('guanajuato') ? 1 : 2;
-        return aDol - bDol;
-      });
-      mostrarSugerencias(combinados.slice(0,8));
-    }).catch(()=> ocultarSugerencias());
-  }, 300);
+function buscarGoogle(texto){
+  if(!autocompleteService){ ocultarSugerencias(); return; }
+
+  // Bias a Dolores Hidalgo, Guanajuato
+  const doloresLocation = new google.maps.LatLng(21.1576, -100.9306);
+  const bounds = new google.maps.LatLngBounds(
+    new google.maps.LatLng(21.05, -101.05),
+    new google.maps.LatLng(21.25, -100.80)
+  );
+
+  autocompleteService.getPlacePredictions({
+    input: texto,
+    componentRestrictions: {country: 'mx'},
+    location: doloresLocation,
+    radius: 20000,
+    bounds: bounds
+  }, (predictions, status)=>{
+    if(status !== google.maps.places.PlacesServiceStatus.OK || !predictions){
+      ocultarSugerencias(); return;
+    }
+    // Ordenar: primero los que tengan Dolores Hidalgo
+    predictions.sort((a,b)=>{
+      const aDol = a.description.toLowerCase().includes('dolores hidalgo') ? 0 : 1;
+      const bDol = b.description.toLowerCase().includes('dolores hidalgo') ? 0 : 1;
+      return aDol - bDol;
+    });
+    ultimaPredicciones = predictions;
+    mostrarSugerenciasGoogle(predictions);
+  });
 }
 
-function mostrarSugerencias(lista){
+function mostrarSugerenciasGoogle(lista){
   const box = document.getElementById('sugerenciasBox');
   if(!lista || lista.length===0){ ocultarSugerencias(); return; }
   box.innerHTML = '';
   lista.forEach((item, idx)=>{
-    const esDolores = item.display_name.toLowerCase().includes('dolores hidalgo');
+    const esDolores = item.description.toLowerCase().includes('dolores hidalgo');
     const div = document.createElement('div');
     div.className = 'sug-item';
     let etiqueta = '';
     if(idx===0 && esDolores){
-      etiqueta = `<div style="font-size:10px;font-weight:800;color:#E30613;margin-bottom:4px;letter-spacing:0.5px">EN DOLORES HIDALGO</div>`;
+      etiqueta = `<div style="font-size:10px;font-weight:800;color:#E30613;margin-bottom:4px">EN DOLORES HIDALGO</div>`;
     }
-    if(idx>0 && esDolores && !lista[idx-1].display_name.toLowerCase().includes('dolores hidalgo')){
-      etiqueta = `<div style="font-size:10px;font-weight:800;color:#888;margin-bottom:4px;margin-top:8px;letter-spacing:0.5px">OTROS LUGARES</div>`;
+    if(idx>0 && esDolores && !lista[idx-1].description.toLowerCase().includes('dolores hidalgo')){
+      etiqueta = `<div style="font-size:10px;font-weight:800;color:#E30613;margin-bottom:4px">EN DOLORES HIDALGO</div>`;
+    }
+    if(idx>0 && !esDolores && lista[idx-1].description.toLowerCase().includes('dolores hidalgo')){
+      etiqueta = `<div style="font-size:10px;font-weight:800;color:#888;margin-bottom:4px;margin-top:6px">OTROS LUGARES</div>`;
     }
     div.innerHTML = `
       <div style="flex:1">
         ${etiqueta}
         <div style="display:flex;gap:10px;align-items:flex-start">
           <div class="sug-icon" style="${esDolores ? 'background:#FFE8EA' : ''}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${esDolores ? '#E30613' : '#111'}" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
-          <div class="sug-text"><b>${item.address?.road || item.name || item.display_name.split(',')[0]}</b><span>${item.display_name}</span></div>
+          <div class="sug-text"><b>${item.structured_formatting.main_text}</b><span>${item.description}</span></div>
         </div>
       </div>
     `;
-    div.onclick = ()=> seleccionarDireccion(item);
+    div.onclick = ()=> seleccionarGoogle(item.place_id, item.description);
     box.appendChild(div);
   });
   box.classList.add('show');
 }
 
-function seleccionarDireccion(item){
-  document.getElementById('inputDireccion').value = item.display_name;
-  latSeleccionado = parseFloat(item.lat);
-  lngSeleccionado = parseFloat(item.lon);
-  document.getElementById('subDir').textContent = item.display_name;
-  ocultarSugerencias();
+function seleccionarGoogle(placeId, description){
+  // Obtener detalles con lat/lng reales de Google
+  placesService.getDetails({placeId: placeId, fields: ['formatted_address','geometry','name']}, (place, status)=>{
+    if(status === google.maps.places.PlacesServiceStatus.OK && place){
+      document.getElementById('inputDireccion').value = place.formatted_address || description;
+      document.getElementById('subDir').textContent = place.formatted_address || description;
+      if(place.geometry && place.geometry.location){
+        latSeleccionado = place.geometry.location.lat();
+        lngSeleccionado = place.geometry.location.lng();
+      }
+    } else {
+      document.getElementById('inputDireccion').value = description;
+      document.getElementById('subDir').textContent = description;
+    }
+    ocultarSugerencias();
+  });
 }
 
 function ocultarSugerencias(){
