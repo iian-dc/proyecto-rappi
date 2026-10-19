@@ -215,7 +215,6 @@ function calcularValoracion(likes){
 function guardarCarrito(){
   localStorage.setItem('doloya_carrito_v2', JSON.stringify(carrito));
   if(carrito.length>0){
-    localStorage.setItem('doloya_carrito_timestamp', Date.now().toString());
     localStorage.setItem('doloya_carrito_restaurante', id);
     localStorage.setItem('doloya_carrito_restaurante_data', JSON.stringify({id:id, cat:cat, nombre:nombreRestauranteGlobal, lat: ubicacionGPS.lat, lng: ubicacionGPS.lng}));
     restauranteActualCarrito = id;
@@ -226,14 +225,14 @@ function guardarCarrito(){
     restauranteActualCarrito = null;
   }
   renderBarraCarrito();
-  guardarCarritoFirebase();
+  guardarCarritoFirebase(false);
 }
-function guardarCarritoFirebase(){
+
+// NUEVA LÓGICA: si esFinal=true, se activa el conteo de 3 horas
+function guardarCarritoFirebase(esFinal = false){
   if(!cat || !id || !ipKey) return;
   const total = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
-  const ahora = Date.now();
-  const expira = ahora + TIEMPO_EXPIRACION;
-  const dataCarrito = {
+  let dataCarrito = {
     restauranteId: id,
     restauranteCat: cat,
     restauranteNombre: nombreRestauranteGlobal,
@@ -241,11 +240,29 @@ function guardarCarritoFirebase(){
     total: total,
     cantidadTotal: carrito.reduce((s,i)=>s+i.cantidad,0),
     ip: ipCliente,
-    ubicacion: ubicacionGPS,
-    fecha: ahora,
-    fechaExpiracion: expira,
-    expiraEn: new Date(expira).toISOString()
+    ubicacion: ubicacionGPS
   };
+
+  if(esFinal){
+    const ahora = Date.now();
+    const expira = ahora + TIEMPO_EXPIRACION;
+    dataCarrito.fecha = ahora;
+    dataCarrito.fechaExpiracion = expira;
+    dataCarrito.expiraEn = new Date(expira).toISOString();
+    localStorage.setItem('doloya_carrito_timestamp', ahora.toString());
+  } else {
+    // Si aún no ha dado click en Ver carrito, no poner tiempo
+    const timestampGuardado = localStorage.getItem('doloya_carrito_timestamp');
+    if(timestampGuardado){
+      const ahora = parseInt(timestampGuardado);
+      dataCarrito.fecha = ahora;
+      dataCarrito.fechaExpiracion = ahora + TIEMPO_EXPIRACION;
+      dataCarrito.expiraEn = new Date(ahora + TIEMPO_EXPIRACION).toISOString();
+    } else {
+      dataCarrito.fecha = Date.now();
+    }
+  }
+
   if(carrito.length>0){
     set(ref(db, `carrito/${cat}/${id}/${ipKey}`), dataCarrito);
     set(ref(db, `doloya_aliados/${cat}/${id}/carritos/${ipKey}`), dataCarrito);
@@ -254,6 +271,7 @@ function guardarCarritoFirebase(){
     set(ref(db, `doloya_aliados/${cat}/${id}/carritos/${ipKey}`), null);
   }
 }
+
 async function eliminarCarritoFirebaseCompleto(catBorrar, idBorrar, ipKeyBorrar, ipOriginal){
   try{
     await set(ref(db, `carrito/${catBorrar}/${idBorrar}/${ipKeyBorrar}`), null);
@@ -266,6 +284,7 @@ async function eliminarCarritoFirebaseCompleto(catBorrar, idBorrar, ipKeyBorrar,
     }
   }catch(e){ console.log("Error borrando firebase:", e); }
 }
+
 async function verificarExpiracion(){
   const timestamp = localStorage.getItem('doloya_carrito_timestamp');
   if(!timestamp || carrito.length===0) return;
@@ -444,7 +463,11 @@ window.handleRestar=(nombre)=>{ restarProducto(nombre); }
 
 document.getElementById('btnVerCarrito').onclick=()=>{
   if(carrito.length===0) return;
-  window.location.href = 'carrito.html';
+  // AQUÍ EMPIEZA EL CONTEO DE 3 HORAS
+  guardarCarritoFirebase(true);
+  setTimeout(()=>{
+    window.location.href = 'carrito.html';
+  }, 400);
 }
 
 document.getElementById('btnConservar').onclick=()=>{
