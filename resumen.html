@@ -80,7 +80,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 
 <div class="item-row no-click">
   <div class="icono"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
-  <div class="info"><b>Dirección</b><span id="txtDireccion">Cargando dirección...</span><span id="txtDistancia" style="color:#E30613;font-weight:700;margin-top:4px"></span></div>
+  <div class="info"><b>Dirección</b><span id="txtDireccion">Cargando dirección...</span><span id="txtDistancia" style="color:#111;font-weight:700;margin-top:6px;display:flex;align-items:center;gap:6px"></span></div>
 </div>
 
 <div class="item-row" onclick="window.location.href='detalles.html'">
@@ -132,11 +132,11 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
   <div class="lista-costos">
     <div style="padding:8px 0;border-top:1px solid #F0F0F0"></div>
     <div class="costo-row"><span>Costo de productos</span><b id="costoProd">$0.00 MXN</b></div>
-    <div class="costo-row"><span id="labelEnvio">Costo de envío (0 km)</span><b id="costoEnvio">$35.00 MXN</b></div>
+    <div class="costo-row"><span id="labelEnvio">Costo de envío</span><b id="costoEnvio">$35.00 MXN</b></div>
     <div class="costo-row"><span>Tarifa de Servicio</span><b>$0.00 MXN</b></div>
     <div class="costo-row total" style="padding-top:12px;border-top:1px solid #F0F0F0;margin-top:8px"><b>Total a pagar</b><b id="totalPagar">$0.00 MXN</b></div>
   </div>
-  <div class="ahorro-banner"><div style="font-size:28px">🪙</div><b id="txtAhorroBanner">Calculando envío por distancia...</b></div>
+  <div class="ahorro-banner"><div style="font-size:22px">📍</div><b id="txtAhorroBanner">Calculando distancia al restaurante...</b></div>
 </div>
 
 <div class="footer">
@@ -145,20 +145,9 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 </div>
 
 <script type="module">
-// --- FIREBASE IMPORT ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  // PEGA AQUI TU CONFIG DE FIREBASE - TU_API_KEY_AQUI
-  apiKey: "// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
   authDomain: "doloya-aliados.firebaseapp.com",
@@ -170,21 +159,11 @@ const firebaseConfig = {
   measurementId: "G-5HETSEL4PT"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);",
-  authDomain: "doloya-xxxxx.firebaseapp.com",
-  projectId: "doloya-xxxxx",
-  storageBucket: "doloya-xxxxx.appspot.com",
-  messagingSenderId: "xxxx",
-  appId: "xxxx"
-};
-
 let db;
 try{
   const app = initializeApp(firebaseConfig);
   db = getFirestore(app);
-}catch(e){ console.log("Firebase no configurado aun", e); }
+}catch(e){ console.log("Firebase no configurado", e); }
 
 window.db = db;
 window.addDoc = addDoc;
@@ -213,7 +192,7 @@ let lat = ubicacion?.lat || ubicacion?.ubicacion?.lat || detallesFull?.lat || 21
 let lng = ubicacion?.lng || ubicacion?.ubicacion?.lng || detallesFull?.lng || -100.9306;
 document.getElementById('mapaIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
 
-// CALCULO KM - TARIFA BASE 35 + 4 POR KM
+// CALCULO KM - TARIFA BASE 35 + 4 POR KM (INTERNO, NO SE MUESTRA)
 const TARIFA_BASE = 35;
 const PRECIO_POR_KM = 4;
 
@@ -226,19 +205,24 @@ function haversine(lat1, lon1, lat2, lon2){
   return R*c;
 }
 
-// Lat/Lng del restaurante - si no tiene, usa centro Dolores
 let restLat = dataRest?.lat || dataRest?.ubicacion?.lat || dataRest?.latitude || 21.1569;
 let restLng = dataRest?.lng || dataRest?.ubicacion?.lng || dataRest?.longitude || -100.9310;
 
 let distanciaKm = haversine(restLat, restLng, lat, lng);
-if(distanciaKm < 0.3) distanciaKm = 0.3; // minimo
+if(distanciaKm < 0.3) distanciaKm = 0.3;
 
 let tipoActual = localStorage.getItem('doloya_tipo_entrega') || 'ahorra';
 let costoProductos = carrito.reduce((s,i)=>s+(i.precio||0)*(i.cantidad||0),0);
 
+function getBaseEnvio(){
+  return TARIFA_BASE + (distanciaKm * PRECIO_POR_KM);
+}
+
 function calcularEnvio(){
-  let base = TARIFA_BASE + (distanciaKm * PRECIO_POR_KM);
-  if(tipoActual==='rapido') base += 10; // rapido +10 como tenias 35 vs 45
+  let base = getBaseEnvio();
+  if(tipoActual==='rapido') base += 10;
+  if(tipoActual==='ahorra') base -= 5;
+  if(base < 15) base = 15;
   return parseFloat(base.toFixed(2));
 }
 
@@ -257,7 +241,11 @@ function cargarDireccion(){
       document.getElementById('txtDireccion').textContent = `Dolores Hidalgo, ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     });
   }
-  document.getElementById('txtDistancia').textContent = `📍 A ${distanciaKm.toFixed(2)} km del restaurante - Base $35 + $4/km`;
+  // NUEVO: SOLO DISTANCIA CON ICONO, SIN BASE + KM
+  document.getElementById('txtDistancia').innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+    Estás a ${distanciaKm.toFixed(2)} km del restaurante
+  `;
 }
 cargarDireccion();
 
@@ -282,20 +270,28 @@ if(metodoSel){
 }
 
 function actualizarResumen(){
-  const envioRapido = (TARIFA_BASE + (distanciaKm * PRECIO_POR_KM) + 10).toFixed(2);
-  const envioAhorra = (TARIFA_BASE + (distanciaKm * PRECIO_POR_KM)).toFixed(2);
-  document.getElementById('txtRapido').textContent = `+ $${envioRapido} MXN`;
-  document.getElementById('txtAhorra').textContent = `+ $${envioAhorra} MXN`;
+  let base = getBaseEnvio();
+  let envioRapido = base + 10;
+  let envioAhorra = base - 5;
+  if(envioAhorra < 15) envioAhorra = 15;
+
+  document.getElementById('txtRapido').textContent = `$${envioRapido.toFixed(2)} MXN`;
+  document.getElementById('txtAhorra').textContent = `$${envioAhorra.toFixed(2)} MXN`;
 
   let envio = calcularEnvio();
   document.getElementById('costoProd').textContent = `$${costoProductos.toFixed(2)} MXN`;
-  document.getElementById('labelEnvio').textContent = `Costo de envío (${distanciaKm.toFixed(2)} km)`;
+  document.getElementById('labelEnvio').textContent = `Costo de envío`;
   document.getElementById('costoEnvio').textContent = `$${envio.toFixed(2)} MXN`;
   
   let total = costoProductos + envio;
   document.getElementById('totalPagar').textContent = `$${total.toFixed(2)} MXN`;
   document.getElementById('totalFooter').textContent = `$${total.toFixed(2)} MXN`;
-  document.getElementById('txtAhorroBanner').textContent = `Envío: Base $35 + $${PRECIO_POR_KM} x ${distanciaKm.toFixed(2)} km = $${envio.toFixed(2)}`;
+  
+  if(tipoActual==='rapido'){
+    document.getElementById('txtAhorroBanner').textContent = `Estás a ${distanciaKm.toFixed(2)} km del restaurante • Entrega más rápida (+$10)`;
+  } else {
+    document.getElementById('txtAhorroBanner').textContent = `Estás a ${distanciaKm.toFixed(2)} km del restaurante • Ahorras $5 en envío`;
+  }
   
   localStorage.setItem('doloya_tipo_entrega', tipoActual);
   localStorage.setItem('doloya_costo_entrega', envio);
@@ -336,7 +332,6 @@ async function irAPagar(){
     window.location.href='metododepago.html';
     return;
   }
-
   const btn = document.getElementById('btnContinuar');
   btn.textContent = 'Guardando...';
   btn.disabled = true;
@@ -344,16 +339,13 @@ async function irAPagar(){
   let envioFinal = calcularEnvio();
   let totalFinal = costoProductos + envioFinal;
 
-  // OBJETO COMPLETO PARA FIREBASE - CARRITO
   const pedidoCompleto = {
     restaurante: {
-      id: dataRest?.id || dataRest?.uid || dataRest?.restauranteId || 'rest_dolores',
+      id: dataRest?.id || 'rest_dolores',
       nombre: dataRest?.nombre || document.getElementById('nombreRest').textContent,
       logo: dataRest?.logo || '',
-      ip: dataRest?.ip || dataRest?.direccionIP || dataRest?.id || '0.0.0.0', // IP del restaurante
       lat: restLat,
       lng: restLng,
-      direccion: dataRest?.direccion || ''
     },
     cliente: {
       direccion: detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent,
@@ -361,17 +353,11 @@ async function irAPagar(){
       referencia: detallesRef,
       celular: detallesFull?.celular || localStorage.getItem('doloya_celular') || '',
       ubicacion: { lat: lat, lng: lng },
-      instrucciones: detallesFull?.instrucciones || '',
-      tipoDireccion: detallesFull?.tipoDireccion || '',
-      nombreEdificio: detallesFull?.nombreEdificio || '',
-      piso: detallesFull?.piso || ''
     },
     productos: carrito,
     totales: {
       costoProductos: parseFloat(costoProductos.toFixed(2)),
       distanciaKm: parseFloat(distanciaKm.toFixed(2)),
-      tarifaBase: TARIFA_BASE,
-      precioPorKm: PRECIO_POR_KM,
       costoEnvio: envioFinal,
       tipoEntrega: tipoActual,
       total: parseFloat(totalFinal.toFixed(2))
@@ -386,19 +372,15 @@ async function irAPagar(){
     if(window.db){
       const ref = await window.addDoc(window.collection(window.db, "carrito"), pedidoCompleto);
       localStorage.setItem('doloya_pedido_id', ref.id);
-      console.log("Guardado en carrito con ID:", ref.id);
     } else {
       localStorage.setItem('doloya_pedido_temp', JSON.stringify(pedidoCompleto));
-      console.log("Firebase no configurado, guardado local");
     }
   }catch(err){
-    console.error("Error guardando en Firebase:", err);
     localStorage.setItem('doloya_pedido_temp', JSON.stringify(pedidoCompleto));
   }
 
-  // Guardar para siguiente pantalla
   localStorage.setItem('doloya_pedido_final', JSON.stringify(pedidoCompleto));
-  window.location.href='confirmacion.html'; // o tu pantalla de pago final
+  window.location.href='confirmacion.html';
 }
 
 if(dataRest){
