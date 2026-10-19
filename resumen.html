@@ -85,7 +85,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 </div>
 <div class="item-row no-click">
   <div class="icono"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
-  <div class="info"><b>Dirección</b><span id="txtDireccion">Cargando dirección...</span><span id="txtDistancia"></span></div>
+  <div class="info"><b>Dirección</b><span id="txtDireccion">Obteniendo tu ubicación GPS...</span><span id="txtDistancia"></span></div>
 </div>
 <div class="item-row" onclick="window.location.href='detalles.html'">
   <div class="icono"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
@@ -199,11 +199,11 @@ try{ metodoSel = JSON.parse(metodoRaw); }catch(e){ metodoSel = metodoRaw; }
 const carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 const dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
 
-// GPS BASE - SIEMPRE DOLOYA_UBICACION ES LA FUENTE PRINCIPAL
 let { ubicacion: ubiInit, detallesFull: detInit } = leerUbicacionStorage();
 let lat = ubiInit?.lat || ubiInit?.ubicacion?.lat || 21.1576;
 let lng = ubiInit?.lng || ubiInit?.ubicacion?.lng || -100.9306;
 let direccionBase = ubiInit?.direccion || '';
+let gpsObtenido = false;
 
 const TARIFA_BASE = 30;
 const PRECIO_POR_KM = 4;
@@ -263,48 +263,122 @@ function calcularAhorro(){
 function actualizarMapaIframe(){
   document.getElementById('mapaIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
 }
-async function cargarDireccionYDistancia(){
-  const { ubicacion: ubiFresh, detallesFull: detFresh } = leerUbicacionStorage();
-  ubicacion = ubiFresh;
-  detallesFull = detFresh;
 
-  // --- CORREGIDO: GPS MANDA SIEMPRE COMO BASE ---
-  if(ubiFresh && (ubiFresh.lat || ubiFresh.ubicacion?.lat)){
-    lat = ubiFresh.lat || ubiFresh.ubicacion.lat;
-    lng = ubiFresh.lng || ubiFresh.ubicacion.lng;
-    direccionBase = ubiFresh.direccion || direccionBase;
-  } else if(detFresh && detFresh.lat && detFresh.lng){
-    // Solo si no hay GPS, usar detalles (cuando cliente modificó)
-    lat = detFresh.lat;
-    lng = detFresh.lng;
-    direccionBase = detFresh.direccion || direccionBase;
-  }
+// NUEVO: REVERSE GEOCODE PARA GPS
+async function obtenerDireccionPorGPS(latGPS, lngGPS){
+  try{
+    const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latGPS}&lon=${lngGPS}&zoom=18&addressdetails=1`);
+    const data = await resp.json();
+    if(data && data.display_name){
+      return data.display_name;
+    }
+  }catch(e){}
+  return `Ubicación GPS ${latGPS.toFixed(5)}, ${lngGPS.toFixed(5)}`;
+}
 
-  actualizarMapaIframe();
+// NUEVO: OBTENER GPS REAL AL ENTRAR DESDE CARRITO
+async function obtenerGPSReal(){
+  // Si el cliente ya editó manualmente en detalles.html, respetar eso y no pisar con GPS
+  const ubiCheck = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
+  const detCheck = JSON.parse(localStorage.getItem('doloya_detalles_full')||'null');
+  const vieneDeDetalles = detCheck && detCheck.direccion && detCheck.lat && detCheck.lng;
+  const edicionReciente = localStorage.getItem('doloya_direccion_editada') === '1';
 
-  // TEXTO UNIDO AL MAPA
-  if(direccionBase){
+  if(vieneDeDetalles && edicionReciente){
+    // Ya editó en detalles, usar esa
+    lat = detCheck.lat;
+    lng = detCheck.lng;
+    direccionBase = detCheck.direccion;
     document.getElementById('txtDireccion').textContent = direccionBase;
-  } else if(ubiFresh?.direccion){
-    document.getElementById('txtDireccion').textContent = ubiFresh.direccion;
-  } else if(detFresh?.direccion){
-    document.getElementById('txtDireccion').textContent = detFresh.direccion;
-  } else {
-    document.getElementById('txtDireccion').textContent = 'Ubicación GPS detectada';
+    actualizarMapaIframe();
+    calcularDistanciaYActualizar();
+    return;
   }
 
-  document.getElementById('txtDistancia').innerHTML = `<span style="color:#E30613;font-weight:800;display:flex;align-items:center;gap:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> Calculando...</span>`;
+  if(!navigator.geolocation){
+    cargarDireccionYDistanciaSinGPS();
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(async (pos)=>{
+    const latGPS = pos.coords.latitude;
+    const lngGPS = pos.coords.longitude;
+    lat = latGPS;
+    lng = lngGPS;
+    gpsObtenido = true;
+    direccionBase = await obtenerDireccionPorGPS(latGPS, lngGPS);
+    
+    // Guardar GPS como base oficial
+    const nuevaUbi = { direccion: direccionBase, lat: latGPS, lng: lngGPS, ubicacion: {lat: latGPS, lng: lngGPS} };
+    localStorage.setItem('doloya_ubicacion', JSON.stringify(nuevaUbi));
+    localStorage.removeItem('doloya_direccion_editada');
+    ubicacion = nuevaUbi;
+
+    document.getElementById('txtDireccion').textContent = direccionBase;
+    actualizarMapaIframe();
+    calcularDistanciaYActualizar();
+  }, (err)=>{
+    // Si no da permiso GPS, usar lo guardado
+    cargarDireccionYDistanciaSinGPS();
+  }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
+}
+
+async function calcularDistanciaYActualizar(){
+  document.getElementById('txtDistancia').innerHTML = `<span style="color:#E30613;font-weight:800;display:flex;align-items:center;gap:4px">Calculando distancia...</span>`;
   const realKm = await obtenerDistanciaRealGoogle(restLat, restLng, lat, lng);
   distanciaKm = realKm;
   if(distanciaKm < 0.3) distanciaKm = 0.3;
   document.getElementById('txtDistancia').innerHTML = `<span style="color:#E30613;font-weight:800;display:flex;align-items:center;gap:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> Estás a ${distanciaKm.toFixed(2)} km del restaurante</span>`;
   actualizarResumen();
 }
-cargarDireccionYDistancia();
+
+async function cargarDireccionYDistanciaSinGPS(){
+  const { ubicacion: ubiFresh, detallesFull: detFresh } = leerUbicacionStorage();
+  ubicacion = ubiFresh;
+  detallesFull = detFresh;
+  if(ubiFresh && (ubiFresh.lat || ubiFresh.ubicacion?.lat)){
+    lat = ubiFresh.lat || ubiFresh.ubicacion.lat;
+    lng = ubiFresh.lng || ubiFresh.ubicacion.lng;
+    direccionBase = ubiFresh.direccion || direccionBase;
+  } else if(detFresh && detFresh.lat && detFresh.lng){
+    lat = detFresh.lat;
+    lng = detFresh.lng;
+    direccionBase = detFresh.direccion || direccionBase;
+  }
+  actualizarMapaIframe();
+  if(direccionBase){
+    document.getElementById('txtDireccion').textContent = direccionBase;
+  } else if(ubiFresh?.direccion){
+    document.getElementById('txtDireccion').textContent = ubiFresh.direccion;
+  } else if(detFresh?.direccion){
+    document.getElementById('txtDireccion').textContent = detFresh.direccion;
+  }
+  calcularDistanciaYActualizar();
+}
+
+// INICIALIZAR: SI VIENE DEL CARRITO, GPS. SI VIENE DE DETALLES, RESPETAR.
+(function init(){
+  const detCheck = JSON.parse(localStorage.getItem('doloya_detalles_full')||'null');
+  const flagEdit = localStorage.getItem('doloya_direccion_editada') === '1';
+  if(detCheck && flagEdit){
+    cargarDireccionYDistanciaSinGPS();
+  } else {
+    // Limpiar flag para forzar GPS cuando viene de carrito
+    const referrer = document.referrer || '';
+    const vieneDeDetalles = localStorage.getItem('doloya_viene_de_detalles') === '1';
+    if(vieneDeDetalles){
+      localStorage.removeItem('doloya_viene_de_detalles');
+      cargarDireccionYDistanciaSinGPS();
+    } else {
+      obtenerGPSReal();
+    }
+  }
+})();
+
 window.addEventListener('focus', ()=>{
   const ubiCheck = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
   if(ubiCheck && (Math.abs((ubiCheck.lat||ubiCheck.ubicacion?.lat||0) - lat) > 0.00001 || Math.abs((ubiCheck.lng||ubiCheck.ubicacion?.lng||0) - lng) > 0.00001 || ubiCheck.direccion !== direccionBase)){
-    cargarDireccionYDistancia();
+    cargarDireccionYDistanciaSinGPS();
   }
 });
 if(detallesFull){
@@ -403,7 +477,6 @@ async function irAPagar(){
   localStorage.setItem('doloya_cliente_nombre', nombre);
   const telefonoGuardado = localStorage.getItem('doloya_celular') || detallesFull?.celular || localStorage.getItem('doloya_cliente_tel') || '';
 
-  // CLIENTE USA DIRECCION BASE DEL GPS
   const direccionClienteFinal = direccionBase || detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent;
 
   const pedidoCompleto = {
