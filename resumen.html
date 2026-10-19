@@ -156,7 +156,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// Firebase 1: DOLOYA ALIADOS (viejo, solo para limpiar carrito)
+// Firebase 1: DOLOYA ALIADOS
 const firebaseConfigAliados = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
   authDomain: "doloya-aliados.firebaseapp.com",
@@ -168,7 +168,7 @@ const firebaseConfigAliados = {
   measurementId: "G-5HETSEL4PT"
 };
 
-// Firebase 2: DOLOYA CONFIRMACION (NUEVO - donde llega al aliado)
+// Firebase 2: DOLOYA CONFIRMACION
 const firebaseConfigConfirmacion = {
   apiKey: "AIzaSyDLKngPyi_SWAXEQwdrHO5h8L8OufulAR4",
   authDomain: "doloya-confirmacion.firebaseapp.com",
@@ -190,7 +190,6 @@ try{
   const appConf = initializeApp(firebaseConfigConfirmacion, "confirmacion");
   dbConfirmacion = getFirestore(appConf);
 }catch(e){
-  // si ya existe, usa la default
   try{
     const appConf = initializeApp(firebaseConfigConfirmacion);
     dbConfirmacion = getFirestore(appConf);
@@ -379,6 +378,7 @@ function cerrarModal(){
   document.getElementById('modalCliente').classList.remove('active');
 }
 
+// ====== UNICA PARTE MODIFICADA - TRANSFERENCIA CORRECTA ======
 async function irAPagar(){
   const nombre = document.getElementById('inputNombre').value.trim();
   if(!nombre){ alert('Por favor ingresa tu nombre completo'); return; }
@@ -412,31 +412,30 @@ async function irAPagar(){
     timestamp: window.serverTimestamp ? window.serverTimestamp() : new Date()
   };
 
-  // Guardar en CONFIRMACION
   try{
+    // 1. GUARDAR EN DOLOYA-CONFIRMACION (donde ve el aliado)
     if(window.dbConfirmacion){
       const ref = await window.addDoc(window.collection(window.dbConfirmacion, "pedidos"), pedidoCompleto);
       localStorage.setItem('doloya_pedido_confirmacion_id', ref.id);
-      console.log("Pedido guardado en confirmacion:", ref.id);
+      console.log("✅ Guardado en confirmacion:", ref.id);
     }
-  }catch(e){
-    console.error("Error guardando en confirmacion", e);
-    localStorage.setItem('doloya_pedido_temp', JSON.stringify(pedidoCompleto));
-  }
-
-  // Intentar borrar de aliados si existia
-  try{
+    // 2. ELIMINAR DE DOLOYA-ALIADOS / CARRITO
     const idAliados = localStorage.getItem('doloya_pedido_id');
     if(idAliados && window.dbAliados){
       await window.deleteDoc(window.doc(window.dbAliados, "carrito", idAliados));
+      console.log("🗑️ Eliminado de aliados:", idAliados);
       localStorage.removeItem('doloya_pedido_id');
     }
-  }catch(e){ console.log("No se pudo borrar de aliados", e); }
+  }catch(e){
+    console.error("Error en transferencia", e);
+    // Guardamos temporal para no perder pedido
+    localStorage.setItem('doloya_pedido_temp', JSON.stringify(pedidoCompleto));
+  }
 
   localStorage.setItem('doloya_pedido_final', JSON.stringify(pedidoCompleto));
-  // SIEMPRE redirige aunque falle firebase
   window.location.href='confirmacion.html';
 }
+// ====== FIN PARTE MODIFICADA ======
 
 if(dataRest){
   document.getElementById('nombreRest').textContent = dataRest.nombre || dataRest.restauranteNombre || 'Restaurante';
