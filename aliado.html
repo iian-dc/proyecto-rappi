@@ -153,7 +153,9 @@ let ubicacionGPS = {lat:null,lng:null};
 let carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 let restauranteActualCarrito = localStorage.getItem('doloya_carrito_restaurante')||null;
 let restauranteAnteriorData = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
-let productoPendiente = null; // CORREGIDO: guarda el producto que intentó agregar
+let productoPendiente = null;
+
+const TIEMPO_EXPIRACION = 3 * 60 * 60 * 1000; // 3 HORAS
 
 function irAlInicio(){ window.location.href = 'inicio.html'; }
 window.irAlInicio = irAlInicio;
@@ -165,12 +167,14 @@ async function obtenerIPyGPS(){
     ipCliente = d.ip;
     ipKey = d.ip.replace(/\./g,'_');
     verificarLike();
+    verificarExpiracion();
   }catch(e){
     let devId = localStorage.getItem('doloya_device_id');
     if(!devId){ devId='dev_'+Math.random().toString(36).slice(2); localStorage.setItem('doloya_device_id', devId); }
     ipCliente = devId;
     ipKey = devId;
     verificarLike();
+    verificarExpiracion();
   }
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(pos=>{
@@ -211,12 +215,14 @@ function calcularValoracion(likes){
 function guardarCarrito(){
   localStorage.setItem('doloya_carrito_v2', JSON.stringify(carrito));
   if(carrito.length>0){
+    localStorage.setItem('doloya_carrito_timestamp', Date.now().toString());
     localStorage.setItem('doloya_carrito_restaurante', id);
     localStorage.setItem('doloya_carrito_restaurante_data', JSON.stringify({id:id, cat:cat, nombre:nombreRestauranteGlobal, lat: ubicacionGPS.lat, lng: ubicacionGPS.lng}));
     restauranteActualCarrito = id;
   }else{
     localStorage.removeItem('doloya_carrito_restaurante');
     localStorage.removeItem('doloya_carrito_restaurante_data');
+    localStorage.removeItem('doloya_carrito_timestamp');
     restauranteActualCarrito = null;
   }
   renderBarraCarrito();
@@ -225,6 +231,8 @@ function guardarCarrito(){
 function guardarCarritoFirebase(){
   if(!cat || !id || !ipKey) return;
   const total = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
+  const ahora = Date.now();
+  const expira = ahora + TIEMPO_EXPIRACION;
   const dataCarrito = {
     restauranteId: id,
     restauranteCat: cat,
@@ -234,7 +242,9 @@ function guardarCarritoFirebase(){
     cantidadTotal: carrito.reduce((s,i)=>s+i.cantidad,0),
     ip: ipCliente,
     ubicacion: ubicacionGPS,
-    fecha: Date.now()
+    fecha: ahora,
+    fechaExpiracion: expira,
+    expiraEn: new Date(expira).toISOString()
   };
   if(carrito.length>0){
     set(ref(db, `carrito/${cat}/${id}/${ipKey}`), dataCarrito);
@@ -244,34 +254,52 @@ function guardarCarritoFirebase(){
     set(ref(db, `doloya_aliados/${cat}/${id}/carritos/${ipKey}`), null);
   }
 }
-
-// CORREGIDO: Borra tambien de Firestore donde se guarda el resumen
 async function eliminarCarritoFirebaseCompleto(catBorrar, idBorrar, ipKeyBorrar, ipOriginal){
   try{
-    // Realtime Database
     await set(ref(db, `carrito/${catBorrar}/${idBorrar}/${ipKeyBorrar}`), null);
     await set(ref(db, `doloya_aliados/${catBorrar}/${idBorrar}/carritos/${ipKeyBorrar}`), null);
-    
-    // Firestore - coleccion carrito (donde guarda resumen)
     if(ipOriginal){
-      const q = query(collection(dbFirestore, "carrito"), where("cliente.celular", "==", localStorage.getItem('doloya_celular')||''));
-      // borrado por IP y por restaurante anterior
-      const q2 = query(collection(dbFirestore, "carrito"), where("restaurante.ip", "==", ipOriginal));
-      // Intento simple: borrar todos donde restaurante.id == idBorrar y ip == ipOriginal
       const snapshot = await getDocs(query(collection(dbFirestore, "carrito"), where("restaurante.id", "==", idBorrar)));
       snapshot.forEach(async (d)=>{
-        const data = d.data();
-        if(data.cliente && data.cliente.celular === localStorage.getItem('doloya_celular')){
-          await deleteDoc(doc(dbFirestore, "carrito", d.id));
-        }
-        // Si coincide IP cliente
-        if(data.restaurante && data.restaurante.ip === ipOriginal || data.ip === ipOriginal){
-          await deleteDoc(doc(dbFirestore, "carrito", d.id));
-        }
+        await deleteDoc(doc(dbFirestore, "carrito", d.id));
       });
     }
   }catch(e){ console.log("Error borrando firebase:", e); }
 }
+async function verificarExpiracion(){
+  const timestamp = localStorage.getItem('doloya_carrito_timestamp');
+  if(!timestamp || carrito.length===0) return;
+  const ahora = Date.now();
+  const tiempoPasado = ahora - parseInt(timestamp);
+  if(tiempoPasado > TIEMPO_EXPIRACION){
+    if(restauranteAnteriorData && ipKey){
+      await set(ref(db, `carrito/${restauranteAnteriorData.cat}/${restauranteAnteriorData.id}/${ipKey}`), null);
+      await set(ref(db, `doloya_aliados/${restauranteAnteriorData.cat}/${restauranteAnteriorData.id}/carritos/${ipKey}`), null);
+    } else if(cat && id && ipKey){
+      await set(ref(db, `carrito/${cat}/${id}/${ipKey}`), null);
+      await set(ref(db, `doloya_aliados/${cat}/${id}/carritos/${ipKey}`), null);
+    }
+    try{
+      const snapshot = await getDocs(collection(dbFirestore, "carrito"));
+      snapshot.forEach(async (d)=>{
+        const data = d.data();
+        if(data.fecha && (ahora - data.fecha) > TIEMPO_EXPIRACION){
+          await deleteDoc(doc(dbFirestore, "carrito", d.id));
+        }
+      });
+    }catch(e){}
+    carrito=[];
+    localStorage.setItem('doloya_carrito_v2', JSON.stringify([]));
+    localStorage.removeItem('doloya_carrito_restaurante');
+    localStorage.removeItem('doloya_carrito_restaurante_data');
+    localStorage.removeItem('doloya_carrito_timestamp');
+    localStorage.removeItem('doloya_pedido_id');
+    localStorage.removeItem('doloya_pedido_temp');
+    localStorage.removeItem('doloya_pedido_final');
+    renderBarraCarrito();
+  }
+}
+setInterval(verificarExpiracion, 5 * 60 * 1000);
 
 function verificarCambioRestaurante(){
   if(carrito.length>0 && restauranteActualCarrito && restauranteActualCarrito!==id){
@@ -407,7 +435,7 @@ else {
       renderProductos(fil.length>0?fil:productosArray.filter(p=>p.categoria===tabsList[0]));
     }
     renderProductos(productosArray.filter(p=>p.categoria===tabsList[0]));
-    setTimeout(()=>{ verificarCambioRestaurante(); }, 500);
+    setTimeout(()=>{ verificarCambioRestaurante(); verificarExpiracion(); }, 500);
   });
 }
 
@@ -429,7 +457,6 @@ document.getElementById('btnConservar').onclick=()=>{
   }
 }
 
-// CORREGIDO COMPLETO - BORRA DE FIREBASE Y AGREGA EL NUEVO
 document.getElementById('btnEliminar').onclick=async ()=>{
   const btn = document.getElementById('btnEliminar');
   btn.textContent = 'Eliminando...';
@@ -441,16 +468,15 @@ document.getElementById('btnEliminar').onclick=async ()=>{
       ipKey,
       ipCliente
     );
-    // Borra tambien el actual por si quedo algo
     await set(ref(db, `carrito/${restauranteAnteriorData.cat}/${restauranteAnteriorData.id}/${ipKey}`), null);
     await set(ref(db, `doloya_aliados/${restauranteAnteriorData.cat}/${restauranteAnteriorData.id}/carritos/${ipKey}`), null);
   }
 
-  // Limpia localStorage completo
   carrito=[];
   localStorage.setItem('doloya_carrito_v2', JSON.stringify([]));
   localStorage.removeItem('doloya_carrito_restaurante');
   localStorage.removeItem('doloya_carrito_restaurante_data');
+  localStorage.removeItem('doloya_carrito_timestamp');
   localStorage.removeItem('doloya_pedido_id');
   localStorage.removeItem('doloya_pedido_temp');
   localStorage.removeItem('doloya_pedido_final');
@@ -460,7 +486,6 @@ document.getElementById('btnEliminar').onclick=async ()=>{
   document.getElementById('modalCambio').classList.remove('show');
   renderBarraCarrito();
 
-  // Si tenia un producto pendiente, lo agrega ahora
   if(productoPendiente){
     setTimeout(()=>{
       addProducto(productoPendiente.nombre, productoPendiente.precio, productoPendiente.imagen);
