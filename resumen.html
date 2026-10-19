@@ -61,9 +61,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 <body>
 
 <div class="header">
-  <button class="btn-back" onclick="window.location.href='inicio.html'">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
-  </button>
+  <button class="btn-back" onclick="window.location.href='inicio.html'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></button>
   <h1>Terminar y pagar</h1>
 </div>
 
@@ -72,10 +70,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
   <div class="pin-center">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M6 10a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1a2 2 0 0 1-1 1.73l-3 1.73a2 2 0 0 1-2 0l-3-1.73A2 2 0 0 1 8 11v-1z"/><path d="M6 11v3a2 2 0 0 0 1 1.73l3 1.73a2 2 0 0 0 2 0l3-1.73A2 2 0 0 0 16 14v-3"/></svg>
   </div>
-  <button class="btn-ajustar" onclick="window.location.href='puntodeentrega.html'">
-    Ajustar punto de entrega
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a5 5 0 0 0-5 5c0 5 5 11 5 11s5-6 5-11a5 5 0 0 0-5-5z"/><circle cx="12" cy="7" r="1.5"/></svg>
-  </button>
+  <button class="btn-ajustar" onclick="window.location.href='puntodeentrega.html'">Ajustar punto de entrega<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a5 5 0 0 0-5 5c0 5 5 11 5 11s5-6 5-11a5 5 0 0 0-5-5z"/><circle cx="12" cy="7" r="1.5"/></svg></button>
 </div>
 
 <div class="item-row no-click">
@@ -90,25 +85,14 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 </div>
 
 <div class="section">
-  <h3>
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-    Entrega estimada
-  </h3>
-
+  <h3><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Entrega estimada</h3>
   <div class="entrega-op active" id="opRapido" onclick="selEntrega('rapido')">
-    <div class="entrega-left">
-      <div class="circle active" id="cRapido"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg></div>
-      <div><b style="display:flex;align-items:center;gap:4px"><span style="color:#E30613">⚡</span><span style="color:#E30613">Más rápido</span></b><span>34 - 49 min</span></div>
-    </div>
-    <div class="entrega-right verde" id="txtRapido">$45.00 MXN</div>
+    <div class="entrega-left"><div class="circle active" id="cRapido"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg></div><div><b style="display:flex;align-items:center;gap:4px"><span style="color:#E30613">⚡</span><span style="color:#E30613">Más rápido</span></b><span>34 - 49 min</span></div></div>
+    <div class="entrega-right verde" id="txtRapido">$0.00 MXN</div>
   </div>
-
   <div class="entrega-op" id="opAhorra" onclick="selEntrega('ahorra')">
-    <div class="entrega-left">
-      <div class="circle" id="cAhorra"></div>
-      <div><b>Ahorra sin prisas</b><span>54 - 74 min</span></div>
-    </div>
-    <div class="entrega-right rojo" id="txtAhorra">$35.00 MXN</div>
+    <div class="entrega-left"><div class="circle" id="cAhorra"></div><div><b>Ahorra sin prisas</b><span>54 - 74 min</span></div></div>
+    <div class="entrega-right rojo" id="txtAhorra">$0.00 MXN</div>
   </div>
 </div>
 
@@ -121,7 +105,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 </div>
 
 <div class="section" style="padding-bottom:0"><h3>Resumen del pedido</h3></div>
-
 <div class="resumen-header" onclick="toggleResumen()">
   <div class="logo-sub" id="logoRest">SUBWAY</div>
   <div class="resumen-info"><b id="nombreRest">Subway</b><span id="cantProductos">0 Productos</span></div>
@@ -132,8 +115,8 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
   <div class="lista-costos">
     <div style="padding:8px 0;border-top:1px solid #F0F0F0"></div>
     <div class="costo-row"><span>Costo de productos</span><b id="costoProd">$0.00 MXN</b></div>
-    <div class="costo-row"><span id="labelEnvio">Costo de envío</span><b id="costoEnvio">$35.00 MXN</b></div>
-    <div class="costo-row"><span>Tarifa de Servicio</span><b>$0.00 MXN</b></div>
+    <div class="costo-row"><span id="labelEnvio">Costo de envío (30 + 4 x km)</span><b id="costoEnvio">$0.00 MXN</b></div>
+    <div class="costo-row"><span>Tarifa de Servicio (3%)</span><b id="costoTarifa">$0.00 MXN</b></div>
     <div class="costo-row total" style="padding-top:12px;border-top:1px solid #F0F0F0;margin-top:8px"><b>Total a pagar</b><b id="totalPagar">$0.00 MXN</b></div>
   </div>
   <div class="ahorro-banner"><div style="font-size:22px">📍</div><b id="txtAhorroBanner">Calculando distancia al restaurante...</b></div>
@@ -147,7 +130,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
 const firebaseConfig = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
   authDomain: "doloya-aliados.firebaseapp.com",
@@ -158,36 +140,23 @@ const firebaseConfig = {
   appId: "1:122314467740:web:9947a0a9560557e3a00059",
   measurementId: "G-5HETSEL4PT"
 };
-
 let db;
-try{
-  const app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
-}catch(e){ console.log("Firebase no configurado", e); }
-
-window.db = db;
-window.addDoc = addDoc;
-window.collection = collection;
-window.serverTimestamp = serverTimestamp;
+try{ const app = initializeApp(firebaseConfig); db = getFirestore(app); }catch(e){}
+window.db = db; window.addDoc = addDoc; window.collection = collection; window.serverTimestamp = serverTimestamp;
 </script>
 
 <script>
-// ========== CONFIGURA TU GOOGLE API KEY AQUI ==========
-const GOOGLE_API_KEY = "AIzaSyCTV1sm6McEIkv-cheaVFCD_svp_a--6wg"; // <--- PEGA TU KEY AQUI, EJ: AIzaSy...
-// ======================================================
+const GOOGLE_API_KEY = "AIzaSyCTV1sm6McEIkv-cheaVFCD_svp_a--6wg";
 
 const ubicacionRaw = localStorage.getItem('doloya_ubicacion');
 const detallesFullRaw = localStorage.getItem('doloya_detalles_full');
-let ubicacion = null;
-let detallesFull = null;
+let ubicacion = null, detallesFull = null;
 try{ ubicacion = JSON.parse(ubicacionRaw); }catch(e){}
 try{ detallesFull = JSON.parse(detallesFullRaw); }catch(e){}
-
 const detallesRef = localStorage.getItem('doloya_detalles_referencia')||'';
 const metodoRaw = localStorage.getItem('doloya_metodo_pago');
 let metodoSel = null;
 try{ metodoSel = JSON.parse(metodoRaw); }catch(e){ metodoSel = metodoRaw; }
-
 const carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 const dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
 
@@ -195,8 +164,10 @@ let lat = ubicacion?.lat || ubicacion?.ubicacion?.lat || detallesFull?.lat || 21
 let lng = ubicacion?.lng || ubicacion?.ubicacion?.lng || detallesFull?.lng || -100.9306;
 document.getElementById('mapaIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
 
-const TARIFA_BASE = 35;
+// NUEVA TARIFA: 30 + 4 x KM y 3% servicio
+const TARIFA_BASE = 30;
 const PRECIO_POR_KM = 4;
+const TARIFA_SERVICIO_PORC = 0.03;
 
 function haversine(lat1, lon1, lat2, lon2){
   const R = 6371;
@@ -206,77 +177,77 @@ function haversine(lat1, lon1, lat2, lon2){
   const c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   return R*c;
 }
-
-let restLat = dataRest?.lat || dataRest?.restauranteLat || dataRest?.ubicacion?.lat || 21.1569;
-let restLng = dataRest?.lng || dataRest?.restauranteLng || dataRest?.ubicacion?.lng || -100.9310;
+let restLat = dataRest?.lat || dataRest?.restauranteLat || 21.1569;
+let restLng = dataRest?.lng || dataRest?.restauranteLng || -100.9310;
 if(dataRest?.restauranteLat) restLat = dataRest.restauranteLat;
 if(dataRest?.restauranteLng) restLng = dataRest.restauranteLng;
 
-let distanciaKm = 0.3; // valor temporal hasta calcular real
+let distanciaKm = parseFloat(localStorage.getItem('doloya_distancia_km')||'0.3');
+let costoEnvioGuardado = parseFloat(localStorage.getItem('doloya_costo_envio')||'0');
+let tarifaServicioGuardada = parseFloat(localStorage.getItem('doloya_tarifa_servicio')||'0');
 
 async function obtenerDistanciaRealGoogle(oLat, oLng, dLat, dLng){
-  // 1. Si tienes Google API Key, intenta Google Distance Matrix (mas exacto)
-  if(GOOGLE_API_KEY && GOOGLE_API_KEY !== "TU_API_KEY_AQUI" && GOOGLE_API_KEY.length > 10){
+  if(GOOGLE_API_KEY && GOOGLE_API_KEY.length > 10){
     try{
       const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${oLat},${oLng}&destinations=${dLat},${dLng}&key=${GOOGLE_API_KEY}&mode=driving`;
-      // Usamos proxy CORS si es necesario, Google a veces bloquea directo, por eso intentamos directo
       const resp = await fetch(url);
       const data = await resp.json();
       if(data.status === "OK" && data.rows[0].elements[0].status === "OK"){
-        const meters = data.rows[0].elements[0].distance.value;
-        console.log("Distancia Google:", meters/1000, "km");
-        return meters / 1000;
+        return data.rows[0].elements[0].distance.value / 1000;
       }
-    }catch(e){ console.log("Google API fallo, usando OSRM", e); }
+    }catch(e){}
   }
-  // 2. Fallback OSRM (ruta real por carretera, gratis, te da los 8.0 km de Rancho Nuevo)
   try{
     const url = `https://router.project-osrm.org/route/v1/driving/${oLng},${oLat};${dLng},${dLat}?overview=false`;
     const r = await fetch(url);
     const j = await r.json();
-    if(j.routes && j.routes[0]){
-      console.log("Distancia OSRM carretera:", j.routes[0].distance/1000, "km");
-      return j.routes[0].distance / 1000;
-    }
-  }catch(e){ console.log("OSRM fallo", e); }
-  
-  // 3. Ultimo fallback haversine
+    if(j.routes && j.routes[0]) return j.routes[0].distance / 1000;
+  }catch(e){}
   return haversine(oLat, oLng, dLat, dLng);
 }
 
 let tipoActual = localStorage.getItem('doloya_tipo_entrega') || 'ahorra';
 let costoProductos = carrito.reduce((s,i)=>s+(i.precio||0)*(i.cantidad||0),0);
 
-function getBaseEnvio(){
-  return TARIFA_BASE + (distanciaKm * PRECIO_POR_KM);
+function getCostosBase(){
+  // Si ya viene del carrito Firebase guardado, usarlo
+  let dist = distanciaKm;
+  if(dist < 0.3) dist = 0.3;
+  let envioBase = TARIFA_BASE + (dist * PRECIO_POR_KM);
+  let tarifa = costoProductos * TARIFA_SERVICIO_PORC;
+  // Si ya hay valores guardados de carrito.html, priorizarlos
+  if(costoEnvioGuardado > 0) envioBase = costoEnvioGuardado;
+  if(tarifaServicioGuardada > 0) tarifa = tarifaServicioGuardada;
+  return { envioBase, tarifa, dist };
 }
 function calcularEnvio(){
-  let base = getBaseEnvio();
+  let { envioBase } = getCostosBase();
+  let base = envioBase;
   if(tipoActual==='rapido') base += 10;
   if(tipoActual==='ahorra') base -= 5;
   if(base < 15) base = 15;
   return parseFloat(base.toFixed(2));
 }
+function calcularTarifa(){
+  let { tarifa } = getCostosBase();
+  return parseFloat(tarifa.toFixed(2));
+}
 
 async function cargarDireccionYDistancia(){
-  if(detallesFull?.direccion){
-    document.getElementById('txtDireccion').textContent = detallesFull.direccion;
-  } else if(ubicacion?.direccion){
-    document.getElementById('txtDireccion').textContent = ubicacion.direccion;
-  }
-
-  // CALCULAR DISTANCIA REAL CARRETERA
+  if(detallesFull?.direccion) document.getElementById('txtDireccion').textContent = detallesFull.direccion;
+  else if(ubicacion?.direccion) document.getElementById('txtDireccion').textContent = ubicacion.direccion;
   document.getElementById('txtDistancia').innerHTML = `<span style="color:#666">📍 Calculando distancia real...</span>`;
-  document.getElementById('txtAhorroBanner').textContent = `Calculando ruta desde restaurante...`;
-
   const realKm = await obtenerDistanciaRealGoogle(restLat, restLng, lat, lng);
   distanciaKm = realKm;
   if(distanciaKm < 0.3) distanciaKm = 0.3;
-
-  document.getElementById('txtDistancia').innerHTML = `
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
-    Estás a ${distanciaKm.toFixed(2)} km del restaurante
-  `;
+  // Si no hay costo guardado, recalcular con nueva distancia
+  if(!costoEnvioGuardado){
+    costoEnvioGuardado = TARIFA_BASE + (distanciaKm * PRECIO_POR_KM);
+  }
+  if(!tarifaServicioGuardada){
+    tarifaServicioGuardada = costoProductos * TARIFA_SERVICIO_PORC;
+  }
+  document.getElementById('txtDistancia').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> Estás a ${distanciaKm.toFixed(2)} km del restaurante`;
   actualizarResumen();
 }
 cargarDireccionYDistancia();
@@ -292,7 +263,6 @@ if(detallesFull){
 } else if(detallesRef){
   document.getElementById('txtDetalles').textContent = detallesRef;
 }
-
 if(metodoSel){
   let nombreMetodo = typeof metodoSel === 'string' ? metodoSel : (metodoSel.nombre || metodoSel.banco || metodoSel.tipo || JSON.stringify(metodoSel));
   document.getElementById('txtMetodo').textContent = nombreMetodo;
@@ -302,29 +272,40 @@ if(metodoSel){
 }
 
 function actualizarResumen(){
-  let base = getBaseEnvio();
-  let envioRapido = base + 10;
-  let envioAhorra = base - 5;
+  let { envioBase, tarifa, dist } = getCostosBase();
+  // Actualizar la variable global distancia
+  if(dist) distanciaKm = dist;
+  let envioRapido = envioBase + 10;
+  let envioAhorra = envioBase - 5;
   if(envioAhorra < 15) envioAhorra = 15;
   document.getElementById('txtRapido').textContent = `$${envioRapido.toFixed(2)} MXN`;
   document.getElementById('txtAhorra').textContent = `$${envioAhorra.toFixed(2)} MXN`;
+
   let envio = calcularEnvio();
+  let tarifaServicio = calcularTarifa();
+
   document.getElementById('costoProd').textContent = `$${costoProductos.toFixed(2)} MXN`;
-  document.getElementById('labelEnvio').textContent = `Costo de envío`;
   document.getElementById('costoEnvio').textContent = `$${envio.toFixed(2)} MXN`;
-  let total = costoProductos + envio;
+  document.getElementById('labelEnvio').textContent = `Costo de envío ($30 + $4 x ${distanciaKm.toFixed(2)}km)`;
+  document.getElementById('costoTarifa').textContent = `$${tarifaServicio.toFixed(2)} MXN`;
+
+  let total = costoProductos + envio + tarifaServicio;
   document.getElementById('totalPagar').textContent = `$${total.toFixed(2)} MXN`;
   document.getElementById('totalFooter').textContent = `$${total.toFixed(2)} MXN`;
+
   if(tipoActual==='rapido'){
-    document.getElementById('txtAhorroBanner').textContent = `Estás a ${distanciaKm.toFixed(2)} km del restaurante • Entrega más rápida (+$10)`;
+    document.getElementById('txtAhorroBanner').textContent = `Estás a ${distanciaKm.toFixed(2)} km • Envío $30 + $4/km + 3% servicio • Entrega más rápida (+$10)`;
   } else {
-    document.getElementById('txtAhorroBanner').textContent = `Estás a ${distanciaKm.toFixed(2)} km del restaurante • Ahorras $5 en envío`;
+    document.getElementById('txtAhorroBanner').textContent = `Estás a ${distanciaKm.toFixed(2)} km • Envío $30 + $4/km + 3% servicio • Ahorras $5`;
   }
+
   localStorage.setItem('doloya_tipo_entrega', tipoActual);
   localStorage.setItem('doloya_costo_entrega', envio);
   localStorage.setItem('doloya_distancia_km', distanciaKm.toFixed(2));
+  localStorage.setItem('doloya_tarifa_servicio', tarifaServicio.toFixed(2));
   localStorage.setItem('doloya_total', total.toFixed(2));
 }
+
 function selEntrega(tipo){
   tipoActual = tipo;
   document.querySelectorAll('.entrega-op').forEach(e=>e.classList.remove('active'));
@@ -352,12 +333,13 @@ async function irAPagar(){
   btn.textContent = 'Guardando...';
   btn.disabled = true;
   let envioFinal = calcularEnvio();
-  let totalFinal = costoProductos + envioFinal;
+  let tarifaFinal = calcularTarifa();
+  let totalFinal = costoProductos + envioFinal + tarifaFinal;
   const pedidoCompleto = {
-    restaurante: { id: dataRest?.id || 'rest_dolores', nombre: dataRest?.nombre || document.getElementById('nombreRest').textContent, logo: dataRest?.logo || '', lat: restLat, lng: restLng, direccion: dataRest?.direccion || dataRest?.restauranteDireccion || "" },
-    cliente: { direccion: detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent, detalles: detallesFull || {}, referencia: detallesRef, celular: detallesFull?.celular || localStorage.getItem('doloya_celular') || '', ubicacion: { lat: lat, lng: lng } },
+    restaurante: { id: dataRest?.id || 'rest_dolores', nombre: dataRest?.nombre || document.getElementById('nombreRest').textContent, logo: dataRest?.logo || '', lat: restLat, lng: restLng, direccion: dataRest?.direccion || "" },
+    cliente: { direccion: detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent, detalles: detallesFull || {}, referencia: detallesRef, celular: detallesFull?.celular || '', ubicacion: { lat: lat, lng: lng } },
     productos: carrito,
-    totales: { costoProductos: parseFloat(costoProductos.toFixed(2)), distanciaKm: parseFloat(distanciaKm.toFixed(2)), distanciaRealCarretera: true, costoEnvio: envioFinal, tipoEntrega: tipoActual, total: parseFloat(totalFinal.toFixed(2)) },
+    totales: { costoProductos: parseFloat(costoProductos.toFixed(2)), distanciaKm: parseFloat(distanciaKm.toFixed(2)), costoEnvio: envioFinal, costoEnvioFormula: `30 + 4*${distanciaKm.toFixed(2)}`, tarifaServicio: tarifaFinal, tarifaServicioPorc: "3%", tipoEntrega: tipoActual, total: parseFloat(totalFinal.toFixed(2)) },
     metodoPago: metodoSel,
     estado: 'pendiente',
     fecha: new Date().toISOString(),
