@@ -20,9 +20,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
 .input-wrap textarea{resize:none;height:90px;padding-top:14px}
 .btn-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:32px;height:32px;background:#EEF0F2;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .btn-clear.top{top:18px;transform:none}
-
-/* LISTADO GOOGLE DEBAJO SIN TAPAR */
-.sugerencias-box{position:absolute;top:calc(100% + 8px);left:0;right:0;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.15);border:1.5px solid #E5E7EB;z-index:50;max-height:260px;overflow-y:auto;display:none}
+.sugerencias-box{position:absolute;top:calc(100% + 8px);left:0;right:0;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.15);border:1.5px solid #E5E7EB;z-index:50;max-height:300px;overflow-y:auto;display:none}
 .sugerencias-box.show{display:block}
 .sug-item{padding:12px 14px;display:flex;gap:10px;align-items:flex-start;cursor:pointer;border-bottom:1px solid #F5F5F5}
 .sug-item:last-child{border:none}
@@ -30,7 +28,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
 .sug-icon{width:30px;height:30px;background:#F3F4F6;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
 .sug-text b{font-size:13px;font-weight:800;display:block;line-height:1.2}
 .sug-text span{font-size:11.5px;color:#777;display:block;margin-top:2px;line-height:1.3}
-
 .footer{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:16px;border-top:1px solid #F0F0F0;z-index:30}
 .btn-guardar{width:100%;padding:16px;background:#E30613;color:#fff;border:none;border-radius:999px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(227,6,19,0.25)}
 </style>
@@ -53,7 +50,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:100px}
     <button class="btn-clear" onclick="clearInput('inputDireccion')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </button>
-    <!-- LISTA DEBAJO, NO TAPA EL INPUT -->
     <div class="sugerencias-box" id="sugerenciasBox"></div>
   </div>
 
@@ -121,7 +117,6 @@ function clearInput(id){
   if(id==='inputDireccion'){ ocultarSugerencias(); }
 }
 
-// Cargar datos existentes
 if(ubicacion?.direccion){
   document.getElementById('inputDireccion').value = ubicacion.direccion;
   document.getElementById('subDir').textContent = ubicacion.direccion;
@@ -138,28 +133,56 @@ if(detallesGuardados){
   document.getElementById('tipoDireccion').value = 'Oficina';
 }
 
-// --- AUTOCOMPLETADO TIPO GOOGLE ---
+// PRIORIDAD DOLORES HIDALGO GUANAJUATO
 function buscarDireccion(texto){
   if(timeoutBusqueda) clearTimeout(timeoutBusqueda);
-  if(!texto || texto.length < 3){ ocultarSugerencias(); return; }
+  if(!texto || texto.length < 2){ ocultarSugerencias(); return; }
   timeoutBusqueda = setTimeout(()=>{
-    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(texto)}&countrycodes=mx&limit=5&addressdetails=1&viewbox=-101.2,21.3,-100.6,20.9&bounded=0`)
-    .then(r=>r.json()).then(data=>{
-      mostrarSugerencias(data);
+    const qDolores = `${texto}, Dolores Hidalgo, Guanajuato`;
+    const urlDolores = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(qDolores)}&countrycodes=mx&limit=6&addressdetails=1&viewbox=-101.05,21.25,-100.80,21.05&bounded=0`;
+    const urlGeneral = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(texto)}&countrycodes=mx&limit=6&addressdetails=1`;
+
+    Promise.all([fetch(urlDolores).then(r=>r.json()).catch(()=>[]), fetch(urlGeneral).then(r=>r.json()).catch(()=>[])])
+    .then(([dataDolores, dataGeneral])=>{
+      let combinados = [...dataDolores];
+      dataGeneral.forEach(g=>{
+        if(!combinados.find(d=>d.place_id===g.place_id)){
+          combinados.push(g);
+        }
+      });
+      combinados.sort((a,b)=>{
+        const aDol = a.display_name.toLowerCase().includes('dolores hidalgo') ? 0 : a.display_name.toLowerCase().includes('guanajuato') ? 1 : 2;
+        const bDol = b.display_name.toLowerCase().includes('dolores hidalgo') ? 0 : b.display_name.toLowerCase().includes('guanajuato') ? 1 : 2;
+        return aDol - bDol;
+      });
+      mostrarSugerencias(combinados.slice(0,8));
     }).catch(()=> ocultarSugerencias());
-  }, 400);
+  }, 300);
 }
 
 function mostrarSugerencias(lista){
   const box = document.getElementById('sugerenciasBox');
   if(!lista || lista.length===0){ ocultarSugerencias(); return; }
   box.innerHTML = '';
-  lista.forEach(item=>{
+  lista.forEach((item, idx)=>{
+    const esDolores = item.display_name.toLowerCase().includes('dolores hidalgo');
     const div = document.createElement('div');
     div.className = 'sug-item';
+    let etiqueta = '';
+    if(idx===0 && esDolores){
+      etiqueta = `<div style="font-size:10px;font-weight:800;color:#E30613;margin-bottom:4px;letter-spacing:0.5px">EN DOLORES HIDALGO</div>`;
+    }
+    if(idx>0 && esDolores && !lista[idx-1].display_name.toLowerCase().includes('dolores hidalgo')){
+      etiqueta = `<div style="font-size:10px;font-weight:800;color:#888;margin-bottom:4px;margin-top:8px;letter-spacing:0.5px">OTROS LUGARES</div>`;
+    }
     div.innerHTML = `
-      <div class="sug-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
-      <div class="sug-text"><b>${item.address?.road || item.name || 'Dirección'}</b><span>${item.display_name}</span></div>
+      <div style="flex:1">
+        ${etiqueta}
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div class="sug-icon" style="${esDolores ? 'background:#FFE8EA' : ''}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${esDolores ? '#E30613' : '#111'}" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
+          <div class="sug-text"><b>${item.address?.road || item.name || item.display_name.split(',')[0]}</b><span>${item.display_name}</span></div>
+        </div>
+      </div>
     `;
     div.onclick = ()=> seleccionarDireccion(item);
     box.appendChild(div);
@@ -179,7 +202,6 @@ function ocultarSugerencias(){
   document.getElementById('sugerenciasBox').classList.remove('show');
 }
 
-// cerrar al tocar fuera
 document.addEventListener('click', (e)=>{
   const wrap = document.getElementById('wrapDireccion');
   if(!wrap.contains(e.target)){
@@ -204,7 +226,6 @@ function guardarDetalles(){
   dataUbi.direccion = direccion;
   dataUbi.lat = latSeleccionado;
   dataUbi.lng = lngSeleccionado;
-  // compatibilidad con tu estructura vieja
   dataUbi.ubicacion = {lat: latSeleccionado, lng: lngSeleccionado};
   localStorage.setItem('doloya_ubicacion', JSON.stringify(dataUbi));
 
