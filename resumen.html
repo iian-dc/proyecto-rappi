@@ -154,8 +154,10 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-const firebaseConfig = {
+import { getFirestore, collection, addDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// Firebase 1: DOLOYA ALIADOS (viejo, solo para limpiar carrito)
+const firebaseConfigAliados = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
   authDomain: "doloya-aliados.firebaseapp.com",
   databaseURL: "https://doloya-aliados-default-rtdb.firebaseio.com",
@@ -165,9 +167,43 @@ const firebaseConfig = {
   appId: "1:122314467740:web:9947a0a9560557e3a00059",
   measurementId: "G-5HETSEL4PT"
 };
-let db;
-try{ const app = initializeApp(firebaseConfig); db = getFirestore(app); }catch(e){}
-window.db = db; window.addDoc = addDoc; window.collection = collection; window.serverTimestamp = serverTimestamp;
+
+// Firebase 2: DOLOYA CONFIRMACION (NUEVO - donde llega al aliado)
+const firebaseConfigConfirmacion = {
+  apiKey: "AIzaSyDLKngPyi_SWAXEQwdrHO5h8L8OufulAR4",
+  authDomain: "doloya-confirmacion.firebaseapp.com",
+  projectId: "doloya-confirmacion",
+  storageBucket: "doloya-confirmacion.firebasestorage.app",
+  messagingSenderId: "832228761099",
+  appId: "1:832228761099:web:ddd4b6a0ee0d7f0494b10e",
+  measurementId: "G-Y7QF0811Z4"
+};
+
+let dbAliados = null;
+let dbConfirmacion = null;
+try{
+  const appAliados = initializeApp(firebaseConfigAliados, "aliados");
+  dbAliados = getFirestore(appAliados);
+}catch(e){ console.log("aliados init", e); }
+
+try{
+  const appConf = initializeApp(firebaseConfigConfirmacion, "confirmacion");
+  dbConfirmacion = getFirestore(appConf);
+}catch(e){
+  // si ya existe, usa la default
+  try{
+    const appConf = initializeApp(firebaseConfigConfirmacion);
+    dbConfirmacion = getFirestore(appConf);
+  }catch(err){ console.log("conf init", err); }
+}
+
+window.dbAliados = dbAliados;
+window.dbConfirmacion = dbConfirmacion;
+window.addDoc = addDoc;
+window.deleteDoc = deleteDoc;
+window.doc = doc;
+window.collection = collection;
+window.serverTimestamp = serverTimestamp;
 </script>
 
 <script>
@@ -205,16 +241,6 @@ if(dataRest?.restauranteLat) restLat = dataRest.restauranteLat;
 if(dataRest?.restauranteLng) restLng = dataRest.restauranteLng;
 let distanciaKm = 0.3;
 async function obtenerDistanciaRealGoogle(oLat, oLng, dLat, dLng){
-  if(GOOGLE_API_KEY && GOOGLE_API_KEY.length > 10){
-    try{
-      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${oLat},${oLng}&destinations=${dLat},${dLng}&key=${GOOGLE_API_KEY}&mode=driving`;
-      const resp = await fetch(url);
-      const data = await resp.json();
-      if(data.status === "OK" && data.rows[0].elements[0].status === "OK"){
-        return data.rows[0].elements[0].distance.value / 1000;
-      }
-    }catch(e){}
-  }
   try{
     const url = `https://router.project-osrm.org/route/v1/driving/${oLng},${oLat};${dLng},${dLat}?overview=false`;
     const r = await fetch(url);
@@ -268,11 +294,11 @@ async function cargarDireccionYDistancia(){
   } else if(ubicacion?.direccion){
     document.getElementById('txtDireccion').textContent = ubicacion.direccion;
   }
-  document.getElementById('txtDistancia').innerHTML = `<span style="color:#666;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/></svg>Calculando...</span>`;
+  document.getElementById('txtDistancia').innerHTML = `<span style="color:#666;display:flex;align-items:center;gap:6px">Calculando...</span>`;
   const realKm = await obtenerDistanciaRealGoogle(restLat, restLng, lat, lng);
   distanciaKm = realKm;
   if(distanciaKm < 0.3) distanciaKm = 0.3;
-  document.getElementById('txtDistancia').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> Estás a ${distanciaKm.toFixed(2)} km del restaurante`;
+  document.getElementById('txtDistancia').innerHTML = `Estás a ${distanciaKm.toFixed(2)} km del restaurante`;
   actualizarResumen();
 }
 cargarDireccionYDistancia();
@@ -288,7 +314,6 @@ if(detallesFull){
   if(detallesFull.nombreEdificio) txt += detallesFull.nombreEdificio + ', ';
   if(detallesFull.piso) txt += detallesFull.piso + ', ';
   if(detallesFull.instrucciones) txt += detallesFull.instrucciones;
-  if(detallesFull.celular) txt += (txt ? ' | ' : '') + 'Cel: ' + detallesFull.celular;
   if(txt) document.getElementById('txtDetalles').textContent = txt;
 } else if(detallesRef){
   document.getElementById('txtDetalles').textContent = detallesRef;
@@ -353,18 +378,21 @@ function abrirModal(){
 function cerrarModal(){
   document.getElementById('modalCliente').classList.remove('active');
 }
+
 async function irAPagar(){
   const nombre = document.getElementById('inputNombre').value.trim();
   if(!nombre){ alert('Por favor ingresa tu nombre completo'); return; }
   const btn = document.getElementById('btnFinalizar');
-  btn.textContent = 'Guardando...';
+  btn.textContent = 'Finalizando...';
   btn.disabled = true;
+
   let envioFinal = calcularEnvio();
   let tarifaFinal = calcularTarifa();
   let ahorroFinal = calcularAhorro();
   let totalFinal = costoProductos + envioFinal + tarifaFinal;
   localStorage.setItem('doloya_cliente_nombre', nombre);
-  const telefonoGuardado = localStorage.getItem('doloya_celular') || detallesFull?.celular || '';
+  const telefonoGuardado = localStorage.getItem('doloya_celular') || detallesFull?.celular || localStorage.getItem('doloya_cliente_tel') || '';
+
   const pedidoCompleto = {
     restaurante: { id: dataRest?.id || 'rest_dolores', nombre: dataRest?.nombre || document.getElementById('nombreRest').textContent, logo: dataRest?.logo || '', lat: restLat, lng: restLng, direccion: dataRest?.direccion || "" },
     cliente: { 
@@ -379,17 +407,37 @@ async function irAPagar(){
     productos: carrito,
     totales: { costoProductos: parseFloat(costoProductos.toFixed(2)), distanciaKm: parseFloat(distanciaKm.toFixed(2)), costoEnvio: envioFinal, tarifaServicio: tarifaFinal, ahorro: parseFloat(ahorroFinal.toFixed(2)), tipoEntrega: tipoActual, total: parseFloat(totalFinal.toFixed(2)) },
     metodoPago: metodoSel,
-    estado: 'pendiente',
+    estado: 'confirmado',
     fecha: new Date().toISOString(),
     timestamp: window.serverTimestamp ? window.serverTimestamp() : new Date()
   };
+
+  // Guardar en CONFIRMACION
   try{
-    if(window.db){ const ref = await window.addDoc(window.collection(window.db, "carrito"), pedidoCompleto); localStorage.setItem('doloya_pedido_id', ref.id); }
-    else{ localStorage.setItem('doloya_pedido_temp', JSON.stringify(pedidoCompleto)); }
-  }catch(err){ localStorage.setItem('doloya_pedido_temp', JSON.stringify(pedidoCompleto)); }
+    if(window.dbConfirmacion){
+      const ref = await window.addDoc(window.collection(window.dbConfirmacion, "pedidos"), pedidoCompleto);
+      localStorage.setItem('doloya_pedido_confirmacion_id', ref.id);
+      console.log("Pedido guardado en confirmacion:", ref.id);
+    }
+  }catch(e){
+    console.error("Error guardando en confirmacion", e);
+    localStorage.setItem('doloya_pedido_temp', JSON.stringify(pedidoCompleto));
+  }
+
+  // Intentar borrar de aliados si existia
+  try{
+    const idAliados = localStorage.getItem('doloya_pedido_id');
+    if(idAliados && window.dbAliados){
+      await window.deleteDoc(window.doc(window.dbAliados, "carrito", idAliados));
+      localStorage.removeItem('doloya_pedido_id');
+    }
+  }catch(e){ console.log("No se pudo borrar de aliados", e); }
+
   localStorage.setItem('doloya_pedido_final', JSON.stringify(pedidoCompleto));
+  // SIEMPRE redirige aunque falle firebase
   window.location.href='confirmacion.html';
 }
+
 if(dataRest){
   document.getElementById('nombreRest').textContent = dataRest.nombre || dataRest.restauranteNombre || 'Restaurante';
   document.getElementById('cantProductos').textContent = `${carrito.reduce((s,i)=>s+(i.cantidad||0),0)} Productos`;
