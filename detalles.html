@@ -115,27 +115,21 @@ function clearInput(id){
   if(id==='inputDireccion'){ ocultarSugerencias(); }
 }
 
-// CORREGIDO: SIEMPRE MOSTRAR LA DIRECCION DEL MAPA/CLIENTE ACTUAL
 (function inicializarDireccion(){
   const dirMapa = ubicacion?.direccion || null;
   const dirDetalles = detallesGuardados?.direccion || null;
   const latMapa = ubicacion?.lat || ubicacion?.ubicacion?.lat || null;
   const lngMapa = ubicacion?.lng || ubicacion?.ubicacion?.lng || null;
-
   let direccionFinal = dirMapa || dirDetalles || 'Dolores Hidalgo México';
   let latFinal = latMapa || detallesGuardados?.lat || latSeleccionado;
   let lngFinal = lngMapa || detallesGuardados?.lng || lngSeleccionado;
-
-  // Si hay ubicacion de mapa, esa manda (es la del cliente)
   if(dirMapa && latMapa && lngMapa){
     direccionFinal = dirMapa;
     latFinal = latMapa;
     lngFinal = lngMapa;
   }
-
   latSeleccionado = latFinal;
   lngSeleccionado = lngFinal;
-
   document.getElementById('inputDireccion').value = direccionFinal;
   document.getElementById('subDir').textContent = direccionFinal;
 })();
@@ -274,6 +268,10 @@ function guardarDetalles(){
   let refTexto = `${tipoDireccion ? tipoDireccion+', ' : ''}${nombreEdificio ? nombreEdificio+', ' : ''}${piso ? piso+', ' : ''}${instrucciones ? instrucciones : ''}`.replace(/, $/,'');
   localStorage.setItem('doloya_detalles_referencia', refTexto || 'Sin referencia');
   if(celular) localStorage.setItem('doloya_celular', celular);
+
+  // ACTUALIZADO: FLAGS PARA QUE RESUMEN SEPA QUE SE EDITÓ MANUAL
+  localStorage.setItem('doloya_direccion_editada', '1');
+  localStorage.setItem('doloya_viene_de_detalles', '1');
 
   window.location.href = 'resumen.html';
 }
