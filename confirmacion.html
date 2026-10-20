@@ -33,7 +33,7 @@ h1{text-align:center;font-size:28px;font-weight:800;margin:18px 0 22px}
 <div class="row"><span class="label">Código del pedido</span><span class="value" id="txtCodigo">ST-0</span></div>
 <div class="row"><span class="label">Nombre del cliente</span><span class="value" id="txtNombre">...</span></div>
 <div class="row"><span class="label">Método de pago</span><span class="value verde" id="txtMetodo">Efectivo</span></div>
-<div class="row"><span class="label">Total a pagar</span><span class="value total" id="txtTotal">$ 0 COP MXN</span></div>
+<div class="row"><span class="label">Total a pagar</span><span class="value total" id="txtTotal">$ 0 MXN</span></div>
 </div>
 <div class="timeline-title">Estado del pedido</div>
 <div id="timeline"></div>
@@ -61,6 +61,34 @@ const pedidoFinal = JSON.parse(localStorage.getItem('doloya_pedido_final')||'nul
 const pedidoId = localStorage.getItem('doloya_pedido_confirmacion_id');
 
 async function obtenerCodigoSecuencial(){
+  if(pedidoId){
+    const mapaCodigos = JSON.parse(localStorage.getItem('doloya_mapa_codigos')||'{}');
+    if(mapaCodigos[pedidoId]){
+      return mapaCodigos[pedidoId];
+    }
+  }
+  if(pedidoFinal && pedidoFinal.codigo){
+    if(pedidoId){
+      const mapa = JSON.parse(localStorage.getItem('doloya_mapa_codigos')||'{}');
+      mapa[pedidoId] = pedidoFinal.codigo;
+      localStorage.setItem('doloya_mapa_codigos', JSON.stringify(mapa));
+      localStorage.setItem('doloya_codigo_pedido_actual', pedidoFinal.codigo);
+    }
+    return pedidoFinal.codigo;
+  }
+  if(pedidoId){
+    try{
+      const snapPedido = await getDoc(doc(dbConf, "pedidos", pedidoId));
+      if(snapPedido.exists() && snapPedido.data().codigo){
+        const codExist = snapPedido.data().codigo;
+        const mapa = JSON.parse(localStorage.getItem('doloya_mapa_codigos')||'{}');
+        mapa[pedidoId] = codExist;
+        localStorage.setItem('doloya_mapa_codigos', JSON.stringify(mapa));
+        localStorage.setItem('doloya_codigo_pedido_actual', codExist);
+        return codExist;
+      }
+    }catch(e){}
+  }
   try{
     const contadorRef = doc(dbConf, "contadores", "pedidos");
     let nuevoCodigo = "";
@@ -76,43 +104,47 @@ async function obtenerCodigoSecuencial(){
       }
       nuevoCodigo = `ST-${numero}`;
     });
+    if(pedidoId){
+      const mapa = JSON.parse(localStorage.getItem('doloya_mapa_codigos')||'{}');
+      mapa[pedidoId] = nuevoCodigo;
+      localStorage.setItem('doloya_mapa_codigos', JSON.stringify(mapa));
+    }
     localStorage.setItem('doloya_codigo_pedido_actual', nuevoCodigo);
     if(pedidoId){
       try{ await updateDoc(doc(dbConf, "pedidos", pedidoId), { codigo: nuevoCodigo }); }catch(e){}
     }
     return nuevoCodigo;
   }catch(e){
-    console.log("error contador", e);
     let contadorLocal = parseInt(localStorage.getItem('doloya_contador_local') || '0');
     let cod = `ST-${contadorLocal}`;
-    localStorage.setItem('doloya_contador_local', (contadorLocal+1).toString());
+    if(pedidoId){
+      const mapa = JSON.parse(localStorage.getItem('doloya_mapa_codigos')||'{}');
+      if(!mapa[pedidoId]){
+        localStorage.setItem('doloya_contador_local', (contadorLocal+1).toString());
+      }else{
+        cod = mapa[pedidoId];
+      }
+      mapa[pedidoId] = cod;
+      localStorage.setItem('doloya_mapa_codigos', JSON.stringify(mapa));
+    }
     localStorage.setItem('doloya_codigo_pedido_actual', cod);
     return cod;
   }
 }
 
 if(pedidoFinal){
-  // si ya tiene codigo en firestore, usar ese, si no generar nuevo
-  if(pedidoFinal.codigo){
-    document.getElementById('txtCodigo').textContent = pedidoFinal.codigo;
-    localStorage.setItem('doloya_codigo_pedido_actual', pedidoFinal.codigo);
-  }else{
-    obtenerCodigoSecuencial().then(cod=>{
-      document.getElementById('txtCodigo').textContent = cod;
-    });
-  }
+  obtenerCodigoSecuencial().then(cod=>{
+    document.getElementById('txtCodigo').textContent = cod;
+  });
   document.getElementById('txtNombre').textContent = pedidoFinal.cliente?.nombre || 'Cliente';
-  // Metodo de pago - siempre efectivo
   let metodoTxt = 'Efectivo';
   if(pedidoFinal.metodoPago){
     if(typeof pedidoFinal.metodoPago === 'string') metodoTxt = pedidoFinal.metodoPago;
     else metodoTxt = pedidoFinal.metodoPago.nombre || pedidoFinal.metodoPago.banco || 'Efectivo';
   }
   document.getElementById('txtMetodo').textContent = metodoTxt;
-  
-  // Total con COP MXN
   const totalVal = pedidoFinal.totales?.total || 0;
-  document.getElementById('txtTotal').textContent = `$ ${Number(totalVal).toLocaleString('es-CO')} COP MXN`;
+  document.getElementById('txtTotal').textContent = `$ ${Number(totalVal).toLocaleString('es-CO')} MXN`;
 }
 
 let estadoActual='confirmado';
@@ -133,7 +165,7 @@ function render(){
  }).join('');
 }
 render();
-if(pedidoId){ onSnapshot(doc(dbConf,"pedidos",pedidoId),(snap)=>{ if(snap.exists()&&snap.data().estado){ estadoActual=snap.data().estado; if(snap.data().codigo){ document.getElementById('txtCodigo').textContent = snap.data().codigo; localStorage.setItem('doloya_codigo_pedido_actual', snap.data().codigo); } render(); } }); }
+if(pedidoId){ onSnapshot(doc(dbConf,"pedidos",pedidoId),(snap)=>{ if(snap.exists()&&snap.data().estado){ estadoActual=snap.data().estado; if(snap.data().codigo){ document.getElementById('txtCodigo').textContent = snap.data().codigo; localStorage.setItem('doloya_codigo_pedido_actual', snap.data().codigo); if(pedidoId){ const mapa = JSON.parse(localStorage.getItem('doloya_mapa_codigos')||'{}'); mapa[pedidoId]=snap.data().codigo; localStorage.setItem('doloya_mapa_codigos', JSON.stringify(mapa)); } } render(); } }); }
 function lanzar(){ const colors=['#16a34a','#ef4444','#f59e0b','#3b82f6','#eab308']; confetti({particleCount:120,spread:90,origin:{y:0.6},colors}); }
 lanzar(); setTimeout(lanzar,1200);
 
