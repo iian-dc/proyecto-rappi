@@ -172,6 +172,7 @@ if(pedidoFinal){
 }
 
 let estadoActual='confirmado';
+let subEstadoRepartidor=''; // para mostrar detalle de repartidor
 const estados=[
  {key:'confirmado',nombre:'Pedido Confirmado',desc:'Recibido', icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>`},
  {key:'aceptado',nombre:'Pedido Aceptado',desc:'Restaurante aceptó tu pedido', icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>`},
@@ -180,8 +181,10 @@ const estados=[
  {key:'finalizado',nombre:'Finalizado',desc:'Entregado', icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 15l5 5L20 6"/><path d="M4 5l2 2"/><path d="M8 5l2 2"/></svg>`},
 ];
 
-// MAPEO DE LO QUE HACE EL RESTAURANTE A LO QUE VE EL CLIENTE
+// === MAPEO COMPLETO RESTAURANTE + REPARTIDOR -> CLIENTE ===
 function mapearEstadoRestauranteACliente(estadoRestaurante){
+  if(!estadoRestaurante) return 'confirmado';
+  const e = estadoRestaurante.toLowerCase();
   const mapa = {
     'nuevo': 'confirmado',
     'confirmado': 'confirmado',
@@ -189,10 +192,29 @@ function mapearEstadoRestauranteACliente(estadoRestaurante){
     'en_preparacion': 'preparando',
     'preparando': 'preparando',
     'listo': 'en_camino',
+    'listo_para_admin': 'preparando',
+    'enviado_a_repartidor': 'aceptado',
+    'activo': 'aceptado',
+    // ESTADOS REPARTIDOR - VINCULADOS
+    'ir_a_recoger': 'en_camino',
+    'recogido': 'en_camino',
+    'ir_a_entregar': 'en_camino',
     'en_camino': 'en_camino',
-    'finalizado': 'finalizado'
+    'finalizado': 'finalizado',
+    'entregado': 'finalizado',
+    'cancelado': 'confirmado'
   };
-  return mapa[estadoRestaurante] || 'confirmado';
+  return mapa[e] || 'confirmado';
+}
+
+function descripcionRepartidor(estadoReal){
+  if(!estadoReal) return null;
+  const e = estadoReal.toLowerCase();
+  if(e==='ir_a_recoger') return {titulo:'En Camino', desc:'Repartidor va al restaurante'};
+  if(e==='recogido') return {titulo:'En Camino', desc:'Repartidor tiene tu pedido'};
+  if(e==='ir_a_entregar' || e==='en_camino') return {titulo:'En Camino', desc:'Repartidor en camino a tu casa'};
+  if(e==='finalizado' || e==='entregado') return {titulo:'Finalizado', desc:'Entregado'};
+  return null;
 }
 
 function actualizarBotones(){
@@ -209,19 +231,24 @@ function render(){
  const idx=estados.findIndex(e=>e.key===estadoActual);
  cont.innerHTML=estados.map((est,i)=>{
   const done=i<idx; const isCurrent=i===idx;
-  // Verde los anteriores, amarillo el actual, gris los que faltan
-  return `<div class="step"><div class="line ${i<idx?'active':''}" style="${i===4?'display:none':''}"></div><div class="icon ${done?'active':''} ${isCurrent?'current':''}">${done?`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>`:est.icon}</div><div class="step-text"><b>${est.nombre}</b><span>${est.desc}</span></div></div>`;
+  let desc = est.desc;
+  if(isCurrent && subEstadoRepartidor){
+    const d = descripcionRepartidor(subEstadoRepartidor);
+    if(d) desc = d.desc;
+  }
+  return `<div class="step"><div class="line ${i<idx?'active':''}" style="${i===4?'display:none':''}"></div><div class="icon ${done?'active':''} ${isCurrent?'current':''}">${done?`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>`:est.icon}</div><div class="step-text"><b>${est.nombre}</b><span>${desc}</span></div></div>`;
  }).join('');
  actualizarBotones();
 }
 render();
 
+// === ESCUCHA CLIENTE: pedidos ===
 if(pedidoId){ 
   onSnapshot(doc(dbConf,"pedidos",pedidoId),(snap)=>{ 
     if(snap.exists()){
       const data = snap.data();
       if(data.estado){
-        // TRADUCE EL ESTADO DEL RESTAURANTE AL DEL CLIENTE EN TIEMPO REAL
+        subEstadoRepartidor = data.estado;
         estadoActual = mapearEstadoRestauranteACliente(data.estado);
         render(); 
       }
@@ -239,6 +266,17 @@ if(pedidoId){
       }
     } 
   }); 
+  // === ESCUCHA REPARTIDOR: pedidos_admin con mismo ID - VINCULADO ===
+  onSnapshot(doc(dbConf,"pedidos_admin",pedidoId),(snap)=>{
+    if(snap.exists()){
+      const data = snap.data();
+      if(data.estado){
+        subEstadoRepartidor = data.estado;
+        estadoActual = mapearEstadoRestauranteACliente(data.estado);
+        render();
+      }
+    }
+  });
 }
 
 function lanzar(){ const colors=['#16a34a','#ef4444','#f59e0b','#3b82f6','#eab308']; confetti({particleCount:180,spread:120,origin:{y:0.6},colors,scalar:1.2}); }
@@ -258,6 +296,7 @@ window.confirmarCancelar = async function(){
   try{
     if(pedidoId){
       await deleteDoc(doc(dbConf, "pedidos", pedidoId));
+      try{ await deleteDoc(doc(dbConf, "pedidos_admin", pedidoId)); }catch{}
     }
     localStorage.removeItem('doloya_pedido_final');
     localStorage.removeItem('doloya_pedido_confirmacion_id');
