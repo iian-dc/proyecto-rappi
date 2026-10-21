@@ -39,6 +39,16 @@ h1{text-align:center;font-size:28px;font-weight:800;margin:14px 0 22px}
 .btn-no{flex:1;background:#F3F4F6;color:#111;border:1px solid #E5E7EB;border-radius:999px;padding:12px;font-weight:700;cursor:pointer}
 .contador-redirect{text-align:center;margin-top:18px;font-size:13px;color:#16a34a;font-weight:700;display:none}
 .contador-redirect.mostrar{display:block;animation:pop .3s ease}
+
+/* CANCELADO OVERLAY CENTRO */
+.cancelado-overlay{position:fixed;inset:0;background:rgba(255,255,255,0.96);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:99999;padding:20px}
+.cancelado-overlay.active{display:flex}
+.cancelado-box{background:white;border:2px solid #ff1744;border-radius:22px;padding:28px 22px;max-width:360px;width:100%;text-align:center;box-shadow:0 0 0 4px rgba(255,23,68,.1), 0 0 32px rgba(255,23,68,.25), 0 12px 32px rgba(0,0,0,.12);animation:pop2 .35s ease}
+.cancelado-icon{width:72px;height:72px;background:#ff1744;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 18px rgba(255,23,68,.4)}
+.cancelado-box h2{font-size:20px;font-weight:900;color:#111;margin-bottom:8px}
+.cancelado-box p{font-size:13.5px;color:#475569;line-height:1.4;margin-bottom:6px}
+.cancelado-motivo{background:#fff5f5;border:1px solid #ffcfcf;border-radius:12px;padding:12px;margin:14px 0;font-size:13px;color:#b91c1c;font-weight:700}
+.btn-okay{width:100%;background:#111;color:white;border:none;border-radius:999px;padding:16px;font-size:15px;font-weight:900;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.15);margin-top:12px}
 </style>
 </head>
 <body>
@@ -71,6 +81,17 @@ h1{text-align:center;font-size:28px;font-weight:800;margin:14px 0 22px}
   </div>
 </div>
 
+<div class="cancelado-overlay" id="canceladoOverlay">
+  <div class="cancelado-box">
+    <div class="cancelado-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+    <h2>Tu pedido ha sido cancelado</h2>
+    <p id="txtCanceladoMotivoDesc">Lamentamos informarte que tu pedido fue cancelado.</p>
+    <div class="cancelado-motivo" id="txtCanceladoMotivo">Motivo: Sin especificar</div>
+    <p style="font-size:12px;color:#64748b">Si tienes dudas contacta al restaurante.</p>
+    <button class="btn-okay" onclick="irAIndex()">OKAY</button>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getFirestore, doc, onSnapshot, getDoc, setDoc, updateDoc, runTransaction, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
@@ -86,10 +107,6 @@ const appConf = initializeApp(configConfirmacion, "confirmacion2");
 const dbConf = getFirestore(appConf);
 const pedidoFinal = JSON.parse(localStorage.getItem('doloya_pedido_final')||'null');
 const pedidoId = localStorage.getItem('doloya_pedido_confirmacion_id');
-
-window.dbConf = dbConf;
-window.docRef = doc;
-window.deleteDoc = deleteDoc;
 
 async function obtenerCodigoSecuencial(){
   if(pedidoId){
@@ -179,6 +196,7 @@ if(pedidoFinal){
 let estadoActual='confirmado';
 let subEstadoRepartidor='';
 let redirectYaIniciado=false;
+let canceladoYaMostrado=false;
 const estados=[
  {key:'confirmado',nombre:'Pedido Confirmado',desc:'Recibido', icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>`},
  {key:'aceptado',nombre:'Pedido Aceptado',desc:'Restaurante aceptó tu pedido', icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>`},
@@ -190,6 +208,7 @@ const estados=[
 function mapearEstadoRestauranteACliente(estadoRestaurante){
   if(!estadoRestaurante) return 'confirmado';
   const e = estadoRestaurante.toLowerCase();
+  if(e==='cancelado') return 'cancelado';
   const mapa = {
     'nuevo': 'confirmado',
     'confirmado': 'confirmado',
@@ -205,8 +224,7 @@ function mapearEstadoRestauranteACliente(estadoRestaurante){
     'ir_a_entregar': 'en_camino',
     'en_camino': 'en_camino',
     'finalizado': 'finalizado',
-    'entregado': 'finalizado',
-    'cancelado': 'confirmado'
+    'entregado': 'finalizado'
   };
   return mapa[e] || 'confirmado';
 }
@@ -236,25 +254,47 @@ function lanzarConfetiEsquinas(){
   confetti({particleCount:120, angle:120, spread:75, origin:{x:1, y:0.9}, colors, scalar:1.2, startVelocity:55, gravity:0.8, ticks:300});
 }
 
+function mostrarCanceladoOverlay(motivo, detalle){
+  if(canceladoYaMostrado) return;
+  canceladoYaMostrado = true;
+  document.getElementById('botonesRow').style.display='none';
+  document.getElementById('tituloPrincipal').textContent='Pedido Cancelado';
+  document.getElementById('checkCircle').style.background='#ff1744';
+  document.getElementById('checkCircle').innerHTML='<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  const motivoTxt = motivo || 'Sin especificar';
+  const detalleTxt = detalle ? ` - ${detalle}` : '';
+  document.getElementById('txtCanceladoMotivo').textContent = `Motivo: ${motivoTxt}${detalleTxt}`;
+  document.getElementById('canceladoOverlay').classList.add('active');
+}
+
+window.irAIndex = function(){
+  try{
+    localStorage.removeItem('doloya_pedido_final');
+    localStorage.removeItem('doloya_pedido_confirmacion_id');
+    localStorage.removeItem('doloya_codigo_pedido_actual');
+    localStorage.removeItem('doloya_carrito_restaurante_data');
+    if(pedidoId){
+      const mapa = JSON.parse(localStorage.getItem('doloya_mapa_codigos')||'{}');
+      delete mapa[pedidoId];
+      localStorage.setItem('doloya_mapa_codigos', JSON.stringify(mapa));
+    }
+  }catch{}
+  window.location.href='index.html';
+}
+
 function celebrarFinalizado(){
-  if(redirectYaIniciado) return;
+  if(redirectYaIniciado || canceladoYaMostrado) return;
   redirectYaIniciado = true;
-  
   document.getElementById('tituloPrincipal').textContent = 'Pedido Entregado';
   document.getElementById('checkCircle').style.background = '#16a34a';
   const botonesRow = document.getElementById('botonesRow');
   if(botonesRow) botonesRow.style.display = 'none';
-
   lanzarConfetiEsquinas();
   setTimeout(lanzarConfetiEsquinas,300);
   setTimeout(lanzarConfetiEsquinas,650);
-  setTimeout(lanzarConfetiEsquinas,1000);
-
-  // MOSTRAR CONTADOR Y REDIRIGIR A LOS 10 SEGUNDOS A INDEX
   const contadorEl = document.getElementById('contadorRedirect');
   const segundosEl = document.getElementById('segundos');
   contadorEl.classList.add('mostrar');
-  
   let seg = 10;
   segundosEl.textContent = seg;
   const intervalo = setInterval(()=>{
@@ -262,7 +302,6 @@ function celebrarFinalizado(){
     segundosEl.textContent = seg;
     if(seg <= 0){
       clearInterval(intervalo);
-      // LIMPIAR TODO PARA EVITAR ERRORES
       try{
         localStorage.removeItem('doloya_pedido_final');
         localStorage.removeItem('doloya_pedido_confirmacion_id');
@@ -282,6 +321,10 @@ function celebrarFinalizado(){
 function render(){
  const cont=document.getElementById('timeline');
  const idx=estados.findIndex(e=>e.key===estadoActual);
+ if(estadoActual==='cancelado'){
+   cont.innerHTML='';
+   return;
+ }
  cont.innerHTML=estados.map((est,i)=>{
   const done=i<idx; const isCurrent=i===idx;
   let desc = est.desc;
@@ -304,18 +347,16 @@ if(pedidoId){
     if(snap.exists()){
       const data = snap.data();
       if(data.estado){
+        if(data.estado.toLowerCase()==='cancelado'){
+          mostrarCanceladoOverlay(data.motivoCancelacion, data.detalleCancelacion);
+          return;
+        }
         subEstadoRepartidor = data.estado;
         estadoActual = mapearEstadoRestauranteACliente(data.estado);
         render(); 
       }
       if(data.codigo){ 
         document.getElementById('txtCodigo').textContent = data.codigo; 
-        localStorage.setItem('doloya_codigo_pedido_actual', data.codigo); 
-        if(pedidoId){ 
-          const mapa = JSON.parse(localStorage.getItem('doloya_mapa_codigos')||'{}'); 
-          mapa[pedidoId]=data.codigo; 
-          localStorage.setItem('doloya_mapa_codigos', JSON.stringify(mapa)); 
-        } 
       }
       if(data.nombre){
         document.getElementById('txtNombre').textContent = data.nombre;
@@ -326,6 +367,10 @@ if(pedidoId){
     if(snap.exists()){
       const data = snap.data();
       if(data.estado){
+        if(data.estado.toLowerCase()==='cancelado'){
+          mostrarCanceladoOverlay(data.motivoCancelacion, data.detalleCancelacion);
+          return;
+        }
         subEstadoRepartidor = data.estado;
         estadoActual = mapearEstadoRestauranteACliente(data.estado);
         render();
