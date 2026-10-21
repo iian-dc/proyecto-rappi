@@ -39,16 +39,16 @@ h1{text-align:center;font-size:28px;font-weight:800;margin:14px 0 22px}
 .btn-no{flex:1;background:#F3F4F6;color:#111;border:1px solid #E5E7EB;border-radius:999px;padding:12px;font-weight:700;cursor:pointer}
 .contador-redirect{text-align:center;margin-top:18px;font-size:13px;color:#16a34a;font-weight:700;display:none}
 .contador-redirect.mostrar{display:block;animation:pop .3s ease}
-
-/* CANCELADO OVERLAY CENTRO */
-.cancelado-overlay{position:fixed;inset:0;background:rgba(255,255,255,0.96);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:99999;padding:20px}
+.cancelado-overlay{position:fixed;inset:0;background:rgba(255,255,255,0.98);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:99999;padding:20px}
 .cancelado-overlay.active{display:flex}
-.cancelado-box{background:white;border:2px solid #ff1744;border-radius:22px;padding:28px 22px;max-width:360px;width:100%;text-align:center;box-shadow:0 0 0 4px rgba(255,23,68,.1), 0 0 32px rgba(255,23,68,.25), 0 12px 32px rgba(0,0,0,.12);animation:pop2 .35s ease}
-.cancelado-icon{width:72px;height:72px;background:#ff1744;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 18px rgba(255,23,68,.4)}
-.cancelado-box h2{font-size:20px;font-weight:900;color:#111;margin-bottom:8px}
-.cancelado-box p{font-size:13.5px;color:#475569;line-height:1.4;margin-bottom:6px}
-.cancelado-motivo{background:#fff5f5;border:1px solid #ffcfcf;border-radius:12px;padding:12px;margin:14px 0;font-size:13px;color:#b91c1c;font-weight:700}
-.btn-okay{width:100%;background:#111;color:white;border:none;border-radius:999px;padding:16px;font-size:15px;font-weight:900;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.15);margin-top:12px}
+.cancelado-box{background:white;border:2px solid #111;border-radius:24px;padding:30px 22px;max-width:380px;width:100%;text-align:center;box-shadow:0 0 0 4px rgba(0,0,0,.06), 0 20px 50px rgba(0,0,0,.18);animation:pop2 .35s ease}
+.cancelado-icon{width:84px;height:84px;background:#111;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.cancelado-box h2{font-size:21px;font-weight:900;color:#111;margin-bottom:10px;line-height:1.2}
+.cancelado-box .sub{font-size:14px;color:#111;font-weight:700;line-height:1.4;margin-bottom:10px}
+.cancelado-motivo{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin:14px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:left}
+.cancelado-motivo b{color:#E30613}
+.cancelado-aviso{font-size:12px;color:#64748b;line-height:1.4;margin-top:10px}
+.btn-okay{width:100%;background:#111;color:white;border:none;border-radius:999px;padding:17px;font-size:15px;font-weight:900;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,.2);margin-top:18px}
 </style>
 </head>
 <body>
@@ -83,18 +83,22 @@ h1{text-align:center;font-size:28px;font-weight:800;margin:14px 0 22px}
 
 <div class="cancelado-overlay" id="canceladoOverlay">
   <div class="cancelado-box">
-    <div class="cancelado-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
-    <h2>Tu pedido ha sido cancelado</h2>
-    <p id="txtCanceladoMotivoDesc">Lamentamos informarte que tu pedido fue cancelado.</p>
-    <div class="cancelado-motivo" id="txtCanceladoMotivo">Motivo: Sin especificar</div>
-    <p style="font-size:12px;color:#64748b">Si tienes dudas contacta al restaurante.</p>
-    <button class="btn-okay" onclick="irAIndex()">OKAY</button>
+    <div class="cancelado-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+    <h2>Pedido cancelado por no recibir</h2>
+    <p class="sub">Tu pedido ha sido cancelado porque no atendiste la entrega.</p>
+    <div class="cancelado-motivo" id="txtCanceladoMotivo">
+      <b>Motivo:</b> <span id="motivoTxt">El repartidor reportó que no recibiste el pedido / no contestaste</span><br><br>
+      <b>Detalle:</b> <span id="detalleTxt">No se pudo completar la entrega</span>
+    </div>
+    <p class="cancelado-aviso">Este pedido ya fue cancelado y no se podrá reprogramar. Si esto se repite, tu cuenta podrá ser bloqueada para futuros pedidos. Toda la información de este pedido ha sido registrada.</p>
+    <button class="btn-okay" onclick="irAIndex()">Entendido</button>
   </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getFirestore, doc, onSnapshot, getDoc, setDoc, updateDoc, runTransaction, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
 const configConfirmacion = {
   apiKey: "AIzaSyDLKngPyi_SWAXEQwdrHO5h8L8OufulAR4",
   authDomain: "doloya-confirmacion.firebaseapp.com",
@@ -105,6 +109,18 @@ const configConfirmacion = {
 };
 const appConf = initializeApp(configConfirmacion, "confirmacion2");
 const dbConf = getFirestore(appConf);
+
+const configHistorial = {
+  apiKey: "AIzaSyCRx4B7mO444s0yU-WTnsqMjBHDWX4IRv8",
+  authDomain: "doloya-historial.firebaseapp.com",
+  projectId: "doloya-historial",
+  storageBucket: "doloya-historial.firebasestorage.app",
+  messagingSenderId: "41258055121",
+  appId: "1:41258055121:web:19a443786320e04ebd9cf0"
+};
+const appHist = initializeApp(configHistorial, "historialConfirmacion");
+const dbHistorial = getFirestore(appHist);
+
 const pedidoFinal = JSON.parse(localStorage.getItem('doloya_pedido_final')||'null');
 const pedidoId = localStorage.getItem('doloya_pedido_confirmacion_id');
 
@@ -179,9 +195,7 @@ async function obtenerCodigoSecuencial(){
 }
 
 if(pedidoFinal){
-  obtenerCodigoSecuencial().then(cod=>{
-    document.getElementById('txtCodigo').textContent = cod;
-  });
+  obtenerCodigoSecuencial().then(cod=>{ document.getElementById('txtCodigo').textContent = cod; });
   document.getElementById('txtNombre').textContent = pedidoFinal.cliente?.nombre || pedidoFinal.nombre || 'Cliente';
   let metodoTxt = 'Efectivo';
   if(pedidoFinal.metodoPago){
@@ -210,61 +224,113 @@ function mapearEstadoRestauranteACliente(estadoRestaurante){
   const e = estadoRestaurante.toLowerCase();
   if(e==='cancelado') return 'cancelado';
   const mapa = {
-    'nuevo': 'confirmado',
-    'confirmado': 'confirmado',
-    'aceptado': 'aceptado',
-    'en_preparacion': 'preparando',
-    'preparando': 'preparando',
-    'listo': 'preparando',
-    'listo_para_admin': 'preparando',
-    'enviado_a_repartidor': 'aceptado',
-    'activo': 'aceptado',
-    'ir_a_recoger': 'preparando',
-    'recogido': 'en_camino',
-    'ir_a_entregar': 'en_camino',
-    'en_camino': 'en_camino',
-    'finalizado': 'finalizado',
-    'entregado': 'finalizado'
+    'nuevo': 'confirmado','confirmado': 'confirmado','aceptado': 'aceptado',
+    'en_preparacion': 'preparando','preparando': 'preparando','listo': 'preparando','listo_para_admin': 'preparando',
+    'enviado_a_repartidor': 'aceptado','activo': 'aceptado','ir_a_recoger': 'preparando',
+    'recogido': 'en_camino','ir_a_entregar': 'en_camino','en_camino': 'en_camino',
+    'finalizado': 'finalizado','entregado': 'finalizado'
   };
   return mapa[e] || 'confirmado';
 }
-
 function descripcionRepartidor(estadoReal){
   if(!estadoReal) return null;
   const e = estadoReal.toLowerCase();
-  if(e==='ir_a_recoger') return {titulo:'Preparando', desc:'Repartidor va al restaurante'};
-  if(e==='recogido') return {titulo:'En Camino', desc:'Repartidor tiene tu pedido - En camino a tu casa'};
-  if(e==='ir_a_entregar' || e==='en_camino') return {titulo:'En Camino', desc:'Repartidor en camino a tu casa'};
-  if(e==='finalizado' || e==='entregado') return {titulo:'Finalizado', desc:'Pedido entregado'};
+  if(e==='ir_a_recoger') return {desc:'Repartidor va al restaurante'};
+  if(e==='recogido') return {desc:'Repartidor tiene tu pedido - En camino a tu casa'};
+  if(e==='ir_a_entregar' || e==='en_camino') return {desc:'Repartidor en camino a tu casa'};
+  if(e==='finalizado' || e==='entregado') return {desc:'Pedido entregado'};
   return null;
 }
-
 function actualizarBotones(){
   const btnCancel = document.getElementById('btnCancelar');
-  if(estadoActual === 'confirmado' || estadoActual === 'aceptado'){
-    btnCancel.classList.remove('disabled');
-  }else{
-    btnCancel.classList.add('disabled');
-  }
+  if(estadoActual === 'confirmado' || estadoActual === 'aceptado'){ btnCancel.classList.remove('disabled'); }else{ btnCancel.classList.add('disabled'); }
 }
-
 function lanzarConfetiEsquinas(){
   const colors=['#16a34a','#22c55e','#4ade80','#f59e0b','#eab308'];
   confetti({particleCount:120, angle:60, spread:75, origin:{x:0, y:0.9}, colors, scalar:1.2, startVelocity:55, gravity:0.8, ticks:300});
   confetti({particleCount:120, angle:120, spread:75, origin:{x:1, y:0.9}, colors, scalar:1.2, startVelocity:55, gravity:0.8, ticks:300});
 }
 
-function mostrarCanceladoOverlay(motivo, detalle){
+async function guardarCanceladoCompletoEnHistorial(dataCancelado){
+  try{
+    const posicion = await new Promise((resolve)=>{
+      if(!navigator.geolocation){ resolve(null); return; }
+      navigator.geolocation.getCurrentPosition((pos)=>{ resolve({lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy}); }, ()=>{ resolve(null); }, {timeout:4000});
+    });
+
+    const infoCliente = {
+      idOriginal: pedidoId || dataCancelado.id || 'sin-id',
+      codigo: document.getElementById('txtCodigo').textContent || dataCancelado.codigo || 'ST-0',
+      nombre: dataCancelado.nombre || dataCancelado.cliente?.nombre || pedidoFinal?.cliente?.nombre || pedidoFinal?.nombre || document.getElementById('txtNombre').textContent,
+      telefono: dataCancelado.telefono || dataCancelado.cliente?.celular || dataCancelado.detalles?.telefono || pedidoFinal?.cliente?.telefono || pedidoFinal?.telefono || '',
+      direccionEntrega: dataCancelado.direccionEntrega || dataCancelado.detalles?.direccion || dataCancelado.cliente?.direccion || pedidoFinal?.cliente?.direccion || pedidoFinal?.direccionEntrega || '',
+      direccionRestaurante: dataCancelado.restaurante?.direccion || pedidoFinal?.restaurante?.direccion || '',
+      restaurante: dataCancelado.restaurante || pedidoFinal?.restaurante || null,
+      productos: dataCancelado.productos || pedidoFinal?.productos || [],
+      totales: dataCancelado.totales || pedidoFinal?.totales || null,
+      metodoPago: dataCancelado.metodoPago || pedidoFinal?.metodoPago || null,
+      motivoCancelacion: dataCancelado.motivoCancelacion || 'No recibió / no contestó',
+      detalleCancelacion: dataCancelado.detalleCancelacion || dataCancelado.motivoCancelacion || 'Cancelado por no recibir',
+      canceladoPor: dataCancelado.canceladoPor || 'repartidor',
+      canceladoPorNombre: dataCancelado.canceladoPorNombre || dataCancelado.repartidorNombre || 'Repartidor',
+      estado: 'cancelado_por_no_recibir',
+      estadoOriginal: dataCancelado.estado,
+      gps: {
+        lat: posicion?.lat || dataCancelado.cliente?.lat || dataCancelado.coordenadas?.lat || pedidoFinal?.cliente?.lat || null,
+        lng: posicion?.lng || dataCancelado.cliente?.lng || dataCancelado.coordenadas?.lng || pedidoFinal?.cliente?.lng || null,
+        accuracy: posicion?.accuracy || null,
+        timestamp: new Date().toISOString()
+      },
+      ubicacionCompleta: {
+        cliente: dataCancelado.cliente || pedidoFinal?.cliente || null,
+        coordenadasEntrega: dataCancelado.coordenadas || pedidoFinal?.coordenadas || null,
+        gpsActualCliente: posicion
+      },
+      ip: dataCancelado.ip || null,
+      userAgent: navigator.userAgent,
+      fechaCancelacion: new Date().toISOString(),
+      enviadoAHistorialEn: new Date().toISOString(),
+      guardadoDesde: 'confirmacion - cancelado por no recibir',
+      datosOriginalesCompletos: dataCancelado
+    };
+
+    const idDoc = pedidoId || dataCancelado.id || `cancel-${Date.now()}`;
+    await setDoc(doc(dbHistorial, "pedidos_cancelados", idDoc), infoCliente);
+    console.log('Guardado completo en pedidos_cancelados', idDoc);
+
+    // TAMBIEN GUARDAR EN CLIENTES BLOQUEADOS POTENCIALES
+    const tel = infoCliente.telefono ? infoCliente.telefono.replace(/\s+/g,'') : null;
+    if(tel){
+      await setDoc(doc(dbHistorial, "clientes_reportados_no_recibe", tel), {
+        telefono: tel,
+        nombre: infoCliente.nombre,
+        direccion: infoCliente.direccionEntrega,
+        gps: infoCliente.gps,
+        motivo: infoCliente.motivoCancelacion,
+        totalPedidosNoRecibidos: 1,
+        ultimoReporte: new Date().toISOString(),
+        pedidos: [infoCliente]
+      }, {merge:true});
+    }
+
+  }catch(e){
+    console.error('Error guardando cancelado en historial', e);
+  }
+}
+
+function mostrarCanceladoOverlay(motivo, detalle, dataFull){
   if(canceladoYaMostrado) return;
   canceladoYaMostrado = true;
   document.getElementById('botonesRow').style.display='none';
   document.getElementById('tituloPrincipal').textContent='Pedido Cancelado';
-  document.getElementById('checkCircle').style.background='#ff1744';
+  document.getElementById('checkCircle').style.background='#111';
   document.getElementById('checkCircle').innerHTML='<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-  const motivoTxt = motivo || 'Sin especificar';
-  const detalleTxt = detalle ? ` - ${detalle}` : '';
-  document.getElementById('txtCanceladoMotivo').textContent = `Motivo: ${motivoTxt}${detalleTxt}`;
+  document.getElementById('motivoTxt').textContent = motivo || 'No recibiste el pedido / no contestaste al repartidor';
+  document.getElementById('detalleTxt').textContent = detalle || motivo || 'Repartidor reportó que no se pudo entregar';
   document.getElementById('canceladoOverlay').classList.add('active');
+
+  // GUARDAR AUTOMATICAMENTE TODO EN HISTORIAL
+  if(dataFull){ guardarCanceladoCompletoEnHistorial(dataFull); }
 }
 
 window.irAIndex = function(){
@@ -302,18 +368,7 @@ function celebrarFinalizado(){
     segundosEl.textContent = seg;
     if(seg <= 0){
       clearInterval(intervalo);
-      try{
-        localStorage.removeItem('doloya_pedido_final');
-        localStorage.removeItem('doloya_pedido_confirmacion_id');
-        localStorage.removeItem('doloya_codigo_pedido_actual');
-        localStorage.removeItem('doloya_carrito_restaurante_data');
-        if(pedidoId){
-          const mapa = JSON.parse(localStorage.getItem('doloya_mapa_codigos')||'{}');
-          delete mapa[pedidoId];
-          localStorage.setItem('doloya_mapa_codigos', JSON.stringify(mapa));
-        }
-      }catch{}
-      window.location.href = 'index.html';
+      irAIndex();
     }
   },1000);
 }
@@ -321,24 +376,16 @@ function celebrarFinalizado(){
 function render(){
  const cont=document.getElementById('timeline');
  const idx=estados.findIndex(e=>e.key===estadoActual);
- if(estadoActual==='cancelado'){
-   cont.innerHTML='';
-   return;
- }
+ if(estadoActual==='cancelado'){ cont.innerHTML=''; return; }
  cont.innerHTML=estados.map((est,i)=>{
   const done=i<idx; const isCurrent=i===idx;
   let desc = est.desc;
-  if(isCurrent && subEstadoRepartidor){
-    const d = descripcionRepartidor(subEstadoRepartidor);
-    if(d) desc = d.desc;
-  }
+  if(isCurrent && subEstadoRepartidor){ const d = descripcionRepartidor(subEstadoRepartidor); if(d) desc = d.desc; }
   const esFinal = estadoActual==='finalizado' && isCurrent;
   return `<div class="step"><div class="line ${i<idx || estadoActual==='finalizado' && i<4 ?'active':''}" style="${i===4?'display:none':''}"></div><div class="icon ${done || estadoActual==='finalizado' ?'active':''} ${isCurrent?'current':''} ${esFinal?'final':''}">${done || esFinal?`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>`:est.icon}</div><div class="step-text"><b>${est.nombre}</b><span>${desc}</span></div></div>`;
  }).join('');
  actualizarBotones();
- if(estadoActual==='finalizado'){
-   celebrarFinalizado();
- }
+ if(estadoActual==='finalizado'){ celebrarFinalizado(); }
 }
 render();
 
@@ -348,19 +395,15 @@ if(pedidoId){
       const data = snap.data();
       if(data.estado){
         if(data.estado.toLowerCase()==='cancelado'){
-          mostrarCanceladoOverlay(data.motivoCancelacion, data.detalleCancelacion);
+          mostrarCanceladoOverlay(data.motivoCancelacion, data.detalleCancelacion, data);
           return;
         }
         subEstadoRepartidor = data.estado;
         estadoActual = mapearEstadoRestauranteACliente(data.estado);
         render(); 
       }
-      if(data.codigo){ 
-        document.getElementById('txtCodigo').textContent = data.codigo; 
-      }
-      if(data.nombre){
-        document.getElementById('txtNombre').textContent = data.nombre;
-      }
+      if(data.codigo){ document.getElementById('txtCodigo').textContent = data.codigo; }
+      if(data.nombre){ document.getElementById('txtNombre').textContent = data.nombre; }
     } 
   }); 
   onSnapshot(doc(dbConf,"pedidos_admin",pedidoId),(snap)=>{
@@ -368,7 +411,7 @@ if(pedidoId){
       const data = snap.data();
       if(data.estado){
         if(data.estado.toLowerCase()==='cancelado'){
-          mostrarCanceladoOverlay(data.motivoCancelacion, data.detalleCancelacion);
+          mostrarCanceladoOverlay(data.motivoCancelacion, data.detalleCancelacion, data);
           return;
         }
         subEstadoRepartidor = data.estado;
@@ -417,15 +460,10 @@ window.confirmarCancelar = async function(){
     btn.disabled = false;
   }
 }
-
 window.llamarRestaurante = function(){
   const dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
   const tel = dataRest?.telefono || dataRest?.tel || dataRest?.celular || '';
-  if(tel){
-    window.location.href = `tel:${tel}`;
-  }else{
-    alert('Llamar al restaurante: no hay número registrado');
-  }
+  if(tel){ window.location.href = `tel:${tel}`; }else{ alert('Llamar al restaurante: no hay número registrado'); }
 }
 </script>
 </body>
