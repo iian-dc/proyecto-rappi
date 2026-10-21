@@ -27,8 +27,7 @@ h1{text-align:center;font-size:28px;font-weight:800;margin:14px 0 22px}
 .btn-llamar{flex:1;background:#16a34a;color:#fff;border:none;border-radius:999px;padding:16px;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 6px 16px rgba(22,163,74,0.3)}
 .btn-cancelar{flex:1;background:#E30613;color:#fff;border:none;border-radius:999px;padding:16px;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 6px 16px rgba(227,6,19,0.3);transition:all 0.3s ease}
 .btn-cancelar.disabled{background:transparent;color:#aaa;border:1.5px solid #E5E7EB;box-shadow:none;pointer-events:none;opacity:0.6}
-.btn-nuevo{width:100%;background:#111;color:#fff;border:none;border-radius:999px;padding:18px;font-size:15px;font-weight:900;display:none;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.2);margin-top:22px}
-.btn-nuevo.mostrar{display:flex;animation:pop .4s ease}
+.btn-nuevo{display:none !important}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px}
 .modal-overlay.active{display:flex}
 .modal-card{background:white;width:100%;max-width:320px;border-radius:20px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,0.2);animation:pop2 .2s ease;text-align:center}
@@ -38,6 +37,8 @@ h1{text-align:center;font-size:28px;font-weight:800;margin:14px 0 22px}
 .btns-confirm{display:flex;gap:10px}
 .btn-si{flex:1;background:#E30613;color:#fff;border:none;border-radius:999px;padding:12px;font-weight:800;cursor:pointer}
 .btn-no{flex:1;background:#F3F4F6;color:#111;border:1px solid #E5E7EB;border-radius:999px;padding:12px;font-weight:700;cursor:pointer}
+.contador-redirect{text-align:center;margin-top:18px;font-size:13px;color:#16a34a;font-weight:700;display:none}
+.contador-redirect.mostrar{display:block;animation:pop .3s ease}
 </style>
 </head>
 <body>
@@ -56,7 +57,7 @@ h1{text-align:center;font-size:28px;font-weight:800;margin:14px 0 22px}
 <button class="btn-cancelar" id="btnCancelar" onclick="abrirConfirmCancelar()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>Cancelar</button>
 <button class="btn-llamar" id="btnLlamar" onclick="llamarRestaurante()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Llamar al restaurante</button>
 </div>
-<button class="btn-nuevo" id="btnNuevo" onclick="window.location.href='index.html'"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Hacer pedido nuevo</button>
+<div class="contador-redirect" id="contadorRedirect">Redirigiendo a inicio en <span id="segundos">10</span>s...</div>
 </div>
 
 <div class="modal-overlay" id="modalCancelar">
@@ -177,6 +178,7 @@ if(pedidoFinal){
 
 let estadoActual='confirmado';
 let subEstadoRepartidor='';
+let redirectYaIniciado=false;
 const estados=[
  {key:'confirmado',nombre:'Pedido Confirmado',desc:'Recibido', icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>`},
  {key:'aceptado',nombre:'Pedido Aceptado',desc:'Restaurante aceptó tu pedido', icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>`},
@@ -230,30 +232,51 @@ function actualizarBotones(){
 
 function lanzarConfetiEsquinas(){
   const colors=['#16a34a','#22c55e','#4ade80','#f59e0b','#eab308'];
-  // Izquierda
   confetti({particleCount:120, angle:60, spread:75, origin:{x:0, y:0.9}, colors, scalar:1.2, startVelocity:55, gravity:0.8, ticks:300});
-  // Derecha
   confetti({particleCount:120, angle:120, spread:75, origin:{x:1, y:0.9}, colors, scalar:1.2, startVelocity:55, gravity:0.8, ticks:300});
 }
 
 function celebrarFinalizado(){
+  if(redirectYaIniciado) return;
+  redirectYaIniciado = true;
+  
   document.getElementById('tituloPrincipal').textContent = 'Pedido Entregado';
   document.getElementById('checkCircle').style.background = '#16a34a';
   const botonesRow = document.getElementById('botonesRow');
   if(botonesRow) botonesRow.style.display = 'none';
-  const btnNuevo = document.getElementById('btnNuevo');
-  if(btnNuevo) btnNuevo.classList.add('mostrar');
 
-  // Confeti elegante desde esquinas hacia arriba
   lanzarConfetiEsquinas();
   setTimeout(lanzarConfetiEsquinas,300);
   setTimeout(lanzarConfetiEsquinas,650);
   setTimeout(lanzarConfetiEsquinas,1000);
-  setTimeout(lanzarConfetiEsquinas,1400);
-  setTimeout(()=>{
-    confetti({particleCount:80, angle:60, spread:80, origin:{x:0, y:0.8}, colors:['#16a34a','#22c55e'], scalar:1.1, startVelocity:60});
-    confetti({particleCount:80, angle:120, spread:80, origin:{x:1, y:0.8}, colors:['#16a34a','#22c55e'], scalar:1.1, startVelocity:60});
-  },1800);
+
+  // MOSTRAR CONTADOR Y REDIRIGIR A LOS 10 SEGUNDOS A INDEX
+  const contadorEl = document.getElementById('contadorRedirect');
+  const segundosEl = document.getElementById('segundos');
+  contadorEl.classList.add('mostrar');
+  
+  let seg = 10;
+  segundosEl.textContent = seg;
+  const intervalo = setInterval(()=>{
+    seg--;
+    segundosEl.textContent = seg;
+    if(seg <= 0){
+      clearInterval(intervalo);
+      // LIMPIAR TODO PARA EVITAR ERRORES
+      try{
+        localStorage.removeItem('doloya_pedido_final');
+        localStorage.removeItem('doloya_pedido_confirmacion_id');
+        localStorage.removeItem('doloya_codigo_pedido_actual');
+        localStorage.removeItem('doloya_carrito_restaurante_data');
+        if(pedidoId){
+          const mapa = JSON.parse(localStorage.getItem('doloya_mapa_codigos')||'{}');
+          delete mapa[pedidoId];
+          localStorage.setItem('doloya_mapa_codigos', JSON.stringify(mapa));
+        }
+      }catch{}
+      window.location.href = 'index.html';
+    }
+  },1000);
 }
 
 function render(){
