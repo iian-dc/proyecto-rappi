@@ -27,6 +27,8 @@ h1{text-align:center;font-size:28px;font-weight:800;margin:14px 0 22px}
 .btn-llamar{flex:1;background:#16a34a;color:#fff;border:none;border-radius:999px;padding:16px;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 6px 16px rgba(22,163,74,0.3)}
 .btn-cancelar{flex:1;background:#E30613;color:#fff;border:none;border-radius:999px;padding:16px;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 6px 16px rgba(227,6,19,0.3);transition:all 0.3s ease}
 .btn-cancelar.disabled{background:transparent;color:#aaa;border:1.5px solid #E5E7EB;box-shadow:none;pointer-events:none;opacity:0.6}
+.btn-nuevo{width:100%;background:#111;color:#fff;border:none;border-radius:999px;padding:18px;font-size:15px;font-weight:900;display:none;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.2);margin-top:22px}
+.btn-nuevo.mostrar{display:flex;animation:pop .4s ease}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px}
 .modal-overlay.active{display:flex}
 .modal-card{background:white;width:100%;max-width:320px;border-radius:20px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,0.2);animation:pop2 .2s ease;text-align:center}
@@ -54,6 +56,7 @@ h1{text-align:center;font-size:28px;font-weight:800;margin:14px 0 22px}
 <button class="btn-cancelar" id="btnCancelar" onclick="abrirConfirmCancelar()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>Cancelar</button>
 <button class="btn-llamar" id="btnLlamar" onclick="llamarRestaurante()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Llamar al restaurante</button>
 </div>
+<button class="btn-nuevo" id="btnNuevo" onclick="window.location.href='index.html'"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Hacer pedido nuevo</button>
 </div>
 
 <div class="modal-overlay" id="modalCancelar">
@@ -182,7 +185,6 @@ const estados=[
  {key:'finalizado',nombre:'Finalizado',desc:'Entregado', icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 15l5 5L20 6"/><path d="M4 5l2 2"/><path d="M8 5l2 2"/></svg>`},
 ];
 
-// === MAPEO CORREGIDO COMO PEDISTE ===
 function mapearEstadoRestauranteACliente(estadoRestaurante){
   if(!estadoRestaurante) return 'confirmado';
   const e = estadoRestaurante.toLowerCase();
@@ -196,9 +198,8 @@ function mapearEstadoRestauranteACliente(estadoRestaurante){
     'listo_para_admin': 'preparando',
     'enviado_a_repartidor': 'aceptado',
     'activo': 'aceptado',
-    // REPARTIDOR - CORREGIDO:
-    'ir_a_recoger': 'preparando', // NO cambia a En Camino, se queda en Preparando
-    'recogido': 'en_camino', // SOLO cuando dice Lo tengo => En Camino en verde
+    'ir_a_recoger': 'preparando',
+    'recogido': 'en_camino',
     'ir_a_entregar': 'en_camino',
     'en_camino': 'en_camino',
     'finalizado': 'finalizado',
@@ -227,19 +228,32 @@ function actualizarBotones(){
   }
 }
 
+function lanzarConfetiEsquinas(){
+  const colors=['#16a34a','#22c55e','#4ade80','#f59e0b','#eab308'];
+  // Izquierda
+  confetti({particleCount:120, angle:60, spread:75, origin:{x:0, y:0.9}, colors, scalar:1.2, startVelocity:55, gravity:0.8, ticks:300});
+  // Derecha
+  confetti({particleCount:120, angle:120, spread:75, origin:{x:1, y:0.9}, colors, scalar:1.2, startVelocity:55, gravity:0.8, ticks:300});
+}
+
 function celebrarFinalizado(){
   document.getElementById('tituloPrincipal').textContent = 'Pedido Entregado';
   document.getElementById('checkCircle').style.background = '#16a34a';
   const botonesRow = document.getElementById('botonesRow');
   if(botonesRow) botonesRow.style.display = 'none';
-  const colors=['#16a34a','#22c55e','#16a34a','#f59e0b','#eab308'];
-  const lanzarFuerte = ()=> confetti({particleCount:300,spread:160,origin:{y:0.6},colors,scalar:1.4,startVelocity:45});
-  lanzarFuerte();
-  setTimeout(lanzarFuerte,250);
-  setTimeout(lanzarFuerte,500);
-  setTimeout(lanzarFuerte,900);
-  setTimeout(lanzarFuerte,1300);
-  setTimeout(()=>confetti({particleCount:500,spread:200,origin:{y:0.5},colors}),1700);
+  const btnNuevo = document.getElementById('btnNuevo');
+  if(btnNuevo) btnNuevo.classList.add('mostrar');
+
+  // Confeti elegante desde esquinas hacia arriba
+  lanzarConfetiEsquinas();
+  setTimeout(lanzarConfetiEsquinas,300);
+  setTimeout(lanzarConfetiEsquinas,650);
+  setTimeout(lanzarConfetiEsquinas,1000);
+  setTimeout(lanzarConfetiEsquinas,1400);
+  setTimeout(()=>{
+    confetti({particleCount:80, angle:60, spread:80, origin:{x:0, y:0.8}, colors:['#16a34a','#22c55e'], scalar:1.1, startVelocity:60});
+    confetti({particleCount:80, angle:120, spread:80, origin:{x:1, y:0.8}, colors:['#16a34a','#22c55e'], scalar:1.1, startVelocity:60});
+  },1800);
 }
 
 function render(){
@@ -297,8 +311,12 @@ if(pedidoId){
   });
 }
 
-function lanzar(){ const colors=['#16a34a','#ef4444','#f59e0b','#3b82f6','#eab308']; confetti({particleCount:180,spread:120,origin:{y:0.6},colors,scalar:1.2}); }
-lanzar(); setTimeout(lanzar,300); setTimeout(lanzar,700); setTimeout(lanzar,1200);
+function lanzar(){ 
+  const colors=['#16a34a','#ef4444','#f59e0b','#3b82f6','#eab308']; 
+  confetti({particleCount:80, angle:60, spread:70, origin:{x:0, y:0.9}, colors, scalar:1.1, startVelocity:45});
+  confetti({particleCount:80, angle:120, spread:70, origin:{x:1, y:0.9}, colors, scalar:1.1, startVelocity:45});
+}
+lanzar(); setTimeout(lanzar,400); setTimeout(lanzar,800);
 
 window.abrirConfirmCancelar = function(){
   if(document.getElementById('btnCancelar').classList.contains('disabled')) return;
