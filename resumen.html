@@ -71,8 +71,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .modal-card input:focus{border-color:#111}
 .btn-finalizar{width:100%;margin-top:18px;padding:16px;background:#E30613;color:white;border:none;border-radius:999px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(227,6,19,0.3)}
 .btn-cancel{width:100%;margin-top:10px;padding:12px;background:white;color:#111;border:1.5px solid #E5E7EB;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer}
-
-/* NUEVO VALIDACION ROJO NEON */
 .error-detalles{border:2px solid #FF0000 !important;box-shadow:0 0 8px #FF0000, 0 0 16px #FF0000, 0 0 24px rgba(255,0,0,0.4) !important;background:#FFF0F0 !important;animation:shakeRed 0.45s ease;border-radius:12px}
 @keyframes shakeRed{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 .toast-resumen{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);background:#111;color:#fff;padding:14px 20px;border-radius:14px;font-size:13px;font-weight:800;z-index:10000;opacity:0;pointer-events:none;transition:all 0.3s ease;text-align:center;box-shadow:0 8px 20px rgba(0,0,0,0.3)}
@@ -286,7 +284,6 @@ async function obtenerGPSReal(){
   const detCheck = JSON.parse(localStorage.getItem('doloya_detalles_full')||'null');
   const vieneDeDetalles = detCheck && detCheck.direccion && detCheck.lat && detCheck.lng;
   const edicionReciente = localStorage.getItem('doloya_direccion_editada') === '1';
-
   if(vieneDeDetalles && edicionReciente){
     lat = detCheck.lat;
     lng = detCheck.lng;
@@ -296,12 +293,10 @@ async function obtenerGPSReal(){
     calcularDistanciaYActualizar();
     return;
   }
-
   if(!navigator.geolocation){
     cargarDireccionYDistanciaSinGPS();
     return;
   }
-
   navigator.geolocation.getCurrentPosition(async (pos)=>{
     const latGPS = pos.coords.latitude;
     const lngGPS = pos.coords.longitude;
@@ -434,22 +429,17 @@ function toggleResumen(){
   const det = document.getElementById('detalleResumen');
   det.style.display = det.style.display==='none' ? 'block' : 'none';
 }
-
-// NUEVO: VALIDAR DETALLES OBLIGATORIOS
 function validarDetallesObligatorios(){
   const det = JSON.parse(localStorage.getItem('doloya_detalles_full')||'null');
   const ubi = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
   const dirTxt = document.getElementById('txtDireccion').textContent || '';
   const tieneDireccion = (det && det.direccion && det.direccion.trim().length > 3) || (ubi && ubi.direccion && ubi.direccion.trim().length > 3) || (dirTxt && dirTxt.length > 10 && !dirTxt.includes('Obteniendo'));
   const tieneCelular = (det && det.celular && det.celular.trim().length >= 8) || (localStorage.getItem('doloya_celular') && localStorage.getItem('doloya_celular').trim().length >= 8);
-  
   let faltan = [];
   if(!tieneDireccion) faltan.push('dirección');
   if(!tieneCelular) faltan.push('celular');
-  
   return { ok: faltan.length===0, faltan };
 }
-
 function mostrarErrorDetalles(mensaje){
   const fila = document.getElementById('filaDetalles');
   fila.classList.remove('error-detalles');
@@ -462,9 +452,7 @@ function mostrarErrorDetalles(mensaje){
   setTimeout(()=>{ toast.classList.remove('show'); fila.classList.remove('error-detalles'); }, 2500);
   setTimeout(()=>{ window.location.href='detalles.html'; }, 800);
 }
-
 function abrirModal(){
-  // PRIMERO VALIDAR DETALLES
   const val = validarDetallesObligatorios();
   if(!val.ok){
     mostrarErrorDetalles('Completa tu ' + val.faltan.join(' y ') + ' en Detalles');
@@ -478,7 +466,6 @@ function abrirModal(){
 function cerrarModal(){
   document.getElementById('modalCliente').classList.remove('active');
 }
-
 async function obtenerIpKey(){
   let ipKey = localStorage.getItem('doloya_device_id');
   try{
@@ -488,6 +475,20 @@ async function obtenerIpKey(){
     localStorage.setItem('doloya_device_id', ipKey);
   }catch(e){}
   return ipKey;
+}
+
+// FIX PARA ERROR Property array contains an invalid nested entity
+function limpiarProductosParaFirestore(arr){
+  if(!Array.isArray(arr)) return [];
+  return arr.map(p=>{
+    // Solo campos permitidos, sin undefined, sin null, sin arrays anidados
+    return {
+      nombre: String(p.nombre || p.name || 'Producto').substring(0,100),
+      precio: Number(p.precio || p.price || 0),
+      cantidad: Number(p.cantidad || p.qty || 1),
+      imagen: String(p.imagen || p.img || p.imagenFinal || '').substring(0,500)
+    };
+  }).filter(p=> p.nombre && p.precio>=0 && p.cantidad>0);
 }
 
 async function irAPagar(){
@@ -504,17 +505,51 @@ async function irAPagar(){
   localStorage.setItem('doloya_cliente_nombre', nombre);
   const telefonoGuardado = localStorage.getItem('doloya_celular') || detallesFull?.celular || localStorage.getItem('doloya_cliente_tel') || '';
 
-  const direccionClienteFinal = direccionBase || detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent;
+  const direccionClienteFinal = direccionBase || detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent || '';
+
+  // PRODUCTOS LIMPIOS - FIX DEL ERROR
+  const productosLimpios = limpiarProductosParaFirestore(carrito);
+  if(productosLimpios.length===0){
+    alert('Carrito vacío o con datos inválidos');
+    btn.textContent='Finalizar pedido';
+    btn.disabled=false;
+    return;
+  }
+
+  // CLIENTE LIMPIO SIN UNDEFINED
+  const clienteLimpio = {
+    nombre: String(nombre).substring(0,100),
+    celular: String(telefonoGuardado || '').substring(0,20),
+    direccion: String(direccionClienteFinal).substring(0,300),
+    referencia: String(detallesRef || '').substring(0,300),
+    ubicacion: { lat: Number(lat||0), lng: Number(lng||0) }
+  };
+
+  // RESTAURANTE LIMPIO
+  const restauranteLimpio = {
+    id: String(dataRest?.id || 'la_catrina_burger'),
+    cat: String(dataRest?.cat || 'burgers'),
+    nombre: String(dataRest?.nombre || document.getElementById('nombreRest').textContent || 'Restaurante').substring(0,100),
+    lat: Number(restLat||0),
+    lng: Number(restLng||0)
+  };
 
   const pedidoCompleto = {
-    restaurante: { id: dataRest?.id || 'la_catrina_burger', cat: dataRest?.cat || 'burgers', nombre: dataRest?.nombre || document.getElementById('nombreRest').textContent, logo: dataRest?.logo || '', lat: restLat, lng: restLng, direccion: dataRest?.direccion || "" },
-    cliente: { nombre: nombre, celular: telefonoGuardado, telefono: telefonoGuardado, direccion: direccionClienteFinal, detalles: detallesFull || {}, referencia: detallesRef, ubicacion: { lat: lat, lng: lng } },
-    productos: carrito,
-    totales: { costoProductos: parseFloat(costoProductos.toFixed(2)), distanciaKm: parseFloat(distanciaKm.toFixed(2)), costoEnvio: envioFinal, tarifaServicio: tarifaFinal, ahorro: parseFloat(ahorroFinal.toFixed(2)), tipoEntrega: tipoActual, total: parseFloat(totalFinal.toFixed(2)) },
-    metodoPago: metodoSel,
+    restaurante: restauranteLimpio,
+    cliente: clienteLimpio,
+    productos: productosLimpios,
+    totales: { 
+      costoProductos: Number(costoProductos.toFixed(2)), 
+      distanciaKm: Number(distanciaKm.toFixed(2)), 
+      costoEnvio: Number(envioFinal), 
+      tarifaServicio: Number(tarifaFinal), 
+      ahorro: Number(ahorroFinal.toFixed(2)), 
+      tipoEntrega: String(tipoActual), 
+      total: Number(totalFinal.toFixed(2)) 
+    },
+    metodoPago: typeof metodoSel === 'string' ? { tipo: metodoSel } : { tipo: String(metodoSel?.tipo || metodoSel?.nombre || 'efectivo').substring(0,50) },
     estado: 'confirmado',
-    fecha: new Date().toISOString(),
-    timestamp: window.serverTimestamp ? window.serverTimestamp() : new Date()
+    fecha: new Date().toISOString()
   };
 
   try{
@@ -527,13 +562,16 @@ async function irAPagar(){
     const idRest = dataRest?.id || 'la_catrina_burger';
 
     if(ipKey && cat && idRest){
-      await window.setRT(window.refRT(window.dbAliadosRT, `carrito/${cat}/${idRest}/${ipKey}`), null);
-      await window.setRT(window.refRT(window.dbAliadosRT, `doloya_aliados/${cat}/${idRest}/carritos/${ipKey}`), null);
+      try{
+        await window.setRT(window.refRT(window.dbAliadosRT, `carrito/${cat}/${idRest}/${ipKey}`), null);
+        await window.setRT(window.refRT(window.dbAliadosRT, `doloya_aliados/${cat}/${idRest}/carritos/${ipKey}`), null);
+      }catch(e){ console.log('Error limpiando carrito RT', e); }
     }
 
     localStorage.removeItem('doloya_carrito_v2');
     window.location.href='confirmacion.html';
   }catch(e){
+    console.error(e);
     alert("Error: "+e.message);
     btn.textContent = 'Finalizar pedido';
     btn.disabled = false;
