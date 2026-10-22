@@ -128,7 +128,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, onValue, get, set, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import { getFirestore, collection, query, where, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
@@ -141,7 +140,6 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const dbFirestore = getFirestore(app);
 
 const params = new URLSearchParams(window.location.search);
 let cat = params.get('cat');
@@ -159,10 +157,18 @@ let carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 let restauranteActualCarrito = localStorage.getItem('doloya_carrito_restaurante')||null;
 let restauranteAnteriorData = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
 let productoPendiente = null;
+let categoriaSeleccionada = 'todos';
+let productosGlobal = [];
 const TIEMPO_EXPIRACION = 3 * 60 * 60 * 1000;
 
 function irAlInicio(){ window.location.href = 'inicio.html'; }
 window.irAlInicio = irAlInicio;
+
+function fmtPrecio(n){
+  const num = parseFloat(n);
+  if(isNaN(num)) return '0';
+  return Number.isInteger(num) ? num.toFixed(0) : num.toFixed(2);
+}
 
 async function obtenerIPyGPS(){
   try{
@@ -230,7 +236,7 @@ function guardarCarrito(){
     localStorage.removeItem('doloya_carrito_timestamp');
     restauranteActualCarrito = null;
   }
-  renderBarraCarrito();
+  renderBarraCarritoSolo();
   guardarCarritoFirebase(false);
 }
 
@@ -298,7 +304,7 @@ async function verificarExpiracion(){
     localStorage.removeItem('doloya_carrito_restaurante');
     localStorage.removeItem('doloya_carrito_restaurante_data');
     localStorage.removeItem('doloya_carrito_timestamp');
-    renderBarraCarrito();
+    renderBarraCarritoSolo();
   }
 }
 setInterval(verificarExpiracion, 5 * 60 * 1000);
@@ -333,7 +339,8 @@ function getCantidad(nombre){
   const existe = carrito.find(p=>p.nombre===nombre);
   return existe?existe.cantidad:0;
 }
-function renderBarraCarrito(){
+
+function renderBarraCarritoSolo(){
   const bar = document.getElementById('carritoBar');
   if(carrito.length===0){ bar.style.display='none'; }
   else{ bar.style.display='flex'; }
@@ -349,9 +356,9 @@ function renderBarraCarrito(){
   const txt = document.getElementById('carritoTexto');
   const prc = document.getElementById('carritoPrecio');
   if(txt) txt.textContent = totalProductos===1?`1 producto`:`${totalProductos} productos`;
-  if(prc) prc.textContent = `$${totalPrecio}`;
+  if(prc) prc.textContent = `$${fmtPrecio(totalPrecio)}`;
   document.querySelectorAll('.prod-card').forEach(card=>{
-    const nombre = card.querySelector('.prod-name')?.textContent;
+    const nombre = card.getAttribute('data-nombre');
     if(!nombre) return;
     const cant = getCantidad(nombre);
     const addBtn = card.querySelector('.btn-add');
@@ -368,10 +375,60 @@ function renderBarraCarrito(){
   });
 }
 
+function renderProductos(lista){
+  const cont=document.getElementById('listaProductos');
+  cont.innerHTML='';
+  if(lista.length===0){
+    cont.innerHTML='<p style="text-align:center;color:#999;padding:20px">No hay productos en esta categoría</p>';
+    return;
+  }
+  lista.forEach(p=>{
+    const cant = getCantidad(p.nombre);
+    let htmlPrecio = '';
+    if(p.tienePromo && p.precioOriginal){
+      htmlPrecio = `<div class="price-line"><span class="prod-price-old">$${fmtPrecio(p.precioOriginal)}</span><span class="prod-price-disc">-${fmtPrecio(p.porcentaje)}%</span><span class="prod-price-new">$${fmtPrecio(p.precio)}</span></div>`;
+    }else{
+      htmlPrecio = `$${fmtPrecio(p.precio)}`;
+    }
+    const badgePromo = p.promo ? `<div class="badge-promo-prod">${p.promo}</div>` : '';
+    cont.innerHTML+=`
+    <div class="prod-card" data-nombre="${p.nombre.replace(/"/g,'&quot;')}">
+      ${badgePromo}
+      <img class="prod-img" src="${p.imagenFinal}">
+      <div class="prod-info">
+        <div class="prod-name">${p.nombre}</div>
+        ${p.descripcion?`<div class="prod-desc">${p.descripcion}</div>`:''}
+        <div class="prod-price">${htmlPrecio}</div>
+      </div>
+      <button class="btn-add" style="${cant>0?'display:none':'display:flex'}" onclick="handleAdd('${p.nombre.replace(/'/g,"\\'")}', ${p.precio}, '${p.imagenFinal}')">+</button>
+      <div class="qty-controls" style="${cant>0?'display:flex':'display:none'}">
+        <button class="qty-btn" onclick="handleRestar('${p.nombre.replace(/'/g,"\\'")}')">−</button>
+        <span class="qty-num">${cant}</span>
+        <button class="qty-btn mas" onclick="handleAdd('${p.nombre.replace(/'/g,"\\'")}', ${p.precio}, '${p.imagenFinal}')">+</button>
+      </div>
+    </div>`;
+  });
+}
+
+function filtrarProductos(catFiltro){
+  categoriaSeleccionada = catFiltro.toLowerCase();
+  document.querySelectorAll('.tab').forEach(t=>{
+    if(t.dataset.cat===categoriaSeleccionada) t.classList.add('active');
+    else t.classList.remove('active');
+  });
+  if(categoriaSeleccionada==='todos'){
+    renderProductos(productosGlobal);
+  }else{
+    const fil=productosGlobal.filter(p=>p.categoria===categoriaSeleccionada);
+    renderProductos(fil);
+  }
+}
+window.filtrarProductos=filtrarProductos;
+
 if(!cat || !id){ document.getElementById('loading').textContent='Restaurante no encontrado'; }
 else {
   obtenerIPyGPS();
-  renderBarraCarrito();
+  renderBarraCarritoSolo();
   onValue(ref(db, `doloya_aliados/${cat}/${id}`), snap=>{
     const data = snap.val();
     if(!data){ document.getElementById('loading').textContent='Restaurante no encontrado'; return; }
@@ -389,10 +446,7 @@ else {
     document.getElementById('txtAbierto').textContent=data.abierto?'ABIERTO':'CERRADO';
     
     const menuRaw = data.menu || {};
-    const categoriasRaw = data.categorias || {};
-    
-    // SOLO PRODUCTOS ACTIVOS
-    let productosArray = Object.values(menuRaw)
+    productosGlobal = Object.values(menuRaw)
       .filter(p=> p.activo!==false && p.activo!==0 && p.activo!=='false')
       .map(p=>{
         const tienePromo = p.promoActiva!==false && (p.promo||p.porcentaje>0) && parseFloat(p.porcentaje||0)>0;
@@ -407,7 +461,7 @@ else {
           precio: precioFinal,
           precioOriginal: tienePromo ? precioOriginal : null,
           porcentaje: tienePromo ? porcentaje : 0,
-          promo: tienePromo ? (p.promo||`-${porcentaje}%`) : '',
+          promo: tienePromo ? (p.promo||`-${fmtPrecio(porcentaje)}%`) : '',
           tienePromo: tienePromo,
           categoria: (p.categoria||p.Categoria||'Combos').toLowerCase(),
           categoriaOriginal: p.categoria||'Combos',
@@ -415,68 +469,28 @@ else {
         };
       });
 
-    // CATEGORIAS SOLO CON PRODUCTOS - SI NO TIENE PRODUCTOS NO SE AÑADE
-    const categoriasConProductos = [...new Set(productosArray.map(m=>m.categoria))].filter(Boolean);
-    const tabsList = categoriasConProductos.length>0 ? categoriasConProductos : ['combos'];
-    
+    const categoriasConProductos = [...new Set(productosGlobal.map(m=>m.categoria))].filter(Boolean);
+    let tabsList = ['todos', ...categoriasConProductos];
+
     const tabsEl=document.getElementById('tabs');
+    const currentActive = categoriaSeleccionada;
     tabsEl.innerHTML='';
     tabsList.forEach((c,i)=>{
       const btn=document.createElement('button');
-      btn.className='tab'+(i===0?' active':'');
+      btn.className='tab'+(c===currentActive?' active':'');
       btn.textContent=c.charAt(0).toUpperCase()+c.slice(1);
       btn.dataset.cat=c;
-      btn.onclick=()=>{
-        document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-        btn.classList.add('active');
-        filtrarProductos(c);
-      };
+      btn.onclick=()=>{ filtrarProductos(c); };
       tabsEl.appendChild(btn);
     });
 
-    function renderProductos(lista){
-      const cont=document.getElementById('listaProductos');
-      cont.innerHTML='';
-      if(lista.length===0){
-        cont.innerHTML='<p style="text-align:center;color:#999;padding:20px">No hay productos en esta categoría</p>';
-        return;
-      }
-      lista.forEach(p=>{
-        const cant = getCantidad(p.nombre);
-        let htmlPrecio = '';
-        if(p.tienePromo && p.precioOriginal){
-          htmlPrecio = `<div class="price-line"><span class="prod-price-old">$${p.precioOriginal.toFixed(0)}</span><span class="prod-price-disc">-${p.porcentaje}%</span><span class="prod-price-new">$${p.precio.toFixed(0)}</span></div>`;
-        }else{
-          htmlPrecio = `$${p.precio.toFixed(0)}`;
-        }
-        const badgePromo = p.promo ? `<div class="badge-promo-prod">${p.promo}</div>` : '';
-        cont.innerHTML+=`
-        <div class="prod-card">
-          ${badgePromo}
-          <img class="prod-img" src="${p.imagenFinal}">
-          <div class="prod-info">
-            <div class="prod-name">${p.nombre}</div>
-            ${p.descripcion?`<div class="prod-desc">${p.descripcion}</div>`:''}
-            <div class="prod-price">${htmlPrecio}</div>
-          </div>
-          <button class="btn-add" style="${cant>0?'display:none':'display:flex'}" onclick="handleAdd('${p.nombre.replace(/'/g,"\\'")}', ${p.precio}, '${p.imagenFinal}')">+</button>
-          <div class="qty-controls" style="${cant>0?'display:flex':'display:none'}">
-            <button class="qty-btn" onclick="handleRestar('${p.nombre.replace(/'/g,"\\'")}')">−</button>
-            <span class="qty-num">${cant}</span>
-            <button class="qty-btn mas" onclick="handleAdd('${p.nombre.replace(/'/g,"\\'")}', ${p.precio}, '${p.imagenFinal}')">+</button>
-          </div>
-        </div>`;
-      });
+    if(categoriaSeleccionada==='todos'){
+      renderProductos(productosGlobal);
+    }else{
+      const fil=productosGlobal.filter(p=>p.categoria===categoriaSeleccionada);
+      renderProductos(fil.length>0?fil:productosGlobal);
     }
-    
-    window.filtrarProductos=(catFiltro)=>{
-      const fil=productosArray.filter(p=>p.categoria===catFiltro.toLowerCase());
-      renderProductos(fil.length>0?fil:productosArray);
-    }
-    
-    renderProductos(productosArray.filter(p=>p.categoria===tabsList[0]));
-    renderBarraCarrito();
-    setTimeout(()=>{ verificarCambioRestaurante(); verificarExpiracion(); }, 500);
+    renderBarraCarritoSolo();
   });
 }
 
@@ -518,7 +532,7 @@ document.getElementById('btnEliminar').onclick=async ()=>{
   restauranteActualCarrito=null;
   restauranteAnteriorData=null;
   document.getElementById('modalCambio').classList.remove('show');
-  renderBarraCarrito();
+  renderBarraCarritoSolo();
   if(productoPendiente){
     setTimeout(()=>{
       addProducto(productoPendiente.nombre, productoPendiente.precio, productoPendiente.imagen);
