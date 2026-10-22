@@ -37,12 +37,14 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
 .tab.active{background:#E30613;color:white;border-color:#E30613;box-shadow:0 4px 12px rgba(227,6,19,0.25)}
 .menu-title{padding:18px 16px 10px 16px;font-size:18px;font-weight:800}
 .productos{padding:0 16px;display:flex;flex-direction:column;gap:12px}
-.prod-card{display:flex;gap:12px;padding:12px;border:1.5px solid #EEE;border-radius:16px;background:white;align-items:center}
+.prod-card{display:flex;gap:12px;padding:12px;border:1.5px solid #EEE;border-radius:16px;background:white;align-items:center;position:relative}
 .prod-img{width:92px;height:72px;border-radius:12px;object-fit:cover;flex-shrink:0;background:#F3F4F6}
 .prod-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
-.prod-name{font-size:14px;font-weight:800;line-height:1.2}
+.prod-name{font-size:14px;font-weight:800;line-height:1.2;display:flex;align-items:center;gap:6px}
 .prod-desc{font-size:11.5px;color:#6B7280;margin-top:3px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.prod-price{margin-top:6px;font-size:15px;font-weight:800}
+.prod-price{margin-top:6px;font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px}
+.prod-price-old{font-size:12px;color:#9CA3AF;text-decoration:line-through;font-weight:600}
+.badge-promo-prod{position:absolute;top:8px;left:8px;background:#E30613;color:white;font-size:9px;font-weight:800;padding:3px 7px;border-radius:6px;z-index:2}
 .btn-add{width:38px;height:38px;background:#E30613;border-radius:50%;border:none;color:white;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 3px 10px rgba(227,6,19,0.25);align-self:center}
 .qty-controls{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .qty-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid #E5E7EB;background:white;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center;cursor:pointer}
@@ -243,7 +245,6 @@ async function guardarCarritoFirebase(esFinal){
     ubicacion: ubicacionGPS,
     fecha: Date.now()
   };
-
   if(esFinal){
     const ahora = Date.now();
     const expira = ahora + TIEMPO_EXPIRACION;
@@ -260,7 +261,6 @@ async function guardarCarritoFirebase(esFinal){
       dataCarrito.expiraEn = new Date(dataCarrito.fechaExpiracion).toISOString();
     }
   }
-
   if(carrito.length>0){
     await set(ref(db, `carrito/${cat}/${id}/${ipKey}`), dataCarrito);
     await set(ref(db, `doloya_aliados/${cat}/${id}/carritos/${ipKey}`), dataCarrito);
@@ -369,6 +369,7 @@ if(!cat || !id){ document.getElementById('loading').textContent='Restaurante no 
 else {
   obtenerIPyGPS();
   renderBarraCarrito();
+  // VINCULACION EN TIEMPO REAL CON PANEL ALIADO - doloya_aliados/{cat}/{id}/menu
   onValue(ref(db, `doloya_aliados/${cat}/${id}`), snap=>{
     const data = snap.val();
     if(!data){ document.getElementById('loading').textContent='Restaurante no encontrado'; return; }
@@ -384,15 +385,46 @@ else {
     document.getElementById('txtCalificacion').textContent=calcularValoracion(likes);
     document.getElementById('txtTotalLikes').textContent=`(${likes})`;
     document.getElementById('txtAbierto').textContent=data.abierto?'ABIERTO':'CERRADO';
-    const menu = data.menu || {};
-    const categorias = [...new Set(Object.values(menu).map(m=>m.categoria || m.tipo || 'Combos'))];
-    const tabsList = categorias.length>0?categorias:['Combos','Salchipapas','Desgranados','Bebidas'];
+    
+    const menuRaw = data.menu || {};
+    // SOLO PRODUCTOS ACTIVOS - si activo===false no aparece al cliente
+    let productosArray = Object.values(menuRaw)
+      .filter(p=> p.activo!==false && p.activo!==0 && p.activo!=='false')
+      .map(p=>{
+        const tienePromo = p.promoActiva!==false && (p.promo||p.porcentaje>0);
+        const precioOriginal = parseFloat(p.precio||p.Precio||0);
+        const precioDesc = parseFloat(p.precioDescuento||0);
+        const precioFinal = (tienePromo && precioDesc>0) ? precioDesc : precioOriginal;
+        const descuentoTexto = p.promo || (p.porcentaje ? `-${p.porcentaje}%` : '');
+        return {
+          nombre: p.nombre||p.Nombre||'Producto',
+          descripcion: p.descripcion||p.Descripcion||'',
+          precio: precioFinal,
+          precioOriginal: tienePromo ? precioOriginal : null,
+          promo: tienePromo ? descuentoTexto : '',
+          categoria: (p.categoria||p.Categoria||'Combos').toLowerCase(),
+          categoriaOriginal: p.categoria||'Combos',
+          imagenFinal: p.imagen||p.img||p.Imagen||'https://via.placeholder.com/150',
+          activo: p.activo
+        };
+      });
+
+    if(productosArray.length===0){
+      productosArray=[
+        {nombre:'Catrina Clásica', descripcion:'Pepperoni premium', precio:165, precioOriginal:null, promo:'', categoria:'combos', categoriaOriginal:'Combos', imagenFinal:'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400'},
+      ];
+    }
+
+    // CATEGORIAS REALES DEL RESTAURANTE - solo texto, sin iconos
+    const categoriasUnicas = [...new Set(productosArray.map(m=>m.categoria))];
+    const tabsList = categoriasUnicas.length>0 ? categoriasUnicas : ['combos'];
     const tabsEl=document.getElementById('tabs');
     tabsEl.innerHTML='';
     tabsList.forEach((c,i)=>{
       const btn=document.createElement('button');
       btn.className='tab'+(i===0?' active':'');
-      btn.textContent=c;
+      btn.textContent=c.charAt(0).toUpperCase()+c.slice(1);
+      btn.dataset.cat=c;
       btn.onclick=()=>{
         document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
         btn.classList.add('active');
@@ -400,25 +432,26 @@ else {
       };
       tabsEl.appendChild(btn);
     });
-    let productosArray = Object.values(menu).map(p=>({...p, categoria: p.categoria||p.tipo||tabsList[0], imagenFinal: p.imagen||p.img||'https://via.placeholder.com/150'}));
-    if(productosArray.length===0){
-      productosArray=[
-        {nombre:'Catrina Clásica', descripcion:'Pepperoni premium', precio:165, imagenFinal:'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400', categoria:'Combos'},
-        {nombre:'Doble Carne BBQ', descripcion:'Doble carne', precio:145, imagenFinal:'https://images.unsplash.com/photo-1550547660-d9450f859349?w=400', categoria:'Combos'}
-      ];
-    }
+
     function renderProductos(lista){
       const cont=document.getElementById('listaProductos');
       cont.innerHTML='';
+      if(lista.length===0){
+        cont.innerHTML='<p style="text-align:center;color:#999;padding:20px">No hay productos en esta categoría</p>';
+        return;
+      }
       lista.forEach(p=>{
         const cant = getCantidad(p.nombre);
+        const precioOld = p.precioOriginal ? `<span class="prod-price-old">$${p.precioOriginal}</span>` : '';
+        const badgePromo = p.promo ? `<div class="badge-promo-prod">${p.promo}</div>` : '';
         cont.innerHTML+=`
         <div class="prod-card">
+          ${badgePromo}
           <img class="prod-img" src="${p.imagenFinal}">
           <div class="prod-info">
             <div class="prod-name">${p.nombre}</div>
             <div class="prod-desc">${p.descripcion||''}</div>
-            <div class="prod-price">$${p.precio}</div>
+            <div class="prod-price">$${p.precio} ${precioOld}</div>
           </div>
           <button class="btn-add" style="${cant>0?'display:none':'display:flex'}" onclick="handleAdd('${p.nombre.replace(/'/g,"\\'")}', ${p.precio}, '${p.imagenFinal}')">+</button>
           <div class="qty-controls" style="${cant>0?'display:flex':'display:none'}">
@@ -429,11 +462,15 @@ else {
         </div>`;
       });
     }
+    
     window.filtrarProductos=(catFiltro)=>{
-      const fil=productosArray.filter(p=>p.categoria.toLowerCase()===catFiltro.toLowerCase());
-      renderProductos(fil.length>0?fil:productosArray.filter(p=>p.categoria===tabsList[0]));
+      const fil=productosArray.filter(p=>p.categoria===catFiltro.toLowerCase());
+      renderProductos(fil.length>0?fil:productosArray);
     }
+    
+    // Mostrar primera categoria real por defecto
     renderProductos(productosArray.filter(p=>p.categoria===tabsList[0]));
+    renderBarraCarrito();
     setTimeout(()=>{ verificarCambioRestaurante(); verificarExpiracion(); }, 500);
   });
 }
