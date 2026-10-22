@@ -61,7 +61,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
 .rest-card.cerrado .rest-logo{filter:grayscale(1)}
 .no-ubi{height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
 .i{width:14px;height:14px;flex-shrink:0}
-.btn-flotante-canasta{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#E30613;color:white;padding:8px 12px;border-radius:999px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:99999;box-shadow:0 6px 18px rgba(227,6,19,0.35);cursor:pointer;min-width:160px;animation: flotar 0.3s ease}
+.btn-flotante-canasta{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#E30613;color:white;padding:8px 12px 8px 12px;border-radius:999px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:99999;box-shadow:0 6px 18px rgba(227,6,19,0.35);cursor:pointer;min-width:160px;animation: flotar 0.3s ease}
 .btn-flotante-left{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;letter-spacing:0.2px}
 .badge-flotante{background:white;color:#E30613;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900}
 @keyframes flotar{from{transform:translateX(-50%) translateY(20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
@@ -75,7 +75,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
 <div class="categories">
   <div class="cat-item active" data-cat="todos"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/bento.png"></div><span>Todos</span></div>
   <div class="cat-item" data-cat="burgers"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/hamburger.png"></div><span>Burger</span></div>
-  <div class="cat-item" data-cat="pizzas"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/pizza.png" onerror="this.onerror=null;this.src='https://img.icons8.com/color/96/pizza.png'"></div><span>Pizza</span></div>
+  <div class="cat-item" data-cat="pizzas"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/pizza.png" onerror="this.src='https://img.icons8.com/color/96/pizza.png'"></div><span>Pizza</span></div>
   <div class="cat-item" data-cat="alitas"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/fried-chicken.png"></div><span>Alitas</span></div>
   <div class="cat-item" data-cat="tacos"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/taco.png"></div><span>Tacos</span></div>
   <div class="cat-item" data-cat="hotdog"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/hot-dog.png"></div><span>Hot Dog</span></div>
@@ -94,12 +94,20 @@ const db = getDatabase(app);
 const dataStr = localStorage.getItem('doloya_ubicacion');
 if(!dataStr) location.href="index.html";
 const cliente = JSON.parse(dataStr);
-const lat = cliente.ubicacion?.lat;
-const lng = cliente.ubicacion?.lng;
-fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`).then(r=>r.json()).then(data=>{ const addr=data.address; const direccion = `${addr.road||''} ${addr.house_number||''}, ${addr.suburb||''}, ${addr.city||addr.town||''}, ${addr.state||''}`; document.getElementById('txtUbi').textContent=direccion; });
+fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${cliente.ubicacion?.lat}&lon=${cliente.ubicacion?.lng}&zoom=18&addressdetails=1`).then(r=>r.json()).then(data=>{ const addr=data.address; const direccion = `${addr.road||''} ${addr.house_number||''}, ${addr.suburb||''}, ${addr.city||addr.town||''}, ${addr.state||''}`; document.getElementById('txtUbi').textContent=direccion; });
 let aliadosData=[];
-let likesData={};
 const listaEl=document.getElementById('listaRestaurantes');
+
+// FUNCION QUE LEE CAMPOS CON MAYUSCULA O MINUSCULA
+function getCampo(r, ...nombres){
+  for(let n of nombres){
+    if(r[n] !== undefined && r[n] !== null && r[n] !== '') return r[n];
+    // busca case-insensitive
+    const key = Object.keys(r).find(k => k.toLowerCase() === n.toLowerCase());
+    if(key && r[key]) return r[key];
+  }
+  return '';
+}
 
 function aplanarDatos(dataPorCategoria){
   let lista=[];
@@ -107,47 +115,34 @@ function aplanarDatos(dataPorCategoria){
     const grupo=dataPorCategoria[cat];
     if(grupo) Object.keys(grupo).forEach(key=>{
       const r=grupo[key];
-      if(r && r.nombre){ 
+      if(r && (r.nombre || r.Nombre)){ 
         r.id=key; 
-        if(!r.categoria) r.categoria=cat;
-        if(r.abierto === undefined && r.estado === undefined) r.abierto = true;
-        else if(r.abierto === undefined){
-          if(r.estado === 'cerrado' || r.estado === false) r.abierto = false;
+        if(!r.categoria && !r.Categoria) r.categoria=cat;
+        r.categoria = getCampo(r,'categoria','Categoria') || cat;
+        r.nombre = getCampo(r,'nombre','Nombre');
+        // ABIERTO
+        if(r.abierto === undefined && r.Abierto === undefined && r.estado === undefined && r.Estado === undefined) r.abierto = true;
+        else {
+          const est = getCampo(r,'abierto','Abierto','estado','Estado');
+          if(typeof est === 'boolean') r.abierto = est;
+          else if(typeof est === 'string') r.abierto = est === 'true' || est === 'abierto';
           else r.abierto = true;
         }
-        if(typeof r.abierto === 'string') r.abierto = r.abierto === 'abierto' || r.abierto === 'true';
-        // ARREGLO LOGO ALITAS FACTORY - SOPORTA VARIOS CAMPOS
-        r.logoFinal = r.logo || r.imagen || r.logoUrl || r.foto || r.image || '';
+        // LIKES REAL - como en tu foto Likes: 2
+        r.likesReal = getCampo(r,'Likes','likes','LIKE','like') || 0;
+        // LOGO REAL - como en tu foto Logo: https://images.unsplash.com/...
+        let logoRaw = getCampo(r,'Logo','logo','LOGO','imagen','Imagen','logoUrl','foto');
+        // Si es alitas_factory y viene vacío, pon imagen de alitas por defecto
+        if((key === 'alitas_factory' || r.nombre.toLowerCase().includes('alitas')) && (!logoRaw || logoRaw.includes('alitas_factory') === false)){
+          // Si ya tiene unsplash, respetarlo, si no, poner una de alitas
+          if(!logoRaw) logoRaw = 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop';
+        }
+        r.logoFinal = logoRaw;
         lista.push(r); 
       }
     });
   });
   return lista;
-}
-
-function obtenerLikesReales(cat, id){
-  // Soporta varias estructuras de doloya_likes
-  if(!likesData) return 0;
-  // caso 1: doloya_likes/{cat}/{id} = numero
-  if(likesData[cat] && likesData[cat][id] !== undefined){
-    const v = likesData[cat][id];
-    if(typeof v === 'number') return v;
-    if(typeof v === 'object') return v.total || v.count || v.likes || v.cantidad || 0;
-  }
-  // caso 2: doloya_likes/{id} = numero
-  if(likesData[id] !== undefined){
-    const v = likesData[id];
-    if(typeof v === 'number') return v;
-    if(typeof v === 'object') return v.total || v.count || v.likes || 0;
-  }
-  // caso 3: doloya_likes/{cat}_{id}
-  const clave = `${cat}_${id}`;
-  if(likesData[clave] !== undefined){
-    const v = likesData[clave];
-    if(typeof v === 'number') return v;
-    if(typeof v === 'object') return v.total || v.count || 0;
-  }
-  return 0;
 }
 
 function renderAliados(filtroCat="todos", busqueda=""){
@@ -160,21 +155,21 @@ function renderAliados(filtroCat="todos", busqueda=""){
     const abierto = a.abierto === true;
     const badgeHtml = abierto ? `<div class="badge badge-open"><div class="dot"></div>Abierto</div>` : `<div class="badge badge-closed"><div class="dot closed"></div>Cerrado</div>`;
     const onclickAttr = abierto ? `onclick="ir('${a.categoria}','${a.id}')"` : ``;
-    const likesReales = obtenerLikesReales(a.categoria, a.id);
-    const logoSrc = a.logoFinal || 'https://img.icons8.com/3d-fluency/94/shop.png';
+    const likesMostrar = a.likesReal;
+    const logoSrc = a.logoFinal || 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop';
 
     listaEl.innerHTML+=`
     <div class="rest-card ${!abierto ? 'cerrado' : ''}" ${onclickAttr}>
-      <img class="rest-logo" src="${logoSrc}" onerror="this.onerror=null;this.src='https://img.icons8.com/3d-fluency/94/shop.png'">
+      <img class="rest-logo" src="${logoSrc}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop'">
       <div class="rest-info">
         <div class="rest-top"><div class="rest-name">${a.nombre}</div>${badgeHtml}</div>
-        <div class="rating"><svg class="i" viewBox="0 0 24 24" fill="#FFB800"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> ${a.rating||'4.8'} <span style="color:#777">(${likesReales})</span></div>
+        <div class="rating"><svg class="i" viewBox="0 0 24 24" fill="#FFB800"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> ${getCampo(a,'rating','Rating')||'4.7'} <span style="color:#777">(${likesMostrar})</span></div>
         <div class="tags"><div class="tag">${a.categoria}</div>${!abierto ? '<div class="tag" style="background:#fee2e2;color:#991b1b">No recibe pedidos</div>' : ''}</div>
         <div class="rest-bottom">
-          <svg class="moto" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M19 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M8 17h5l2-5h3.5"/><path d="M13 12l2-3h2"/></svg> ${a.tiempoEntrega||'20-30 min'}
+          <svg class="moto" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M19 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M8 17h5l2-5h3.5"/><path d="M13 12l2-3h2"/></svg> ${getCampo(a,'tiempoEntrega','TiempoEntrega')||'20-30 min'}
           <span>·</span>
-          <svg class="moto" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M19 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M8 17h5l2-5h3.5"/><path d="M13 12l2-3h2"/></svg> $${a.costoEnvio||'30'}
-          <span class="distancia">${a.distancia||'180 m'}</span>
+          <svg class="moto" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M19 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M8 17h5l2-5h3.5"/><path d="M13 12l2-3h2"/></svg> $${getCampo(a,'costoEnvio','CostoEnvio')||'35'}
+          <span class="distancia">${getCampo(a,'distancia','Distancia')||'180 m'}</span>
         </div>
       </div>
     </div>`;
@@ -185,17 +180,14 @@ window.ir=(cat,id)=>{ localStorage.setItem('doloya_aliadoSeleccionado', JSON.str
 
 onValue(ref(db,'doloya_aliados'), snap=>{
   const v=snap.val();
-  if(v){ aliadosData=aplanarDatos(v); renderAliados(document.querySelector('.cat-item.active')?.dataset.cat||'todos', document.getElementById('buscador').value); }
-});
-
-// LIKES REALES EN TIEMPO REAL DESDE doloya_likes
-onValue(ref(db,'doloya_likes'), snap=>{
-  likesData = snap.val() || {};
-  renderAliados(document.querySelector('.cat-item.active')?.dataset.cat||'todos', document.getElementById('buscador').value);
+  if(v){ aliadosData=aplanarDatos(v); renderAliados(); }
 });
 
 const buscador=document.getElementById('buscador');
-buscador.addEventListener('input',e=>{ renderAliados(document.querySelector('.cat-item.active')?.dataset.cat||'todos', e.target.value); });
+buscador.addEventListener('input',e=>{
+  const cat=document.querySelector('.cat-item.active')?.dataset.cat||'todos';
+  renderAliados(cat,e.target.value);
+});
 document.querySelectorAll('.cat-item').forEach(el=>{
   el.addEventListener('click',()=>{
     document.querySelectorAll('.cat-item').forEach(x=>x.classList.remove('active'));
@@ -203,7 +195,14 @@ document.querySelectorAll('.cat-item').forEach(el=>{
     renderAliados(el.dataset.cat, buscador.value);
   });
 });
-function actualizarBotonFlotante(){ const carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]'); const btn = document.getElementById('btnFlotanteCanasta'); const badge = document.getElementById('badgeFlotante'); if(!btn || !badge) return; if(carrito.length===0){ btn.style.display='none'; } else { const total = carrito.reduce((s,i)=>s+i.cantidad,0); badge.textContent = total; btn.style.display='flex'; } }
+
+function actualizarBotonFlotante(){
+  const carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
+  const btn = document.getElementById('btnFlotanteCanasta');
+  const badge = document.getElementById('badgeFlotante');
+  if(!btn || !badge) return;
+  if(carrito.length===0){ btn.style.display='none'; } else { const total = carrito.reduce((s,i)=>s+i.cantidad,0); badge.textContent = total; btn.style.display='flex'; }
+}
 actualizarBotonFlotante(); setInterval(actualizarBotonFlotante, 1000);
 window.addEventListener('storage', actualizarBotonFlotante);
 window.addEventListener('focus', actualizarBotonFlotante);
