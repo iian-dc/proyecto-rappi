@@ -42,8 +42,11 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
 .prod-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
 .prod-name{font-size:14px;font-weight:800;line-height:1.2;display:flex;align-items:center;gap:6px}
 .prod-desc{font-size:11.5px;color:#6B7280;margin-top:3px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.prod-price{margin-top:6px;font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px}
+.prod-price{margin-top:6px;font-size:15px;font-weight:800;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .prod-price-old{font-size:12px;color:#9CA3AF;text-decoration:line-through;font-weight:600}
+.prod-price-disc{font-size:10px;color:#E30613;font-weight:800;background:#FFE1E6;padding:2px 6px;border-radius:4px}
+.prod-price-new{font-size:15px;font-weight:900;color:#111}
+.price-line{display:flex;align-items:center;gap:6px}
 .badge-promo-prod{position:absolute;top:8px;left:8px;background:#E30613;color:white;font-size:9px;font-weight:800;padding:3px 7px;border-radius:6px;z-index:2}
 .btn-add{width:38px;height:38px;background:#E30613;border-radius:50%;border:none;color:white;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 3px 10px rgba(227,6,19,0.25);align-self:center}
 .qty-controls{display:flex;align-items:center;gap:8px;flex-shrink:0}
@@ -369,7 +372,6 @@ if(!cat || !id){ document.getElementById('loading').textContent='Restaurante no 
 else {
   obtenerIPyGPS();
   renderBarraCarrito();
-  // VINCULACION EN TIEMPO REAL CON PANEL ALIADO - doloya_aliados/{cat}/{id}/menu
   onValue(ref(db, `doloya_aliados/${cat}/${id}`), snap=>{
     const data = snap.val();
     if(!data){ document.getElementById('loading').textContent='Restaurante no encontrado'; return; }
@@ -387,37 +389,36 @@ else {
     document.getElementById('txtAbierto').textContent=data.abierto?'ABIERTO':'CERRADO';
     
     const menuRaw = data.menu || {};
-    // SOLO PRODUCTOS ACTIVOS - si activo===false no aparece al cliente
+    const categoriasRaw = data.categorias || {};
+    
+    // SOLO PRODUCTOS ACTIVOS
     let productosArray = Object.values(menuRaw)
       .filter(p=> p.activo!==false && p.activo!==0 && p.activo!=='false')
       .map(p=>{
-        const tienePromo = p.promoActiva!==false && (p.promo||p.porcentaje>0);
+        const tienePromo = p.promoActiva!==false && (p.promo||p.porcentaje>0) && parseFloat(p.porcentaje||0)>0;
         const precioOriginal = parseFloat(p.precio||p.Precio||0);
-        const precioDesc = parseFloat(p.precioDescuento||0);
-        const precioFinal = (tienePromo && precioDesc>0) ? precioDesc : precioOriginal;
-        const descuentoTexto = p.promo || (p.porcentaje ? `-${p.porcentaje}%` : '');
+        const precioDescRaw = parseFloat(p.precioDescuento||0);
+        const porcentaje = parseFloat(p.porcentaje||0);
+        const precioDesc = precioDescRaw>0 ? precioDescRaw : (tienePromo ? (precioOriginal - precioOriginal*porcentaje/100) : precioOriginal);
+        const precioFinal = tienePromo ? precioDesc : precioOriginal;
         return {
           nombre: p.nombre||p.Nombre||'Producto',
           descripcion: p.descripcion||p.Descripcion||'',
           precio: precioFinal,
           precioOriginal: tienePromo ? precioOriginal : null,
-          promo: tienePromo ? descuentoTexto : '',
+          porcentaje: tienePromo ? porcentaje : 0,
+          promo: tienePromo ? (p.promo||`-${porcentaje}%`) : '',
+          tienePromo: tienePromo,
           categoria: (p.categoria||p.Categoria||'Combos').toLowerCase(),
           categoriaOriginal: p.categoria||'Combos',
-          imagenFinal: p.imagen||p.img||p.Imagen||'https://via.placeholder.com/150',
-          activo: p.activo
+          imagenFinal: p.imagen||p.img||p.Imagen||'https://via.placeholder.com/150'
         };
       });
 
-    if(productosArray.length===0){
-      productosArray=[
-        {nombre:'Catrina Clásica', descripcion:'Pepperoni premium', precio:165, precioOriginal:null, promo:'', categoria:'combos', categoriaOriginal:'Combos', imagenFinal:'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400'},
-      ];
-    }
-
-    // CATEGORIAS REALES DEL RESTAURANTE - solo texto, sin iconos
-    const categoriasUnicas = [...new Set(productosArray.map(m=>m.categoria))];
-    const tabsList = categoriasUnicas.length>0 ? categoriasUnicas : ['combos'];
+    // CATEGORIAS SOLO CON PRODUCTOS - SI NO TIENE PRODUCTOS NO SE AÑADE
+    const categoriasConProductos = [...new Set(productosArray.map(m=>m.categoria))].filter(Boolean);
+    const tabsList = categoriasConProductos.length>0 ? categoriasConProductos : ['combos'];
+    
     const tabsEl=document.getElementById('tabs');
     tabsEl.innerHTML='';
     tabsList.forEach((c,i)=>{
@@ -442,7 +443,12 @@ else {
       }
       lista.forEach(p=>{
         const cant = getCantidad(p.nombre);
-        const precioOld = p.precioOriginal ? `<span class="prod-price-old">$${p.precioOriginal}</span>` : '';
+        let htmlPrecio = '';
+        if(p.tienePromo && p.precioOriginal){
+          htmlPrecio = `<div class="price-line"><span class="prod-price-old">$${p.precioOriginal.toFixed(0)}</span><span class="prod-price-disc">-${p.porcentaje}%</span><span class="prod-price-new">$${p.precio.toFixed(0)}</span></div>`;
+        }else{
+          htmlPrecio = `$${p.precio.toFixed(0)}`;
+        }
         const badgePromo = p.promo ? `<div class="badge-promo-prod">${p.promo}</div>` : '';
         cont.innerHTML+=`
         <div class="prod-card">
@@ -450,8 +456,8 @@ else {
           <img class="prod-img" src="${p.imagenFinal}">
           <div class="prod-info">
             <div class="prod-name">${p.nombre}</div>
-            <div class="prod-desc">${p.descripcion||''}</div>
-            <div class="prod-price">$${p.precio} ${precioOld}</div>
+            ${p.descripcion?`<div class="prod-desc">${p.descripcion}</div>`:''}
+            <div class="prod-price">${htmlPrecio}</div>
           </div>
           <button class="btn-add" style="${cant>0?'display:none':'display:flex'}" onclick="handleAdd('${p.nombre.replace(/'/g,"\\'")}', ${p.precio}, '${p.imagenFinal}')">+</button>
           <div class="qty-controls" style="${cant>0?'display:flex':'display:none'}">
@@ -468,7 +474,6 @@ else {
       renderProductos(fil.length>0?fil:productosArray);
     }
     
-    // Mostrar primera categoria real por defecto
     renderProductos(productosArray.filter(p=>p.categoria===tabsList[0]));
     renderBarraCarrito();
     setTimeout(()=>{ verificarCambioRestaurante(); verificarExpiracion(); }, 500);
