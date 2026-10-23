@@ -159,6 +159,8 @@ let restauranteAnteriorData = JSON.parse(localStorage.getItem('doloya_carrito_re
 let productoPendiente = null;
 let categoriaSeleccionada = 'todos';
 let productosGlobal = [];
+let categoriasConfig = [];
+let mapaCategorias = {};
 const TIEMPO_EXPIRACION = 3 * 60 * 60 * 1000;
 
 function irAlInicio(){ window.location.href = 'inicio.html'; }
@@ -445,9 +447,28 @@ else {
     document.getElementById('txtTotalLikes').textContent=`(${likes})`;
     document.getElementById('txtAbierto').textContent=data.abierto?'ABIERTO':'CERRADO';
     
+    // CATEGORIAS CONFIG
+    const rawCats = data.categorias || {};
+    categoriasConfig = Object.values(rawCats).map(o=>({
+      key:o.key||o.nombreLower||'',
+      nombre:o.nombre||o.key||'',
+      nombreLower:(o.nombreLower||o.key||'').toLowerCase(),
+      activa:o.activa!==false,
+      orden:o.orden??99
+    }));
+    categoriasConfig.sort((a,b)=>a.orden-b.orden);
+    mapaCategorias={};
+    categoriasConfig.forEach(c=>{ mapaCategorias[c.nombreLower]=c; });
+
     const menuRaw = data.menu || {};
     productosGlobal = Object.values(menuRaw)
-      .filter(p=> p.activo!==false && p.activo!==0 && p.activo!=='false')
+      .filter(p=> {
+        if(p.activo===false || p.activo===0 || p.activo==='false') return false;
+        if(p.categoriaActiva===false) return false;
+        const catL = (p.categoria||'').toLowerCase();
+        if(mapaCategorias[catL] && mapaCategorias[catL].activa===false) return false;
+        return true;
+      })
       .map(p=>{
         const tienePromo = p.promoActiva!==false && (p.promo||p.porcentaje>0) && parseFloat(p.porcentaje||0)>0;
         const precioOriginal = parseFloat(p.precio||p.Precio||0);
@@ -465,12 +486,21 @@ else {
           tienePromo: tienePromo,
           categoria: (p.categoria||p.Categoria||'Combos').toLowerCase(),
           categoriaOriginal: p.categoria||'Combos',
-          imagenFinal: p.imagen||p.img||p.Imagen||'https://via.placeholder.com/150'
+          imagenFinal: p.imagen||p.img||p.Imagen||'https://via.placeholder.com/150',
+          ordenCategoria: p.ordenCategoria ?? mapaCategorias[(p.categoria||'').toLowerCase()]?.orden ?? 99
         };
       });
 
-    const categoriasConProductos = [...new Set(productosGlobal.map(m=>m.categoria))].filter(Boolean);
-    let tabsList = ['todos', ...categoriasConProductos];
+    // ORDENAR PRODUCTOS POR ORDEN DE CATEGORIA
+    productosGlobal.sort((a,b)=>a.ordenCategoria - b.ordenCategoria);
+
+    let tabsList = [];
+    if(categoriasConfig.length>0){
+      tabsList = ['todos', ...categoriasConfig.filter(c=>c.activa!==false).map(c=>c.nombreLower)];
+    }else{
+      const categoriasConProductos = [...new Set(productosGlobal.map(m=>m.categoria))].filter(Boolean);
+      tabsList = ['todos', ...categoriasConProductos];
+    }
 
     const tabsEl=document.getElementById('tabs');
     const currentActive = categoriaSeleccionada;
