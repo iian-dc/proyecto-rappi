@@ -123,15 +123,8 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 <div id="detalleResumen" style="display:block">
   <div class="lista-costos">
     <div class="costo-row"><span>Costo de productos</span><b id="costoProd">$0.00</b></div>
-    <div class="costo-row"><span style="display:flex;align-items:center">Costo de envío <span class="icono-info">i</span></span><b id="costoEnvio">$0.00</b></div>
-    <div class="costo-row"><span>Tarifa de Servicio</span><b id="costoTarifa" class="precio-rojo">$0.00</b></div>
+    <div class="costo-row"><span>Costo de envío</span><b id="costoEnvio">$0.00</b></div>
     <div class="costo-row total"><b>Total a pagar</b><b id="totalPagar">$0.00</b></div>
-  </div>
-  <div class="ahorro-banner">
-    <div style="width:24px;height:24px;background:#DBEAFE;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1E40AF" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.5 16.5L8 21l-2-3 7.5-1.5z"/><path d="M8 12a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2z"/></svg>
-    </div>
-    <b id="txtAhorroBanner">Has ahorrado $0.00</b>
   </div>
 </div>
 <div class="footer">
@@ -148,13 +141,12 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
     <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
   </div>
 </div>
-
 <div class="toast-resumen" id="toastResumen">Completa tu dirección y celular en Detalles</div>
 
 <script type="module">
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfigAliados = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
@@ -165,7 +157,6 @@ const firebaseConfigAliados = {
   messagingSenderId: "122314467740",
   appId: "1:122314467740:web:9947a0a9560557e3a00059"
 };
-
 const firebaseConfigConfirmacion = {
   apiKey: "AIzaSyDLKngPyi_SWAXEQwdrHO5h8L8OufulAR4",
   authDomain: "doloya-confirmacion.firebaseapp.com",
@@ -174,13 +165,10 @@ const firebaseConfigConfirmacion = {
   messagingSenderId: "832228761099",
   appId: "1:832228761099:web:ddd4b6a0ee0d7f0494b10e"
 };
-
 const appAliados = getApps().find(a=>a.name==="aliados") || initializeApp(firebaseConfigAliados, "aliados");
 const appConf = getApps().find(a=>a.name==="confirmacion") || initializeApp(firebaseConfigConfirmacion, "confirmacion");
-
 const dbAliadosRT = getDatabase(appAliados);
 const dbConfirmacionFS = getFirestore(appConf);
-
 window.dbAliadosRT = dbAliadosRT;
 window.dbConfirmacionFS = dbConfirmacionFS;
 window.addDoc = addDoc;
@@ -188,6 +176,8 @@ window.collection = collection;
 window.refRT = ref;
 window.setRT = set;
 window.serverTimestamp = serverTimestamp;
+window.onValueRT = onValue;
+window.getRT = get;
 </script>
 
 <script>
@@ -204,16 +194,25 @@ let metodoSel = null;
 try{ metodoSel = JSON.parse(metodoRaw); }catch(e){ metodoSel = metodoRaw; }
 const carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 const dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
-
 let { ubicacion: ubiInit, detallesFull: detInit } = leerUbicacionStorage();
 let lat = ubiInit?.lat || ubiInit?.ubicacion?.lat || 21.1576;
 let lng = ubiInit?.lng || ubiInit?.ubicacion?.lng || -100.9306;
 let direccionBase = ubiInit?.direccion || '';
 let gpsObtenido = false;
 
-const TARIFA_BASE = 30;
-const PRECIO_POR_KM = 4;
-const TARIFA_SERVICIO_PORC = 0.03;
+// === TARIFA VINCULADA A TU ADMIN $22 + $4/km ===
+let tarifaGlobal = {base: 22, precio_km: 4};
+const EXTRA_RAPIDO = 14.99;
+
+window.onValueRT(window.refRT(window.dbAliadosRT, 'config_global/tarifa_default'), snap=>{
+  const v = snap.val();
+  if(v){
+    if(v.base !== undefined) tarifaGlobal.base = parseFloat(v.base);
+    if(v.precio_km !== undefined) tarifaGlobal.precio_km = parseFloat(v.precio_km);
+    actualizarResumen();
+  }
+});
+
 function haversine(lat1, lon1, lat2, lon2){
   const R = 6371;
   const dLat = (lat2-lat1)*Math.PI/180;
@@ -227,6 +226,13 @@ let restLng = dataRest?.lng || dataRest?.restauranteLng || -100.9310;
 if(dataRest?.restauranteLat) restLat = dataRest.restauranteLat;
 if(dataRest?.restauranteLng) restLng = dataRest.restauranteLng;
 let distanciaKm = 0.3;
+
+// Usar distancia ya calculada si existe
+try{
+  const envioGuardado = JSON.parse(localStorage.getItem('doloya_envio_actual')||'null');
+  if(envioGuardado && envioGuardado.distanciaKm) distanciaKm = parseFloat(envioGuardado.distanciaKm);
+}catch(e){}
+
 async function obtenerDistanciaRealGoogle(oLat, oLng, dLat, dLng){
   try{
     const url = `https://router.project-osrm.org/route/v1/driving/${oLng},${oLat};${dLng},${dLat}?overview=false`;
@@ -238,34 +244,19 @@ async function obtenerDistanciaRealGoogle(oLat, oLng, dLat, dLng){
 }
 let tipoActual = localStorage.getItem('doloya_tipo_entrega') || 'ahorra';
 let costoProductos = carrito.reduce((s,i)=>s+(i.precio||0)*(i.cantidad||0),0);
-function getCostosBase(){
+
+function getCostoReal(){
   let dist = distanciaKm;
-  if(dist < 0.3) dist = 0.3;
-  let envioBase = TARIFA_BASE + (dist * PRECIO_POR_KM);
-  let tarifa = costoProductos * TARIFA_SERVICIO_PORC;
-  return { envioBase, tarifa, dist };
+  if(dist < 0.1) dist = 0.1;
+  return tarifaGlobal.base + (dist * tarifaGlobal.precio_km);
 }
-function calcularEnvio(){
-  let { envioBase } = getCostosBase();
-  let base = envioBase;
-  if(tipoActual==='rapido') base += 10;
-  if(tipoActual==='ahorra') base -= 5;
-  if(base < 15) base = 15;
-  return parseFloat(base.toFixed(2));
+
+function calcularEnvioSeleccionado(){
+  const real = getCostoReal();
+  if(tipoActual==='rapido') return real + EXTRA_RAPIDO;
+  return real; // ahorra = real
 }
-function calcularTarifa(){
-  let { tarifa } = getCostosBase();
-  return parseFloat(tarifa.toFixed(2));
-}
-function calcularAhorro(){
-  let monto = costoProductos;
-  let porc = 0.04;
-  if(monto > 0 && monto <= 100) porc = 0.04;
-  else if(monto > 100 && monto <= 200) porc = 0.06;
-  else if(monto > 200 && monto <= 400) porc = 0.08;
-  else if(monto > 400) porc = 0.10;
-  return monto * porc;
-}
+
 function actualizarMapaIframe(){
   document.getElementById('mapaIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
 }
@@ -273,9 +264,7 @@ async function obtenerDireccionPorGPS(latGPS, lngGPS){
   try{
     const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latGPS}&lon=${lngGPS}&zoom=18&addressdetails=1`);
     const data = await resp.json();
-    if(data && data.display_name){
-      return data.display_name;
-    }
+    if(data && data.display_name) return data.display_name;
   }catch(e){}
   return `Ubicación GPS ${latGPS.toFixed(5)}, ${lngGPS.toFixed(5)}`;
 }
@@ -293,16 +282,11 @@ async function obtenerGPSReal(){
     calcularDistanciaYActualizar();
     return;
   }
-  if(!navigator.geolocation){
-    cargarDireccionYDistanciaSinGPS();
-    return;
-  }
+  if(!navigator.geolocation){ cargarDireccionYDistanciaSinGPS(); return; }
   navigator.geolocation.getCurrentPosition(async (pos)=>{
     const latGPS = pos.coords.latitude;
     const lngGPS = pos.coords.longitude;
-    lat = latGPS;
-    lng = lngGPS;
-    gpsObtenido = true;
+    lat = latGPS; lng = lngGPS; gpsObtenido = true;
     direccionBase = await obtenerDireccionPorGPS(latGPS, lngGPS);
     const nuevaUbi = { direccion: direccionBase, lat: latGPS, lng: lngGPS, ubicacion: {lat: latGPS, lng: lngGPS} };
     localStorage.setItem('doloya_ubicacion', JSON.stringify(nuevaUbi));
@@ -311,55 +295,40 @@ async function obtenerGPSReal(){
     document.getElementById('txtDireccion').textContent = direccionBase;
     actualizarMapaIframe();
     calcularDistanciaYActualizar();
-  }, (err)=>{
-    cargarDireccionYDistanciaSinGPS();
-  }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
+  }, ()=>{ cargarDireccionYDistanciaSinGPS(); }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
 }
 async function calcularDistanciaYActualizar(){
   document.getElementById('txtDistancia').innerHTML = `<span style="color:#E30613;font-weight:800;display:flex;align-items:center;gap:4px">Calculando distancia...</span>`;
   const realKm = await obtenerDistanciaRealGoogle(restLat, restLng, lat, lng);
   distanciaKm = realKm;
-  if(distanciaKm < 0.3) distanciaKm = 0.3;
+  if(distanciaKm < 0.1) distanciaKm = 0.1;
   document.getElementById('txtDistancia').innerHTML = `<span style="color:#E30613;font-weight:800;display:flex;align-items:center;gap:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> Estás a ${distanciaKm.toFixed(2)} km del restaurante</span>`;
   actualizarResumen();
 }
 async function cargarDireccionYDistanciaSinGPS(){
   const { ubicacion: ubiFresh, detallesFull: detFresh } = leerUbicacionStorage();
-  ubicacion = ubiFresh;
-  detallesFull = detFresh;
+  ubicacion = ubiFresh; detallesFull = detFresh;
   if(ubiFresh && (ubiFresh.lat || ubiFresh.ubicacion?.lat)){
     lat = ubiFresh.lat || ubiFresh.ubicacion.lat;
     lng = ubiFresh.lng || ubiFresh.ubicacion.lng;
     direccionBase = ubiFresh.direccion || direccionBase;
   } else if(detFresh && detFresh.lat && detFresh.lng){
-    lat = detFresh.lat;
-    lng = detFresh.lng;
-    direccionBase = detFresh.direccion || direccionBase;
+    lat = detFresh.lat; lng = detFresh.lng; direccionBase = detFresh.direccion || direccionBase;
   }
   actualizarMapaIframe();
-  if(direccionBase){
-    document.getElementById('txtDireccion').textContent = direccionBase;
-  } else if(ubiFresh?.direccion){
-    document.getElementById('txtDireccion').textContent = ubiFresh.direccion;
-  } else if(detFresh?.direccion){
-    document.getElementById('txtDireccion').textContent = detFresh.direccion;
-  }
+  if(direccionBase) document.getElementById('txtDireccion').textContent = direccionBase;
+  else if(ubiFresh?.direccion) document.getElementById('txtDireccion').textContent = ubiFresh.direccion;
+  else if(detFresh?.direccion) document.getElementById('txtDireccion').textContent = detFresh.direccion;
   calcularDistanciaYActualizar();
 }
 (function init(){
   const detCheck = JSON.parse(localStorage.getItem('doloya_detalles_full')||'null');
   const flagEdit = localStorage.getItem('doloya_direccion_editada') === '1';
-  if(detCheck && flagEdit){
-    cargarDireccionYDistanciaSinGPS();
-  } else {
-    const referrer = document.referrer || '';
+  if(detCheck && flagEdit){ cargarDireccionYDistanciaSinGPS(); }
+  else{
     const vieneDeDetalles = localStorage.getItem('doloya_viene_de_detalles') === '1';
-    if(vieneDeDetalles){
-      localStorage.removeItem('doloya_viene_de_detalles');
-      cargarDireccionYDistanciaSinGPS();
-    } else {
-      obtenerGPSReal();
-    }
+    if(vieneDeDetalles){ localStorage.removeItem('doloya_viene_de_detalles'); cargarDireccionYDistanciaSinGPS(); }
+    else obtenerGPSReal();
   }
 })();
 window.addEventListener('focus', ()=>{
@@ -385,29 +354,25 @@ if(metodoSel){
   document.getElementById('badgeMetodo').style.background = '#E6F9ED';
   document.getElementById('badgeMetodo').style.color = '#0A7D2E';
 }
+
 function actualizarResumen(){
-  let { envioBase, tarifa, dist } = getCostosBase();
-  if(dist) distanciaKm = dist;
-  let envioRapido = envioBase + 10;
-  let envioAhorra = envioBase - 5;
-  if(envioAhorra < 15) envioAhorra = 15;
-  document.getElementById('txtRapido').textContent = `$${envioRapido.toFixed(2)} MXN`;
+  const costoReal = getCostoReal();
+  const envioAhorra = costoReal;
+  const envioRapido = costoReal + EXTRA_RAPIDO;
   document.getElementById('txtAhorra').textContent = `$${envioAhorra.toFixed(2)} MXN`;
-  let envio = calcularEnvio();
-  let tarifaServicio = calcularTarifa();
-  let ahorro = calcularAhorro();
+  document.getElementById('txtRapido').textContent = `$${envioRapido.toFixed(2)} MXN`;
+
+  let envioSeleccionado = calcularEnvioSeleccionado();
   document.getElementById('costoProd').textContent = `$${costoProductos.toFixed(2)}`;
-  document.getElementById('costoEnvio').textContent = `$${envio.toFixed(2)}`;
-  document.getElementById('costoTarifa').textContent = `$${tarifaServicio.toFixed(2)}`;
-  let total = costoProductos + envio + tarifaServicio;
+  document.getElementById('costoEnvio').textContent = `$${envioSeleccionado.toFixed(2)}`;
+  let total = costoProductos + envioSeleccionado;
   document.getElementById('totalPagar').textContent = `$${total.toFixed(2)}`;
   document.getElementById('totalFooter').textContent = `$${total.toFixed(2)} MXN`;
-  document.getElementById('txtAhorroBanner').textContent = `Has ahorrado $${ahorro.toFixed(2)}`;
+
   localStorage.setItem('doloya_tipo_entrega', tipoActual);
-  localStorage.setItem('doloya_costo_entrega', envio);
+  localStorage.setItem('doloya_costo_entrega', envioSeleccionado.toFixed(2));
   localStorage.setItem('doloya_distancia_km', distanciaKm.toFixed(2));
-  localStorage.setItem('doloya_tarifa_servicio', tarifaServicio.toFixed(2));
-  localStorage.setItem('doloya_ahorro', ahorro.toFixed(2));
+  localStorage.setItem('doloya_envio_actual', JSON.stringify({distanciaKm: distanciaKm, costo: envioSeleccionado, costoReal: costoReal, base: tarifaGlobal.base, precio_km: tarifaGlobal.precio_km}));
   localStorage.setItem('doloya_total', total.toFixed(2));
 }
 function selEntrega(tipo){
@@ -454,18 +419,13 @@ function mostrarErrorDetalles(mensaje){
 }
 function abrirModal(){
   const val = validarDetallesObligatorios();
-  if(!val.ok){
-    mostrarErrorDetalles('Completa tu ' + val.faltan.join(' y ') + ' en Detalles');
-    return;
-  }
+  if(!val.ok){ mostrarErrorDetalles('Completa tu ' + val.faltan.join(' y ') + ' en Detalles'); return; }
   if(!metodoSel){ window.location.href='metododepago.html'; return; }
   const nombreGuardado = localStorage.getItem('doloya_cliente_nombre')||'';
   document.getElementById('inputNombre').value = nombreGuardado;
   document.getElementById('modalCliente').classList.add('active');
 }
-function cerrarModal(){
-  document.getElementById('modalCliente').classList.remove('active');
-}
+function cerrarModal(){ document.getElementById('modalCliente').classList.remove('active'); }
 async function obtenerIpKey(){
   let ipKey = localStorage.getItem('doloya_device_id');
   try{
@@ -476,12 +436,9 @@ async function obtenerIpKey(){
   }catch(e){}
   return ipKey;
 }
-
-// FIX PARA ERROR Property array contains an invalid nested entity
 function limpiarProductosParaFirestore(arr){
   if(!Array.isArray(arr)) return [];
   return arr.map(p=>{
-    // Solo campos permitidos, sin undefined, sin null, sin arrays anidados
     return {
       nombre: String(p.nombre || p.name || 'Producto').substring(0,100),
       precio: Number(p.precio || p.price || 0),
@@ -490,33 +447,19 @@ function limpiarProductosParaFirestore(arr){
     };
   }).filter(p=> p.nombre && p.precio>=0 && p.cantidad>0);
 }
-
 async function irAPagar(){
   const nombre = document.getElementById('inputNombre').value.trim();
   if(!nombre){ alert('Por favor ingresa tu nombre completo'); return; }
   const btn = document.getElementById('btnFinalizar');
-  btn.textContent = 'Finalizando...';
-  btn.disabled = true;
-
-  let envioFinal = calcularEnvio();
-  let tarifaFinal = calcularTarifa();
-  let ahorroFinal = calcularAhorro();
-  let totalFinal = costoProductos + envioFinal + tarifaFinal;
+  btn.textContent = 'Finalizando...'; btn.disabled = true;
+  let envioFinal = calcularEnvioSeleccionado();
+  let costoReal = getCostoReal();
+  let totalFinal = costoProductos + envioFinal;
   localStorage.setItem('doloya_cliente_nombre', nombre);
   const telefonoGuardado = localStorage.getItem('doloya_celular') || detallesFull?.celular || localStorage.getItem('doloya_cliente_tel') || '';
-
   const direccionClienteFinal = direccionBase || detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent || '';
-
-  // PRODUCTOS LIMPIOS - FIX DEL ERROR
   const productosLimpios = limpiarProductosParaFirestore(carrito);
-  if(productosLimpios.length===0){
-    alert('Carrito vacío o con datos inválidos');
-    btn.textContent='Finalizar pedido';
-    btn.disabled=false;
-    return;
-  }
-
-  // CLIENTE LIMPIO SIN UNDEFINED
+  if(productosLimpios.length===0){ alert('Carrito vacío'); btn.textContent='Finalizar pedido'; btn.disabled=false; return; }
   const clienteLimpio = {
     nombre: String(nombre).substring(0,100),
     celular: String(telefonoGuardado || '').substring(0,20),
@@ -524,16 +467,12 @@ async function irAPagar(){
     referencia: String(detallesRef || '').substring(0,300),
     ubicacion: { lat: Number(lat||0), lng: Number(lng||0) }
   };
-
-  // RESTAURANTE LIMPIO
   const restauranteLimpio = {
     id: String(dataRest?.id || 'la_catrina_burger'),
     cat: String(dataRest?.cat || 'burgers'),
     nombre: String(dataRest?.nombre || document.getElementById('nombreRest').textContent || 'Restaurante').substring(0,100),
-    lat: Number(restLat||0),
-    lng: Number(restLng||0)
+    lat: Number(restLat||0), lng: Number(restLng||0)
   };
-
   const pedidoCompleto = {
     restaurante: restauranteLimpio,
     cliente: clienteLimpio,
@@ -541,9 +480,9 @@ async function irAPagar(){
     totales: { 
       costoProductos: Number(costoProductos.toFixed(2)), 
       distanciaKm: Number(distanciaKm.toFixed(2)), 
-      costoEnvio: Number(envioFinal), 
-      tarifaServicio: Number(tarifaFinal), 
-      ahorro: Number(ahorroFinal.toFixed(2)), 
+      costoEnvio: Number(envioFinal),
+      costoReal: Number(costoReal.toFixed(2)),
+      extraRapido: tipoActual==='rapido' ? 14.99 : 0,
       tipoEntrega: String(tipoActual), 
       total: Number(totalFinal.toFixed(2)) 
     },
@@ -551,30 +490,24 @@ async function irAPagar(){
     estado: 'confirmado',
     fecha: new Date().toISOString()
   };
-
   try{
     const refDoc = await window.addDoc(window.collection(window.dbConfirmacionFS, "pedidos"), pedidoCompleto);
     localStorage.setItem('doloya_pedido_confirmacion_id', refDoc.id);
     localStorage.setItem('doloya_pedido_final', JSON.stringify(pedidoCompleto));
-
     const ipKey = await obtenerIpKey();
     const cat = dataRest?.cat || 'burgers';
     const idRest = dataRest?.id || 'la_catrina_burger';
-
     if(ipKey && cat && idRest){
       try{
         await window.setRT(window.refRT(window.dbAliadosRT, `carrito/${cat}/${idRest}/${ipKey}`), null);
         await window.setRT(window.refRT(window.dbAliadosRT, `doloya_aliados/${cat}/${idRest}/carritos/${ipKey}`), null);
-      }catch(e){ console.log('Error limpiando carrito RT', e); }
+      }catch(e){}
     }
-
     localStorage.removeItem('doloya_carrito_v2');
     window.location.href='confirmacion.html';
   }catch(e){
-    console.error(e);
     alert("Error: "+e.message);
-    btn.textContent = 'Finalizar pedido';
-    btn.disabled = false;
+    btn.textContent = 'Finalizar pedido'; btn.disabled = false;
   }
 }
 if(dataRest){
