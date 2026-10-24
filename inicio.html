@@ -96,7 +96,7 @@ let aliadosData=[];
 const listaEl=document.getElementById('listaRestaurantes');
 function getCampo(r, ...nombres){ if(!r) return ''; for(let n of nombres){ if(r[n] !== undefined && r[n] !== null && r[n] !== '') return r[n]; const key = Object.keys(r).find(k => k.toLowerCase() === n.toLowerCase()); if(key && r[key]) return r[key]; } return ''; }
 
-// TARIFA VINCULADA A TU ADMIN - NO SE MUESTRA VISUAL, SOLO CALCULO INTERNO
+// TARIFA VINCULADA A TU ADMIN - SOLO INTERNO
 let tarifaGlobal = {base: 22, precio_km: 4};
 onValue(ref(db, 'config_global/tarifa_default'), snap=>{
   const v = snap.val();
@@ -122,7 +122,7 @@ function extraerUbicacionReal(root){
   if(root.coordenadas && root.coordenadas.lat) return root.coordenadas;
   if(root.info && root.info.lat && root.info.lng) return {lat: parseFloat(root.info.lat), lng: parseFloat(root.info.lng)};
   if(root.lat && root.lng) return {lat: parseFloat(root.lat), lng: parseFloat(root.lng)};
-  if(root.categorias && root.categorias.ubicacion.lat) return root.categorias.ubicacion;
+  if(root.categorias && root.categorias.ubicacion && root.categorias.ubicacion.lat) return root.categorias.ubicacion;
   return null;
 }
 
@@ -140,7 +140,7 @@ function obtenerDisponibilidadReal(root){
       if(d.estado === 'abierto' || d.estado === 'activo') return true;
     }
   }
-  if(root.categorias && root.categorias.categorias && root.categorias.categorias.disponibilidad){
+  if(root.categorias && root.categorias.categorias.disponibilidad){
     let d = root.categorias.categorias.disponibilidad;
     if(typeof d.abierto === 'boolean') return d.abierto;
     if(d.estado === 'cerrado' || d.abierto === false) return false;
@@ -222,15 +222,14 @@ function aplanarDatos(dataPorCategoria){
     let abiertoVal = obtenerDisponibilidadReal(grupo);
     let infoReal = extraerInfoRestauranteReal(grupo, topKey);
     let ubicacionRest = extraerUbicacionReal(grupo);
-    
-    // CALCULO INTERNO POR KM - NO SE MUESTRA
     let distanciaKm = 0;
     let costoEnvioCalc = tarifaGlobal.base;
     if(ubicacionRest && cliente.ubicacion && cliente.ubicacion.lat && cliente.ubicacion.lng){
-      distanciaKm = haversine(cliente.ubicacion.lat, cliente.ubicacion.lng, parseFloat(ubicacionRest.lat), parseFloat(ubicacionRest.lng));
-      costoEnvioCalc = tarifaGlobal.base + (distanciaKm * tarifaGlobal.precio_km);
+      try{
+        distanciaKm = haversine(cliente.ubicacion.lat, cliente.ubicacion.lng, parseFloat(ubicacionRest.lat), parseFloat(ubicacionRest.lng));
+        costoEnvioCalc = tarifaGlobal.base + (distanciaKm * tarifaGlobal.precio_km);
+      }catch(e){ distanciaKm = 0; costoEnvioCalc = tarifaGlobal.base; }
     }
-    
     lista.push({
       id: topKey,
       categoriaOriginal: topKey,
