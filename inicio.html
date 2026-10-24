@@ -99,19 +99,34 @@ let aliadosData=[];
 const listaEl=document.getElementById('listaRestaurantes');
 function getCampo(r, ...nombres){ if(!r) return ''; for(let n of nombres){ if(r[n] !== undefined && r[n] !== null && r[n] !== '') return r[n]; const key = Object.keys(r).find(k => k.toLowerCase() === n.toLowerCase()); if(key && r[key]) return r[key]; } return ''; }
 
-// CORREGIDO: SOLO LEE LA BUENA categorias/categorias/disponibilidad
+// CORREGIDO SOLO ESTO - LEE EL ESTADO DONDE ESTÉ EN TU FOTO
 function obtenerDisponibilidadReal(root){
   if(!root || typeof root !== 'object') return true;
-  let disp = null;
-  // LA BUENA: doloya_aliados/santillos/categorias/categorias/disponibilidad
-  if(root.categorias && root.categorias.categorias && root.categorias.categorias.disponibilidad){
-    disp = root.categorias.categorias.disponibilidad;
+  function buscarDisponibilidad(node, depth){
+    if(!node || typeof node !== 'object' || depth>12) return null;
+    // Si el nodo tiene disponibilidad con abierto/estado es el bueno
+    if(node.disponibilidad && typeof node.disponibilidad === 'object' && (node.disponibilidad.abierto !== undefined || node.disponibilidad.estado !== undefined)){
+      return node.disponibilidad;
+    }
+    // Recorre profundo hasta encontrarlo (boneles, salchipapas, categorias, etc)
+    for(let k in node){
+      if(k==='info' || k==='perfil' || k==='likes' || k==='Likes') continue;
+      let v = node[k];
+      if(v && typeof v === 'object'){
+        let found = buscarDisponibilidad(v, depth+1);
+        if(found) return found;
+      }
+    }
+    return null;
   }
-  if(disp){
-    if(typeof disp === 'boolean') return disp;
-    if(disp.abierto !== undefined) return disp.abierto === true || disp.abierto === 'true' || disp.abierto === 'abierto';
-    if(disp.estado !== undefined) return disp.estado === 'abierto' || disp.estado === 'activo';
-    return true;
+  let disp = buscarDisponibilidad(root, 0);
+  if(!disp) return true;
+  if(typeof disp === 'boolean') return disp;
+  if(disp.abierto !== undefined){
+    return disp.abierto === true || disp.abierto === 'true' || disp.abierto === 'abierto' || disp.abierto === 'activo';
+  }
+  if(disp.estado !== undefined){
+    return disp.estado === 'abierto' || disp.estado === 'activo';
   }
   return true;
 }
