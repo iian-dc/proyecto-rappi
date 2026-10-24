@@ -97,40 +97,135 @@ const cliente = JSON.parse(dataStr);
 fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${cliente.ubicacion?.lat}&lon=${cliente.ubicacion?.lng}&zoom=18&addressdetails=1`).then(r=>r.json()).then(data=>{ const addr=data.address; const direccion = `${addr.road||''} ${addr.house_number||''}, ${addr.suburb||''}, ${addr.city||addr.town||''}, ${addr.state||''}`; document.getElementById('txtUbi').textContent=direccion; });
 let aliadosData=[];
 const listaEl=document.getElementById('listaRestaurantes');
-function getCampo(r, ...nombres){ for(let n of nombres){ if(r[n] !== undefined && r[n] !== null && r[n] !== '') return r[n]; const key = Object.keys(r).find(k => k.toLowerCase() === n.toLowerCase()); if(key && r[key]) return r[key]; } return ''; }
+
+function getCampo(r, ...nombres){ 
+  if(!r) return '';
+  for(let n of nombres){ 
+    if(r[n] !== undefined && r[n] !== null && r[n] !== '') return r[n]; 
+    const key = Object.keys(r).find(k => k.toLowerCase() === n.toLowerCase()); 
+    if(key && r[key]) return r[key]; 
+  } 
+  return ''; 
+}
+
+// CORRECCION: ENLAZADO A TU ESTRUCTURA REAL DE FIREBASE (santillos/categorias/categorias/...)
+function buscarInfoRestaurante(obj){
+  if(!obj || typeof obj !== 'object') return null;
+  // Si directamente tiene correo, es info
+  if(obj.correo || obj.email || obj.contrasena){
+    return obj;
+  }
+  // Busca en info
+  if(obj.info && typeof obj.info === 'object'){
+    return obj.info;
+  }
+  // Busca recursivo en categorias/categorias/xxx/info
+  if(obj.categorias){
+    let cat = obj.categorias;
+    if(cat.categorias){
+      cat = cat.categorias;
+    }
+    for(let k in cat){
+      let v = cat[k];
+      if(v && v.info) return v.info;
+      // Caso de tu foto: info está dentro de salchipapas junto con el producto
+      if(v && (v.correo || v.email)){
+        return v;
+      }
+      // Busca dentro de la categoria si hay info escondida
+      if(v && typeof v === 'object'){
+        for(let kk in v){
+          let vv = v[kk];
+          if(vv && typeof vv === 'object' && (vv.correo || vv.categoria === 'general')){
+            return vv;
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
 function aplanarDatos(dataPorCategoria){
   let lista=[];
-  Object.keys(dataPorCategoria).forEach(cat=>{
-    const grupo=dataPorCategoria[cat];
-    if(grupo) Object.keys(grupo).forEach(key=>{
-      const r=grupo[key];
-      if(r && (r.nombre || r.Nombre)){ 
-        r.id=key; 
-        if(!r.categoria && !r.Categoria) r.categoria=cat;
-        r.categoria = getCampo(r,'categoria','Categoria') || cat;
-        r.nombre = getCampo(r,'nombre','Nombre');
-        if(r.abierto === undefined && r.Abierto === undefined && r.estado === undefined && r.Estado === undefined) r.abierto = true;
-        else { const est = getCampo(r,'abierto','Abierto','estado','Estado'); if(typeof est === 'boolean') r.abierto = est; else if(typeof est === 'string') r.abierto = est === 'true' || est === 'abierto'; else r.abierto = true; }
-        r.likesReal = getCampo(r,'Likes','likes') || 0;
-        let logoRaw = getCampo(r,'Logo','logo','imagen','logoUrl','foto');
-        if(!logoRaw) logoRaw = 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop';
-        r.logoFinal = logoRaw;
-        lista.push(r); 
+  if(!dataPorCategoria) return lista;
+
+  Object.keys(dataPorCategoria).forEach(topKey=>{
+    if(topKey === 'admin') {
+      // admin/admin tiene abierto pero no es restaurante cliente
+      return;
+    }
+
+    const grupo = dataPorCategoria[topKey];
+
+    // CASO NUEVO TUYO: topKey = santillos, y grupo = {categorias: {categorias: {boneles, salchipapas}}}
+    if(grupo && typeof grupo === 'object' && grupo.categorias){
+      let info = buscarInfoRestaurante(grupo);
+      let nombreRest = info ? (info.nombre || info.nombreRestaurante || topKey) : topKey;
+      let catRest = info ? (info.categoria || topKey) : topKey;
+      // Si no hay info, usa el key como nombre bonito
+      if(!info){
+        nombreRest = topKey.charAt(0).toUpperCase() + topKey.slice(1);
       }
-    });
+
+      lista.push({
+        id: topKey,
+        categoria: (catRest || topKey).toLowerCase(),
+        categoriaOriginal: topKey,
+        nombre: nombreRest,
+        Nombre: nombreRest,
+        abierto: true,
+        estado: 'abierto',
+        likesReal: 0,
+        logoFinal: grupo.logo || grupo.Logo || (info && (info.logo || info.Logo)) || 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop',
+        tiempoEntrega: '20-30 min',
+        costoEnvio: '35',
+        distancia: '180 m',
+        rating: '4.8',
+        esNuevoFormato: true,
+        rawData: grupo
+      });
+      return;
+    }
+
+    // CASO VIEJO: doloya_aliados/{categoria}/{idRestaurante}
+    if(grupo && typeof grupo === 'object'){
+      Object.keys(grupo).forEach(key=>{
+        const r=grupo[key];
+        if(r && (r.nombre || r.Nombre || r.correo)){
+          r.id=key; 
+          if(!r.categoria && !r.Categoria) r.categoria=topKey;
+          r.categoria = getCampo(r,'categoria','Categoria') || topKey;
+          r.nombre = getCampo(r,'nombre','Nombre') || key;
+          if(r.abierto === undefined && r.Abierto === undefined && r.estado === undefined && r.Estado === undefined) r.abierto = true;
+          else { const est = getCampo(r,'abierto','Abierto','estado','Estado'); if(typeof est === 'boolean') r.abierto = est; else if(typeof est === 'string') r.abierto = est === 'true' || est === 'abierto'; else r.abierto = true; }
+          r.likesReal = getCampo(r,'Likes','likes') || 0;
+          let logoRaw = getCampo(r,'Logo','logo','imagen','logoUrl','foto');
+          if(!logoRaw) logoRaw = 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop';
+          r.logoFinal = logoRaw;
+          r.categoriaOriginal = topKey;
+          lista.push(r); 
+        }
+      });
+    }
   });
   return lista;
 }
+
 function renderAliados(filtroCat="todos", busqueda=""){
   let f=[...aliadosData];
   f.sort((a,b)=>{ if(a.abierto === b.abierto) return 0; return a.abierto ? -1 : 1; });
-  if(filtroCat!=="todos") f=f.filter(a=>a.categoria===filtroCat);
+  if(filtroCat!=="todos") f=f.filter(a=> (a.categoria||'').toLowerCase() === filtroCat.toLowerCase() || (a.categoriaOriginal||'').toLowerCase() === filtroCat.toLowerCase());
   if(busqueda) f=f.filter(a=>a.nombre.toLowerCase().includes(busqueda.toLowerCase()));
   listaEl.innerHTML="";
+  if(f.length===0){
+    listaEl.innerHTML = '<p style="padding:20px;color:#888">No hay restaurantes aún. Crea el restaurante santillos.</p>';
+    return;
+  }
   f.forEach(a=>{
     const abierto = a.abierto === true;
     const badgeHtml = abierto ? `<div class="badge badge-open"><div class="dot"></div>Abierto</div>` : `<div class="badge badge-closed"><div class="dot closed"></div>Cerrado</div>`;
-    const onclickAttr = abierto ? `onclick="ir('${a.categoria}','${a.id}')"` : ``;
+    const onclickAttr = abierto ? `onclick="ir('${a.categoriaOriginal||a.categoria}','${a.id}')"` : ``;
     const likesMostrar = a.likesReal;
     const logoSrc = a.logoFinal || 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop';
     listaEl.innerHTML+=`
@@ -150,8 +245,22 @@ function renderAliados(filtroCat="todos", busqueda=""){
     </div>`;
   });
 }
-window.ir=(cat,id)=>{ localStorage.setItem('doloya_aliadoSeleccionado', JSON.stringify({cat,id})); location.href=`aliado.html?cat=${cat}&id=${id}`; }
-onValue(ref(db,'doloya_aliados'), snap=>{ const v=snap.val(); if(v){ aliadosData=aplanarDatos(v); renderAliados(); } });
+
+window.ir=(cat,id)=>{
+  // CORRECCION ENLACE AL PANEL: ahora cat es el id real del restaurante (santillos)
+  localStorage.setItem('doloya_aliadoSeleccionado', JSON.stringify({cat,id}));
+  location.href=`aliado.html?cat=${cat}&id=${id}`;
+}
+
+onValue(ref(db,'doloya_aliados'), snap=>{
+  const v=snap.val();
+  if(v){
+    aliadosData=aplanarDatos(v);
+    console.log('Restaurantes encontrados:', aliadosData);
+    renderAliados();
+  }
+});
+
 const buscador=document.getElementById('buscador');
 buscador.addEventListener('input',e=>{ const cat=document.querySelector('.cat-item.active')?.dataset.cat||'todos'; renderAliados(cat,e.target.value); });
 document.querySelectorAll('.cat-item').forEach(el=>{ el.addEventListener('click',()=>{ document.querySelectorAll('.cat-item').forEach(x=>x.classList.remove('active')); el.classList.add('active'); renderAliados(el.dataset.cat, buscador.value); }); });
