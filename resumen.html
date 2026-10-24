@@ -53,9 +53,10 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .costo-row.total{padding-top:16px;margin-top:4px;border-top:1px solid #F0F0F0}
 .costo-row.total b{font-size:15px;font-weight:900}
 .precio-rojo{color:#E30613 !important;font-weight:900 !important}
-.icono-info{width:18px;height:18px;border:1.5px solid #6B7280;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#6B7280;margin-left:6px;vertical-align:middle}
-.ahorro-banner{background:#EAF4FF;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-top:14px}
-.ahorro-banner b{font-size:13.5px;color:#1E40AF;line-height:1.3;font-weight:800}
+.toast-resumen{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);background:#111;color:#fff;padding:14px 20px;border-radius:14px;font-size:13px;font-weight:800;z-index:10000;opacity:0;pointer-events:none;transition:all 0.3s ease;text-align:center;box-shadow:0 8px 20px rgba(0,0,0,0.3)}
+.toast-resumen.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.error-detalles{border:2px solid #FF0000 !important;box-shadow:0 0 8px #FF0000, 0 0 16px #FF0000, 0 0 24px rgba(255,0,0,0.4) !important;background:#FFF0F0 !important;animation:shakeRed 0.45s ease;border-radius:12px}
+@keyframes shakeRed{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 .footer{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #EEE;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;z-index:999;box-shadow:0 -4px 12px rgba(0,0,0,0.06)}
 .footer b{font-size:22px;font-weight:900;line-height:1}
 .footer span{font-size:12px;color:#555;font-weight:600}
@@ -71,10 +72,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .modal-card input:focus{border-color:#111}
 .btn-finalizar{width:100%;margin-top:18px;padding:16px;background:#E30613;color:white;border:none;border-radius:999px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(227,6,19,0.3)}
 .btn-cancel{width:100%;margin-top:10px;padding:12px;background:white;color:#111;border:1.5px solid #E5E7EB;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer}
-.error-detalles{border:2px solid #FF0000 !important;box-shadow:0 0 8px #FF0000, 0 0 16px #FF0000, 0 0 24px rgba(255,0,0,0.4) !important;background:#FFF0F0 !important;animation:shakeRed 0.45s ease;border-radius:12px}
-@keyframes shakeRed{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
-.toast-resumen{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);background:#111;color:#fff;padding:14px 20px;border-radius:14px;font-size:13px;font-weight:800;z-index:10000;opacity:0;pointer-events:none;transition:all 0.3s ease;text-align:center;box-shadow:0 8px 20px rgba(0,0,0,0.3)}
-.toast-resumen.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
@@ -124,6 +121,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
   <div class="lista-costos">
     <div class="costo-row"><span>Costo de productos</span><b id="costoProd">$0.00</b></div>
     <div class="costo-row"><span>Costo de envío</span><b id="costoEnvio">$0.00</b></div>
+    <div class="costo-row"><span>Tarifa de Servicio</span><b id="costoTarifa" class="precio-rojo">$0.00</b></div>
     <div class="costo-row total"><b>Total a pagar</b><b id="totalPagar">$0.00</b></div>
   </div>
 </div>
@@ -147,7 +145,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
 const firebaseConfigAliados = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
   authDomain: "doloya-aliados.firebaseapp.com",
@@ -198,13 +195,11 @@ let { ubicacion: ubiInit, detallesFull: detInit } = leerUbicacionStorage();
 let lat = ubiInit?.lat || ubiInit?.ubicacion?.lat || 21.1576;
 let lng = ubiInit?.lng || ubiInit?.ubicacion?.lng || -100.9306;
 let direccionBase = ubiInit?.direccion || '';
-let gpsObtenido = false;
 
-// === TARIFA REAL $22 + $4/km - VINCULADA A TU ADMIN ===
 let tarifaGlobal = {base: 22, precio_km: 4};
 const EXTRA_RAPIDO = 14.99;
+const TARIFA_SERVICIO_PORC = 0.03;
 
-// Leer tarifa de admin y tambien del envio ya calculado en inicio
 try{
   const envioGuardado = JSON.parse(localStorage.getItem('doloya_envio_actual')||'null');
   if(envioGuardado){
@@ -212,7 +207,6 @@ try{
     if(envioGuardado.precio_km) tarifaGlobal.precio_km = parseFloat(envioGuardado.precio_km);
   }
 }catch(e){}
-
 if(window.onValueRT){
   window.onValueRT(window.refRT(window.dbAliadosRT, 'config_global/tarifa_default'), snap=>{
     const v = snap.val();
@@ -223,7 +217,6 @@ if(window.onValueRT){
     }
   });
 }
-
 function haversine(lat1, lon1, lat2, lon2){
   const R = 6371;
   const dLat = (lat2-lat1)*Math.PI/180;
@@ -237,29 +230,21 @@ let restLng = dataRest?.lng || dataRest?.restauranteLng || -100.9310;
 if(dataRest?.restauranteLat) restLat = dataRest.restauranteLat;
 if(dataRest?.restauranteLng) restLng = dataRest.restauranteLng;
 let distanciaKm = 0.3;
-try{
-  const env = JSON.parse(localStorage.getItem('doloya_envio_actual')||'null');
-  if(env && env.distanciaKm) distanciaKm = parseFloat(env.distanciaKm);
-}catch(e){}
-
+try{ const env = JSON.parse(localStorage.getItem('doloya_envio_actual')||'null'); if(env && env.distanciaKm) distanciaKm = parseFloat(env.distanciaKm); }catch(e){}
 async function obtenerDistanciaRealGoogle(oLat, oLng, dLat, dLng){
   try{
     const url = `https://router.project-osrm.org/route/v1/driving/${oLng},${oLat};${dLng},${dLat}?overview=false`;
-    const r = await fetch(url);
-    const j = await r.json();
+    const r = await fetch(url); const j = await r.json();
     if(j.routes && j.routes[0]) return j.routes[0].distance / 1000;
   }catch(e){}
   return haversine(oLat, oLng, dLat, dLng);
 }
 let tipoActual = localStorage.getItem('doloya_tipo_entrega') || 'ahorra';
 let costoProductos = carrito.reduce((s,i)=>s+(i.precio||0)*(i.cantidad||0),0);
-
 function getCostoReal(){
-  let dist = distanciaKm;
-  if(dist < 0.1) dist = 0.1;
+  let dist = distanciaKm; if(dist < 0.1) dist = 0.1;
   return tarifaGlobal.base + (dist * tarifaGlobal.precio_km);
 }
-
 function actualizarMapaIframe(){
   document.getElementById('mapaIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
 }
@@ -284,7 +269,7 @@ async function obtenerGPSReal(){
   if(!navigator.geolocation){ cargarDireccionYDistanciaSinGPS(); return; }
   navigator.geolocation.getCurrentPosition(async (pos)=>{
     const latGPS = pos.coords.latitude; const lngGPS = pos.coords.longitude;
-    lat = latGPS; lng = lngGPS; gpsObtenido = true;
+    lat = latGPS; lng = lngGPS;
     direccionBase = await obtenerDireccionPorGPS(latGPS, lngGPS);
     const nuevaUbi = { direccion: direccionBase, lat: latGPS, lng: lngGPS, ubicacion: {lat: latGPS, lng: lngGPS} };
     localStorage.setItem('doloya_ubicacion', JSON.stringify(nuevaUbi));
@@ -297,8 +282,7 @@ async function obtenerGPSReal(){
 async function calcularDistanciaYActualizar(){
   document.getElementById('txtDistancia').innerHTML = `<span style="color:#E30613;font-weight:800;display:flex;align-items:center;gap:4px">Calculando distancia...</span>`;
   const realKm = await obtenerDistanciaRealGoogle(restLat, restLng, lat, lng);
-  distanciaKm = realKm;
-  if(distanciaKm < 0.1) distanciaKm = 0.1;
+  distanciaKm = realKm; if(distanciaKm < 0.1) distanciaKm = 0.1;
   document.getElementById('txtDistancia').innerHTML = `<span style="color:#E30613;font-weight:800;display:flex;align-items:center;gap:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> Estás a ${distanciaKm.toFixed(2)} km del restaurante</span>`;
   actualizarResumen();
 }
@@ -306,9 +290,7 @@ async function cargarDireccionYDistanciaSinGPS(){
   const { ubicacion: ubiFresh, detallesFull: detFresh } = leerUbicacionStorage();
   ubicacion = ubiFresh; detallesFull = detFresh;
   if(ubiFresh && (ubiFresh.lat || ubiFresh.ubicacion?.lat)){
-    lat = ubiFresh.lat || ubiFresh.ubicacion.lat;
-    lng = ubiFresh.lng || ubiFresh.ubicacion.lng;
-    direccionBase = ubiFresh.direccion || direccionBase;
+    lat = ubiFresh.lat || ubiFresh.ubicacion.lat; lng = ubiFresh.lng || ubiFresh.ubicacion.lng; direccionBase = ubiFresh.direccion || direccionBase;
   } else if(detFresh && detFresh.lat && detFresh.lng){
     lat = detFresh.lat; lng = detFresh.lng; direccionBase = detFresh.direccion || direccionBase;
   }
@@ -328,12 +310,6 @@ async function cargarDireccionYDistanciaSinGPS(){
     else obtenerGPSReal();
   }
 })();
-window.addEventListener('focus', ()=>{
-  const ubiCheck = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
-  if(ubiCheck && (Math.abs((ubiCheck.lat||ubiCheck.ubicacion?.lat||0) - lat) > 0.00001 || Math.abs((ubiCheck.lng||ubiCheck.ubicacion?.lng||0) - lng) > 0.00001 || ubiCheck.direccion !== direccionBase)){
-    cargarDireccionYDistanciaSinGPS();
-  }
-});
 if(detallesFull){
   let txt = '';
   if(detallesFull.tipoDireccion) txt += detallesFull.tipoDireccion + ' - ';
@@ -355,23 +331,20 @@ function actualizarResumen(){
   const costoReal = getCostoReal();
   const envioAhorra = costoReal;
   const envioRapido = costoReal + EXTRA_RAPIDO;
-  const elRapido = document.getElementById('txtRapido');
-  const elAhorra = document.getElementById('txtAhorra');
-  if(elRapido) elRapido.textContent = `$${envioRapido.toFixed(2)} MXN`;
-  if(elAhorra) elAhorra.textContent = `$${envioAhorra.toFixed(2)} MXN`;
+  document.getElementById('txtAhorra').textContent = `$${envioAhorra.toFixed(2)} MXN`;
+  document.getElementById('txtRapido').textContent = `$${envioRapido.toFixed(2)} MXN`;
   let envioSeleccionado = tipoActual==='rapido' ? envioRapido : envioAhorra;
-  const elProd = document.getElementById('costoProd');
-  const elEnv = document.getElementById('costoEnvio');
-  const elTotal = document.getElementById('totalPagar');
-  const elFoot = document.getElementById('totalFooter');
-  if(elProd) elProd.textContent = `$${costoProductos.toFixed(2)}`;
-  if(elEnv) elEnv.textContent = `$${envioSeleccionado.toFixed(2)}`;
-  let total = costoProductos + envioSeleccionado;
-  if(elTotal) elTotal.textContent = `$${total.toFixed(2)}`;
-  if(elFoot) elFoot.textContent = `$${total.toFixed(2)} MXN`;
+  let tarifaServicio = costoProductos * TARIFA_SERVICIO_PORC;
+  document.getElementById('costoProd').textContent = `$${costoProductos.toFixed(2)}`;
+  document.getElementById('costoEnvio').textContent = `$${envioSeleccionado.toFixed(2)}`;
+  document.getElementById('costoTarifa').textContent = `$${tarifaServicio.toFixed(2)}`;
+  let total = costoProductos + envioSeleccionado + tarifaServicio;
+  document.getElementById('totalPagar').textContent = `$${total.toFixed(2)}`;
+  document.getElementById('totalFooter').textContent = `$${total.toFixed(2)} MXN`;
   localStorage.setItem('doloya_tipo_entrega', tipoActual);
   localStorage.setItem('doloya_costo_entrega', envioSeleccionado.toFixed(2));
   localStorage.setItem('doloya_distancia_km', distanciaKm.toFixed(2));
+  localStorage.setItem('doloya_tarifa_servicio', tarifaServicio.toFixed(2));
   localStorage.setItem('doloya_envio_actual', JSON.stringify({distanciaKm: distanciaKm, costo: envioSeleccionado, costoReal: costoReal, base: tarifaGlobal.base, precio_km: tarifaGlobal.precio_km}));
   localStorage.setItem('doloya_total', total.toFixed(2));
 }
@@ -451,7 +424,8 @@ async function irAPagar(){
   btn.textContent = 'Finalizando...'; btn.disabled = true;
   const costoReal = getCostoReal();
   let envioFinal = tipoActual==='rapido' ? costoReal + EXTRA_RAPIDO : costoReal;
-  let totalFinal = costoProductos + envioFinal;
+  let tarifaServicio = costoProductos * TARIFA_SERVICIO_PORC;
+  let totalFinal = costoProductos + envioFinal + tarifaServicio;
   localStorage.setItem('doloya_cliente_nombre', nombre);
   const telefonoGuardado = localStorage.getItem('doloya_celular') || detallesFull?.celular || localStorage.getItem('doloya_cliente_tel') || '';
   const direccionClienteFinal = direccionBase || detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent || '';
@@ -479,6 +453,7 @@ async function irAPagar(){
       distanciaKm: Number(distanciaKm.toFixed(2)), 
       costoEnvio: Number(envioFinal),
       costoReal: Number(costoReal.toFixed(2)),
+      tarifaServicio: Number(tarifaServicio.toFixed(2)),
       extraRapido: tipoActual==='rapido' ? EXTRA_RAPIDO : 0,
       tipoEntrega: String(tipoActual), 
       total: Number(totalFinal.toFixed(2)) 
