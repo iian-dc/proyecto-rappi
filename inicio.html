@@ -99,45 +99,47 @@ let aliadosData=[];
 const listaEl=document.getElementById('listaRestaurantes');
 function getCampo(r, ...nombres){ if(!r) return ''; for(let n of nombres){ if(r[n] !== undefined && r[n] !== null && r[n] !== '') return r[n]; const key = Object.keys(r).find(k => k.toLowerCase() === n.toLowerCase()); if(key && r[key]) return r[key]; } return ''; }
 
-// CORRECCION SOLO PARA TU CASO: toma categoria de info / perfil / _info
+// CORREGIDO: SOLO LEE LA BUENA categorias/categorias/disponibilidad
+function obtenerDisponibilidadReal(root){
+  if(!root || typeof root !== 'object') return true;
+  let disp = null;
+  // LA BUENA: doloya_aliados/santillos/categorias/categorias/disponibilidad
+  if(root.categorias && root.categorias.categorias && root.categorias.categorias.disponibilidad){
+    disp = root.categorias.categorias.disponibilidad;
+  }
+  if(disp){
+    if(typeof disp === 'boolean') return disp;
+    if(disp.abierto !== undefined) return disp.abierto === true || disp.abierto === 'true' || disp.abierto === 'abierto';
+    if(disp.estado !== undefined) return disp.estado === 'abierto' || disp.estado === 'activo';
+    return true;
+  }
+  return true;
+}
+
 function extraerCategoriaReal(root){
   if(!root || typeof root !== 'object') return '';
   let cat = '';
-  // 1. Directo en root si es string Burger
   if(typeof root.categorias === 'string' && root.categorias){
     cat = root.categorias;
   }
-  // 2. Dentro de categorias objeto
   if(root.categorias && typeof root.categorias === 'object'){
     let cObj = root.categorias;
-    // _info: "Burger" - ESTA es la que señalas con la flecha, la cambiamos a su categoria
     if(cObj._info && typeof cObj._info === 'string'){
       cat = cObj._info;
     }
-    // categorias interno
-    if(cObj.categorias && typeof cObj.categorias === 'object'){
-      // no tocar este, es el de abajo que dejamos tal cual
-    }
-    // info subcategoria - DE AQUI TOMAMOS LA INFO REAL DEL RESTAURANTE
     if(cObj.info && cObj.info.categoria) cat = cObj.info.categoria;
     if(cObj.info && cObj.info.Categoria) cat = cObj.info.Categoria;
-    // busca en cada subcategoria el info con categoria
     for(let k in cObj){
       let v = cObj[k];
       if(v && typeof v === 'object'){
         if(v.info && v.info.categoria) cat = v.info.categoria;
         if(v.info && v.info.Categoria) cat = v.info.Categoria;
-        // dentro de salchipapas/info
         if(v.correo && v.categoria) cat = v.categoria;
-        // perfil
         if(v.perfil && v.perfil.categoria) cat = v.perfil.categoria;
-        // si la subcategoria es boneles, salchipapas etc y tiene info adentro
         for(let kk in v){
           let vv = v[kk];
           if(vv && typeof vv === 'object' && vv.categoria && typeof vv.categoria === 'string' && vv.categoria.length<20){
-            // evita que tome categoria de producto, solo si tiene correo o es general
             if(vv.correo || vv.categoria.toLowerCase().includes('burger') || vv.categoria.toLowerCase().includes('pizza') || vv.categoria.toLowerCase()==='general'){
-              // si es general no, busca otra
             }else{
               cat = vv.categoria;
             }
@@ -146,10 +148,8 @@ function extraerCategoriaReal(root){
       }
     }
   }
-  // 3. En info raiz
   if(root.info && root.info.categoria) cat = root.info.categoria;
   if(root.perfil && root.perfil.categoria) cat = root.perfil.categoria;
-  // 4. Si _info existe arriba
   if(root._info && typeof root._info === 'string') cat = root._info;
   return cat;
 }
@@ -158,11 +158,13 @@ function extraerTodo(root){
   let result = {};
   let categoriaReal = extraerCategoriaReal(root);
   if(categoriaReal) result.categoria = categoriaReal;
+  result.abiertoReal = obtenerDisponibilidadReal(root);
   
   function recorrer(obj, depth){
     if(!obj || typeof obj !== 'object' || depth>6) return;
     for(let k in obj){
       let v = obj[k];
+      if(k==='disponibilidad') continue;
       if(k==='categorias' && typeof v==='object' && depth<2){
         recorrer(v, depth+1);
         continue;
@@ -173,11 +175,10 @@ function extraerTodo(root){
       }
       if(typeof v !== 'object' || v===null){
         let lk = k.toLowerCase();
-        if(['nombre','nombreRestaurante','logo','imagen','foto','abierto','estado','correo','email','disponibilidad','_info'].includes(lk) || lk.includes('logo') || lk.includes('imagen')){
+        if(['nombre','nombreRestaurante','logo','imagen','foto','correo','email','_info'].includes(lk) || lk.includes('logo') || lk.includes('imagen')){
           if(!result[k] && !result[lk]) result[k]=v;
           if(lk!=='_info') result[lk]=v;
           if(lk==='_info' && typeof v==='string' && v.length<20){
-            // _info: "Burger" lo tomamos como categoria si no hay otra
             if(!result.categoria) result.categoria = v;
           }
         }
@@ -209,9 +210,7 @@ function aplanarDatos(dataPorCategoria){
     let extra = extraerTodo(grupo);
     let nombreRest = extra.nombre || extra.nombreRestaurante || extra.Nombre || topKey;
     if(nombreRest.toLowerCase()==='salchipapas' && topKey==='santillos') nombreRest='Santillos';
-    let abiertoVal = true;
-    if(extra.abierto !== undefined) abiertoVal = extra.abierto===true || extra.abierto==='true' || extra.abierto==='abierto' || extra.abierto==='activo';
-    else if(extra.estado !== undefined) abiertoVal = extra.estado==='abierto' || extra.estado==='activo' || extra.estado===true;
+    let abiertoVal = extra.abiertoReal;
     let logoVal = extra.logo || extra.Logo || extra.imagen || extra.foto || extra.logoUrl || '';
     if(!logoVal) logoVal = 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop';
     let esFormatoNuevo = grupo.categorias ? true : false;
@@ -252,13 +251,11 @@ function coincideCategoria(catRestaurante, catFiltro){
   let rc = catRestaurante.toLowerCase().trim();
   let fc = catFiltro.toLowerCase().trim();
   if(fc==='todos') return true;
-  // normaliza: burgers -> burger, pizzas -> pizza
   let fcSing = fc.endsWith('s') ? fc.slice(0,-1) : fc;
   let rcSing = rc.endsWith('s') ? rc.slice(0,-1) : rc;
   if(rc===fc || rcSing===fcSing) return true;
   if(rc.includes(fc) || fc.includes(rc)) return true;
   if(rc.includes(fcSing) || fcSing.includes(rc)) return true;
-  // casos especificos
   if(fc==='burgers' && rc.includes('burger')) return true;
   if(fc==='pizzas' && rc.includes('pizza')) return true;
   if(fc==='alitas' && rc.includes('alita')) return true;
