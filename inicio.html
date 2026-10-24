@@ -99,25 +99,40 @@ let aliadosData=[];
 const listaEl=document.getElementById('listaRestaurantes');
 function getCampo(r, ...nombres){ if(!r) return ''; for(let n of nombres){ if(r[n] !== undefined && r[n] !== null && r[n] !== '') return r[n]; const key = Object.keys(r).find(k => k.toLowerCase() === n.toLowerCase()); if(key && r[key]) return r[key]; } return ''; }
 
-// CORREGIDO: LEE LA RUTA REAL doloya_aliados/ID/disponibilidad
+// CORREGIDO: LEE EL DE ARRIBA false/cerrado - NO EL DE ABAJO true/activo
 function obtenerDisponibilidadReal(root){
   if(!root || typeof root !== 'object') return true;
-  if(root.disponibilidad){
-    let d = root.disponibilidad;
-    if(typeof d.abierto === 'boolean') return d.abierto;
-    if(typeof d.abierto === 'string') return d.abierto === 'true' || d.abierto === 'abierto' || d.abierto === 'activo';
-    if(d.estado) return d.estado === 'abierto' || d.estado === 'activo';
-  }
-  if(root.info && root.info.disponibilidad){
-    let d = root.info.disponibilidad;
-    if(typeof d.abierto === 'boolean') return d.abierto;
-    if(typeof d.abierto === 'string') return d.abierto === 'true' || d.abierto === 'abierto';
-    if(d.estado) return d.estado === 'abierto' || d.estado === 'activo';
-  }
+  
+  // 1. PRIORIDAD MAXIMA: doloya_aliados/ID/categorias/disponibilidad (el de ARRIBA de tu foto)
   if(root.categorias && root.categorias.disponibilidad){
     let d = root.categorias.disponibilidad;
     if(typeof d.abierto === 'boolean') return d.abierto;
+    if(typeof d.abierto === 'string') {
+      if(d.abierto === 'false' || d.abierto === 'cerrado' || d.abierto === 'desactivo') return false;
+      if(d.abierto === 'true' || d.abierto === 'abierto' || d.abierto === 'activo') return true;
+    }
+    if(d.estado){
+      if(d.estado === 'cerrado' || d.estado === 'false') return false;
+      if(d.estado === 'abierto' || d.estado === 'activo') return true;
+    }
   }
+
+  // 2. Segunda prioridad: categorias/categorias/disponibilidad (por si tu estructura es anidada)
+  if(root.categorias && root.categorias.categorias.disponibilidad){
+    let d = root.categorias.categorias.disponibilidad;
+    if(typeof d.abierto === 'boolean') return d.abierto;
+    if(d.estado === 'cerrado' || d.abierto === false) return false;
+    if(d.estado === 'abierto' || d.abierto === true) return true;
+  }
+
+  // 3. Raiz: doloya_aliados/ID/disponibilidad
+  if(root.disponibilidad){
+    let d = root.disponibilidad;
+    if(typeof d.abierto === 'boolean') return d.abierto;
+    if(d.estado === 'cerrado') return false;
+    if(d.estado === 'abierto') return true;
+  }
+
   return true;
 }
 
@@ -137,16 +152,12 @@ function extraerCategoriaReal(root){
   return cat;
 }
 
-// CORREGIDO: LOGO ACEPTA data:image/jpeg;base64 COMO EN TU FOTO
 function extraerInfoRestauranteReal(root, topKey){
   if(!root || typeof root !== 'object') return {nombre: topKey.replace(/_/g,' '), logo: 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop'};
   let info = {nombre: '', logo: ''};
-  
   if(root.info && root.info.imagen && typeof root.info.imagen === 'string'){
     let img = root.info.imagen.trim();
-    if(img.startsWith('http') || img.startsWith('data:image')){
-      info.logo = img;
-    }
+    if(img.startsWith('http') || img.startsWith('data:image')){ info.logo = img; }
   }
   if(!info.logo && root.perfil && root.perfil.imagenPerfil && typeof root.perfil.imagenPerfil === 'string'){
     let img = root.perfil.imagenPerfil.trim();
@@ -160,7 +171,6 @@ function extraerInfoRestauranteReal(root, topKey){
     let img = root.info.logo.trim();
     if(img.startsWith('http') || img.startsWith('data:image')) info.logo = img;
   }
-
   if(root.perfil){
     if(root.perfil.nombre) info.nombre = root.perfil.nombre;
     if(root.perfil.nombreRestaurante) info.nombre = root.perfil.nombreRestaurante;
@@ -171,7 +181,6 @@ function extraerInfoRestauranteReal(root, topKey){
       info.nombre = root.info.nombre;
     }
   }
-  
   if(!info.nombre || info.nombre.toLowerCase().includes('mampana') || info.nombre.length > 40){
     let base = topKey.replace(/_/g,' ').trim();
     base = base.charAt(0).toUpperCase() + base.slice(1);
@@ -179,10 +188,8 @@ function extraerInfoRestauranteReal(root, topKey){
     info.nombre = base;
   }
   if(info.nombre.toLowerCase()==='salchipapas' && topKey==='santillos') info.nombre='Santillos';
-  
   info.nombre = info.nombre.replace(/_/g,' ').trim();
   if(!info.logo) info.logo = 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop';
-  
   return info;
 }
 
@@ -194,14 +201,11 @@ function aplanarDatos(dataPorCategoria){
     const grupo = dataPorCategoria[topKey];
     if(!grupo || typeof grupo !== 'object') return;
     if(grupo.precio !== undefined && grupo.nombre) return;
-    
     let categoriaReal = extraerCategoriaReal(grupo);
     let abiertoVal = obtenerDisponibilidadReal(grupo);
     let infoReal = extraerInfoRestauranteReal(grupo, topKey);
-    
     let nombreRest = infoReal.nombre;
     let logoVal = infoReal.logo;
-    
     lista.push({
       id: topKey,
       categoriaOriginal: topKey,
