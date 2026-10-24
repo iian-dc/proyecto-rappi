@@ -78,6 +78,16 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
 .btn-conservar{flex:1;padding:16px;border-radius:999px;border:1.5px solid #E5E7EB;background:white;font-size:15px;font-weight:800;cursor:pointer}
 .btn-eliminar{flex:1;padding:16px;border-radius:999px;border:none;background:#E30613;color:white;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(227,6,19,0.3)}
 .loading{text-align:center;padding:40px;color:#999}
+/* SOLO AGREGADO PARA CIERRE */
+#overlayCerrado{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999999;display:none;align-items:center;justify-content:center;padding:24px}
+#overlayCerrado.show{display:flex}
+.card-cerrado{background:white;border-radius:22px;padding:26px 22px;text-align:center;max-width:340px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,0.35);animation:popCerrado 0.3s ease}
+.card-cerrado h2{font-size:19px;font-weight:900;color:#111}
+.card-cerrado p{font-size:13.5px;color:#555;margin-top:8px;line-height:1.4}
+.card-cerrado .count{margin-top:14px;font-size:12px;font-weight:800;color:#E30613;background:#FFF1F2;padding:7px 14px;border-radius:999px;display:inline-block}
+@keyframes popCerrado{from{transform:scale(0.85);opacity:0}to{transform:scale(1);opacity:1}}
+body.bloqueado{overflow:hidden}
+body.bloqueado .btn-add, body.bloqueado .qty-btn{pointer-events:none !important;opacity:0.4}
 </style>
 </head>
 <body>
@@ -120,6 +130,14 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
     </div>
   </div>
 </div>
+<!-- SOLO AGREGADO PARA CIERRE -->
+<div id="overlayCerrado">
+  <div class="card-cerrado">
+    <h2>Lo sentimos</h2>
+    <p>Este restaurante ha cerrado por el día de hoy</p>
+    <div class="count">Regresando al inicio en <span id="countNum">5</span>s...</div>
+  </div>
+</div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, onValue, get, set, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -154,6 +172,28 @@ let productosGlobal = [];
 let categoriasConfig = [];
 let mapaCategorias = {};
 const TIEMPO_EXPIRACION = 3 * 60 * 60 * 1000;
+// SOLO AGREGADO PARA CIERRE
+let restauranteCerrado = false;
+let overlayCerradoMostrado = false;
+function mostrarTarjetaCerrado(){
+  if(overlayCerradoMostrado) return;
+  overlayCerradoMostrado = true;
+  restauranteCerrado = true;
+  document.body.classList.add('bloqueado');
+  const overlay = document.getElementById('overlayCerrado');
+  const countEl = document.getElementById('countNum');
+  if(overlay) overlay.classList.add('show');
+  let segundos = 5;
+  if(countEl) countEl.textContent = segundos;
+  const intervalo = setInterval(()=>{
+    segundos--;
+    if(countEl) countEl.textContent = segundos;
+    if(segundos <= 0){
+      clearInterval(intervalo);
+      window.location.href = 'inicio.html';
+    }
+  }, 1000);
+}
 function irAlInicio(){ window.location.href = 'inicio.html'; }
 window.irAlInicio = irAlInicio;
 function fmtPrecio(n){
@@ -299,6 +339,7 @@ async function verificarExpiracion(){
 }
 setInterval(verificarExpiracion, 5 * 60 * 1000);
 function verificarCambioRestaurante(){
+  if(restauranteCerrado){ mostrarTarjetaCerrado(); return true; }
   if(carrito.length>0 && restauranteActualCarrito && restauranteActualCarrito!==id){
     const nombreAnt = restauranteAnteriorData?.nombre || restauranteActualCarrito;
     document.getElementById('txtRestauranteAnterior').textContent = nombreAnt;
@@ -308,6 +349,7 @@ function verificarCambioRestaurante(){
   return false;
 }
 function addProducto(nombre, precio, imagen){
+  if(restauranteCerrado){ mostrarTarjetaCerrado(); return; }
   if(verificarCambioRestaurante()){
     productoPendiente = {nombre, precio, imagen};
     return;
@@ -318,6 +360,7 @@ function addProducto(nombre, precio, imagen){
   guardarCarrito();
 }
 function restarProducto(nombre){
+  if(restauranteCerrado){ mostrarTarjetaCerrado(); return; }
   const idx = carrito.findIndex(p=>p.nombre===nombre);
   if(idx===-1) return;
   carrito[idx].cantidad--;
@@ -537,10 +580,9 @@ else {
   }
 
   function estaAbiertoDesdeDisponibilidad(data){
-    // SOLO desde categorias/disponibilidad como me pediste
     let val = null;
     if(data.categorias && data.categorias.disponibilidad) val = data.categorias.disponibilidad;
-    else if(data.categorias && data.categorias.categorias && data.categorias.categorias.disponibilidad) val = data.categorias.categorias.disponibilidad;
+    else if(data.categorias && data.categorias.categorias.disponibilidad) val = data.categorias.categorias.disponibilidad;
     else if(data.disponibilidad) val = data.disponibilidad;
 
     if(val===null || val===undefined) return true;
@@ -599,16 +641,17 @@ else {
     document.getElementById('txtCalificacion').textContent = calcularValoracion(likes);
     document.getElementById('txtTotalLikes').textContent = `(${likes})`;
     
-    // SOLO DESDE DISPONIBILIDAD
     let disponible = estaAbiertoDesdeDisponibilidad(data);
     let badgeEl = document.getElementById('badgeAbierto');
     let txtAbiertoEl = document.getElementById('txtAbierto');
     if(disponible){
       txtAbiertoEl.textContent = 'ABIERTO';
       badgeEl.classList.remove('cerrado');
+      restauranteCerrado = false;
     } else {
       txtAbiertoEl.textContent = 'CERRADO';
       badgeEl.classList.add('cerrado');
+      mostrarTarjetaCerrado();
     }
 
     let rawCats = data.categorias || {};
@@ -675,7 +718,6 @@ else {
     cargarDesdeData(data);
   });
 
-  // TIEMPO REAL SOLO DESDE categorias/disponibilidad
   onValue(ref(db, `doloya_aliados/${id}/categorias/disponibilidad`), snap=>{
     let val = snap.val();
     if(val===null) return;
@@ -689,9 +731,11 @@ else {
     if(disponible){
       txtAbiertoEl.textContent = 'ABIERTO';
       badgeEl.classList.remove('cerrado');
+      restauranteCerrado = false;
     } else {
       txtAbiertoEl.textContent = 'CERRADO';
       badgeEl.classList.add('cerrado');
+      mostrarTarjetaCerrado();
     }
   });
 
@@ -707,15 +751,18 @@ else {
     if(disponible){
       txtAbiertoEl.textContent = 'ABIERTO';
       badgeEl.classList.remove('cerrado');
+      restauranteCerrado = false;
     } else {
       txtAbiertoEl.textContent = 'CERRADO';
       badgeEl.classList.add('cerrado');
+      mostrarTarjetaCerrado();
     }
   });
 }
 window.handleAdd=(nombre, precio, imagen)=>{ addProducto(nombre, precio, imagen); }
 window.handleRestar=(nombre)=>{ restarProducto(nombre); }
 document.getElementById('btnVerCarrito').onclick = async ()=>{
+  if(restauranteCerrado){ mostrarTarjetaCerrado(); return; }
   if(carrito.length===0) return;
   const btn = document.getElementById('btnVerCarrito');
   btn.textContent = 'Guardando...';
