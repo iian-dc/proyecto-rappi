@@ -99,31 +99,24 @@ let aliadosData=[];
 const listaEl=document.getElementById('listaRestaurantes');
 function getCampo(r, ...nombres){ if(!r) return ''; for(let n of nombres){ if(r[n] !== undefined && r[n] !== null && r[n] !== '') return r[n]; const key = Object.keys(r).find(k => k.toLowerCase() === n.toLowerCase()); if(key && r[key]) return r[key]; } return ''; }
 
+// CORREGIDO: LEE LA RUTA REAL doloya_aliados/ID/disponibilidad
 function obtenerDisponibilidadReal(root){
   if(!root || typeof root !== 'object') return true;
-  function buscarDisponibilidad(node, depth){
-    if(!node || typeof node !== 'object' || depth>12) return null;
-    if(node.disponibilidad && typeof node.disponibilidad === 'object' && (node.disponibilidad.abierto !== undefined || node.disponibilidad.estado !== undefined)){
-      return node.disponibilidad;
-    }
-    for(let k in node){
-      if(k==='info' || k==='perfil' || k==='likes' || k==='Likes') continue;
-      let v = node[k];
-      if(v && typeof v === 'object'){
-        let found = buscarDisponibilidad(v, depth+1);
-        if(found) return found;
-      }
-    }
-    return null;
+  if(root.disponibilidad){
+    let d = root.disponibilidad;
+    if(typeof d.abierto === 'boolean') return d.abierto;
+    if(typeof d.abierto === 'string') return d.abierto === 'true' || d.abierto === 'abierto' || d.abierto === 'activo';
+    if(d.estado) return d.estado === 'abierto' || d.estado === 'activo';
   }
-  let disp = buscarDisponibilidad(root, 0);
-  if(!disp) return true;
-  if(typeof disp === 'boolean') return disp;
-  if(disp.abierto !== undefined){
-    return disp.abierto === true || disp.abierto === 'true' || disp.abierto === 'abierto' || disp.abierto === 'activo';
+  if(root.info && root.info.disponibilidad){
+    let d = root.info.disponibilidad;
+    if(typeof d.abierto === 'boolean') return d.abierto;
+    if(typeof d.abierto === 'string') return d.abierto === 'true' || d.abierto === 'abierto';
+    if(d.estado) return d.estado === 'abierto' || d.estado === 'activo';
   }
-  if(disp.estado !== undefined){
-    return disp.estado === 'abierto' || disp.estado === 'activo';
+  if(root.categorias && root.categorias.disponibilidad){
+    let d = root.categorias.disponibilidad;
+    if(typeof d.abierto === 'boolean') return d.abierto;
   }
   return true;
 }
@@ -131,14 +124,10 @@ function obtenerDisponibilidadReal(root){
 function extraerCategoriaReal(root){
   if(!root || typeof root !== 'object') return '';
   let cat = '';
-  if(typeof root.categorias === 'string' && root.categorias){
-    cat = root.categorias;
-  }
+  if(typeof root.categorias === 'string' && root.categorias){ cat = root.categorias; }
   if(root.categorias && typeof root.categorias === 'object'){
     let cObj = root.categorias;
-    if(cObj._info && typeof cObj._info === 'string'){
-      cat = cObj._info;
-    }
+    if(cObj._info && typeof cObj._info === 'string'){ cat = cObj._info; }
     if(cObj.info && cObj.info.categoria) cat = cObj.info.categoria;
     if(cObj.info && cObj.info.Categoria) cat = cObj.info.Categoria;
   }
@@ -148,27 +137,40 @@ function extraerCategoriaReal(root){
   return cat;
 }
 
-// MODIFICADO: Ahora quita _ y pone espacios en el nombre
+// CORREGIDO: LOGO ACEPTA data:image/jpeg;base64 COMO EN TU FOTO
 function extraerInfoRestauranteReal(root, topKey){
-  if(!root || typeof root !== 'object') return {nombre: topKey.replace(/_/g,' '), logo: ''};
+  if(!root || typeof root !== 'object') return {nombre: topKey.replace(/_/g,' '), logo: 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop'};
   let info = {nombre: '', logo: ''};
   
+  if(root.info && root.info.imagen && typeof root.info.imagen === 'string'){
+    let img = root.info.imagen.trim();
+    if(img.startsWith('http') || img.startsWith('data:image')){
+      info.logo = img;
+    }
+  }
+  if(!info.logo && root.perfil && root.perfil.imagenPerfil && typeof root.perfil.imagenPerfil === 'string'){
+    let img = root.perfil.imagenPerfil.trim();
+    if(img.startsWith('http') || img.startsWith('data:image')) info.logo = img;
+  }
+  if(!info.logo && root.info && root.info.imagenPerfil && typeof root.info.imagenPerfil === 'string'){
+    let img = root.info.imagenPerfil.trim();
+    if(img.startsWith('http') || img.startsWith('data:image')) info.logo = img;
+  }
+  if(!info.logo && root.info && root.info.logo && typeof root.info.logo === 'string'){
+    let img = root.info.logo.trim();
+    if(img.startsWith('http') || img.startsWith('data:image')) info.logo = img;
+  }
+
   if(root.perfil){
     if(root.perfil.nombre) info.nombre = root.perfil.nombre;
     if(root.perfil.nombreRestaurante) info.nombre = root.perfil.nombreRestaurante;
-    if(root.perfil.imagenPerfil) info.logo = root.perfil.imagenPerfil;
   }
   if(root.info){
-    if(root.info.nombre && !root.info.correo && root.info.nombre.length < 40) {
-      if(!info.nombre) info.nombre = root.info.nombre;
-    }
     if(root.info.nombreRestaurante) info.nombre = root.info.nombreRestaurante;
-    if(root.info.logo) info.logo = root.info.logo;
-    if(root.info.imagenPerfil) info.logo = root.info.imagenPerfil;
-    if(root.info.imagenPortada && !info.logo) info.logo = root.info.imagenPortada;
+    else if(root.info.nombre && root.info.nombre.length < 40 && !root.info.nombre.includes('@')) {
+      info.nombre = root.info.nombre;
+    }
   }
-  if(root.logo && typeof root.logo === 'string' && root.logo.startsWith('http')) info.logo = root.logo;
-  if(root.imagenPerfil && typeof root.imagenPerfil === 'string' && root.imagenPerfil.startsWith('http')) info.logo = root.imagenPerfil;
   
   if(!info.nombre || info.nombre.toLowerCase().includes('mampana') || info.nombre.length > 40){
     let base = topKey.replace(/_/g,' ').trim();
@@ -178,8 +180,8 @@ function extraerInfoRestauranteReal(root, topKey){
   }
   if(info.nombre.toLowerCase()==='salchipapas' && topKey==='santillos') info.nombre='Santillos';
   
-  // Asegurar que nunca tenga _ al mostrarse
   info.nombre = info.nombre.replace(/_/g,' ').trim();
+  if(!info.logo) info.logo = 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop';
   
   return info;
 }
@@ -199,7 +201,6 @@ function aplanarDatos(dataPorCategoria){
     
     let nombreRest = infoReal.nombre;
     let logoVal = infoReal.logo;
-    if(!logoVal) logoVal = 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop';
     
     lista.push({
       id: topKey,
@@ -247,7 +248,7 @@ function renderAliados(filtroCat="todos", busqueda=""){
   if(busqueda) f=f.filter(a=>a.nombre.toLowerCase().includes(busqueda.toLowerCase()));
   listaEl.innerHTML="";
   if(f.length===0){
-    listaEl.innerHTML = '<p style="padding:20px;color:#888">No hay restaurantes en '+filtroCat+' - Verifica que en Firebase tengas categoria: burger</p>';
+    listaEl.innerHTML = '<p style="padding:20px;color:#888">No hay restaurantes en '+filtroCat+'</p>';
     return;
   }
   f.forEach(a=>{
