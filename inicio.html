@@ -99,7 +99,6 @@ let aliadosData=[];
 const listaEl=document.getElementById('listaRestaurantes');
 function getCampo(r, ...nombres){ if(!r) return ''; for(let n of nombres){ if(r[n] !== undefined && r[n] !== null && r[n] !== '') return r[n]; const key = Object.keys(r).find(k => k.toLowerCase() === n.toLowerCase()); if(key && r[key]) return r[key]; } return ''; }
 
-// CORREGIDO SOLO ESTO - LEE EL ESTADO DONDE ESTÉ
 function obtenerDisponibilidadReal(root){
   if(!root || typeof root !== 'object') return true;
   function buscarDisponibilidad(node, depth){
@@ -149,12 +148,11 @@ function extraerCategoriaReal(root){
   return cat;
 }
 
-// CORREGIDO SOLO ESTO - YA NO TOMA PRODUCTOS COMO NOMBRE/LOGO
+// MODIFICADO: Ahora quita _ y pone espacios en el nombre
 function extraerInfoRestauranteReal(root, topKey){
-  if(!root || typeof root !== 'object') return {nombre: topKey, logo: ''};
+  if(!root || typeof root !== 'object') return {nombre: topKey.replace(/_/g,' '), logo: ''};
   let info = {nombre: '', logo: ''};
   
-  // SOLO perfil e info - NUNCA productos
   if(root.perfil){
     if(root.perfil.nombre) info.nombre = root.perfil.nombre;
     if(root.perfil.nombreRestaurante) info.nombre = root.perfil.nombreRestaurante;
@@ -172,13 +170,16 @@ function extraerInfoRestauranteReal(root, topKey){
   if(root.logo && typeof root.logo === 'string' && root.logo.startsWith('http')) info.logo = root.logo;
   if(root.imagenPerfil && typeof root.imagenPerfil === 'string' && root.imagenPerfil.startsWith('http')) info.logo = root.imagenPerfil;
   
-  // Fallback a topKey si no hay nombre o si el nombre parece producto
   if(!info.nombre || info.nombre.toLowerCase().includes('mampana') || info.nombre.length > 40){
-    let base = topKey.charAt(0).toUpperCase() + topKey.slice(1);
+    let base = topKey.replace(/_/g,' ').trim();
+    base = base.charAt(0).toUpperCase() + base.slice(1);
     if(base.toLowerCase() === 'santillos') base = 'Santillos';
     info.nombre = base;
   }
   if(info.nombre.toLowerCase()==='salchipapas' && topKey==='santillos') info.nombre='Santillos';
+  
+  // Asegurar que nunca tenga _ al mostrarse
+  info.nombre = info.nombre.replace(/_/g,' ').trim();
   
   return info;
 }
@@ -190,7 +191,6 @@ function aplanarDatos(dataPorCategoria){
     if(topKey === 'admin') return;
     const grupo = dataPorCategoria[topKey];
     if(!grupo || typeof grupo !== 'object') return;
-    // IGNORA si es un producto directo (tiene precio)
     if(grupo.precio !== undefined && grupo.nombre) return;
     
     let categoriaReal = extraerCategoriaReal(grupo);
@@ -255,19 +255,14 @@ function renderAliados(filtroCat="todos", busqueda=""){
     const badgeHtml = abierto ? `<div class="badge badge-open"><div class="dot"></div>Abierto</div>` : `<div class="badge badge-closed"><div class="dot closed"></div>Cerrado</div>`;
     const onclickAttr = `onclick="ir('${a.categoriaOriginal}','${a.id}')"`;
     const logoSrc = a.logoFinal;
+    const nombreMostrar = a.nombre.replace(/_/g,' ').trim();
     listaEl.innerHTML+=`
     <div class="rest-card ${!abierto ? 'cerrado' : ''}" ${onclickAttr}>
       <img class="rest-logo" src="${logoSrc}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop'">
       <div class="rest-info">
-        <div class="rest-top"><div class="rest-name">${a.nombre}</div>${badgeHtml}</div>
+        <div class="rest-top"><div class="rest-name">${nombreMostrar}</div>${badgeHtml}</div>
         <div class="rating"><svg class="i" viewBox="0 0 24 24" fill="#FFB800"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> ${getCampo(a,'rating','Rating')||'4.7'} <span style="color:#777">(${a.likesReal||0})</span></div>
-        <div class="tags"><div class="tag">${a.categoriaRaw||a.categoria}</div>${!abierto ? '<div class="tag" style="background:#fee2e2;color:#991b1b">No recibe pedidos</div>' : ''}</div>
-        <div class="rest-bottom">
-          <svg class="moto" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M19 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M8 17h5l2-5h3.5"/><path d="M13 12l2-3h2"/></svg> ${getCampo(a,'tiempoEntrega','TiempoEntrega')||'20-30 min'}
-          <span>·</span>
-          <svg class="moto" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M19 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M8 17h5l2-5h3.5"/><path d="M13 12l2-3h2"/></svg> $${getCampo(a,'costoEnvio','CostoEnvio')||'35'}
-          <span class="distancia">${getCampo(a,'distancia','Distancia')||'180 m'}</span>
-        </div>
+        <div class="tags"><div class="tag">${(a.categoriaRaw||a.categoria).replace(/_/g,' ')}</div>${!abierto ? '<div class="tag" style="background:#fee2e2;color:#991b1b">No recibe pedidos</div>' : ''}</div>
       </div>
     </div>`;
   });
