@@ -71,10 +71,9 @@ let productosAbiertos = true;
 let logoRestaurante = dataRest?.logo || null;
 const TIEMPO_EXPIRACION = 3 * 60 * 60 * 1000;
 
-// CONFIG TARIFAS
 const TARIFA_BASE_KM = 30;
 const PRECIO_POR_KM = 4;
-const TARIFA_SERVICIO_PORC = 0.03; // 3%
+const TARIFA_SERVICIO_PORC = 0.03;
 
 async function obtenerIP(){
   try{
@@ -85,26 +84,92 @@ async function obtenerIP(){
     ipKey = localStorage.getItem('doloya_device_id');
   }
 }
+
+// CORREGIDO: AHORA SI SACA EL LOGO REAL
 async function obtenerLogo(){
-  if(logoRestaurante){ render(); return; }
+  if(logoRestaurante){ render(); enriquecerDescripciones(); return; }
   if(dataRest?.cat && dataRest?.id){
     try{
-      const snap = await get(ref(db, `doloya_aliados/${dataRest.cat}/${dataRest.id}`));
-      const data = snap.val();
+      let data = null;
+      let snap1 = await get(ref(db, `doloya_aliados/${dataRest.id}`));
+      if(snap1.exists()) data = snap1.val();
+      if(!data){
+        let snap2 = await get(ref(db, `doloya_aliados/${dataRest.cat}/${dataRest.id}`));
+        if(snap2.exists()) data = snap2.val();
+      }
       if(data){
-        if(data.logo){ logoRestaurante = data.logo; dataRest.logo = data.logo; }
-        else if(data.portada){ logoRestaurante = data.portada; }
+        if(data.perfil?.imagenPerfil) logoRestaurante = data.perfil.imagenPerfil;
+        else if(data.perfil?.imagenPortada) logoRestaurante = data.perfil.imagenPortada;
+        else if(data.info?.logo) logoRestaurante = data.info.logo;
+        else if(data.info?.imagenPerfil) logoRestaurante = data.info.imagenPerfil;
+        else if(data.logo) logoRestaurante = data.logo;
+        else if(data.imagenPerfil) logoRestaurante = data.imagenPerfil;
+        
+        if(logoRestaurante){
+          dataRest.logo = logoRestaurante;
+          localStorage.setItem('doloya_carrito_restaurante_data', JSON.stringify(dataRest));
+        }
         if(data.direccion) dataRest.direccion = data.direccion;
         if(data.lat) dataRest.lat = data.lat;
         if(data.lng) dataRest.lng = data.lng;
         if(data.ubicacion?.lat) dataRest.lat = data.ubicacion.lat;
         if(data.ubicacion?.lng) dataRest.lng = data.ubicacion.lng;
-        localStorage.setItem('doloya_carrito_restaurante_data', JSON.stringify(dataRest));
       }
     }catch(e){}
   }
   render();
+  enriquecerDescripciones();
 }
+
+// NUEVO: BUSCA DESCRIPCION REAL SI EL CARRITO NO LA TRAE
+async function enriquecerDescripciones(){
+  if(!dataRest?.id) return;
+  let necesitaUpdate = false;
+  for(let i=0;i<carrito.length;i++){
+    let p = carrito[i];
+    if(!p.descripcion || p.descripcion.toLowerCase() === p.nombre.toLowerCase()){
+      try{
+        let snap = await get(ref(db, `doloya_aliados/${dataRest.id}`));
+        let root = snap.val();
+        if(!root){
+          let snap2 = await get(ref(db, `doloya_aliados/${dataRest.cat}/${dataRest.id}`));
+          root = snap2.val();
+        }
+        if(root){
+          let descEncontrada = buscarDescripcionEnData(root, p.nombre);
+          if(descEncontrada){
+            carrito[i].descripcion = descEncontrada;
+            necesitaUpdate = true;
+          }
+        }
+      }catch(e){}
+    }
+  }
+  if(necesitaUpdate){
+    localStorage.setItem('doloya_carrito_v2', JSON.stringify(carrito));
+    render();
+  }
+}
+function buscarDescripcionEnData(root, nombreBuscar){
+  if(!root) return null;
+  let nombreLower = nombreBuscar.toLowerCase();
+  function recorrer(node){
+    if(!node || typeof node !== 'object') return null;
+    for(let k in node){
+      let v = node[k];
+      if(v && typeof v === 'object'){
+        if(v.nombre && v.nombre.toLowerCase() === nombreLower && v.descripcion){
+          return v.descripcion;
+        }
+        let res = recorrer(v);
+        if(res) return res;
+      }
+    }
+    return null;
+  }
+  return recorrer(root);
+}
+
 function render(){
   const cont = document.getElementById('contenido');
   const foot = document.getElementById('footer');
@@ -129,13 +194,16 @@ function render(){
       </div>
     </div>
     <div class="productos ${!productosAbiertos?'oculto':''}" id="listaProds">
-      ${carrito.map((p,idx)=>`
+      ${carrito.map((p,idx)=>{
+        let textoDesc = p.descripcion || '';
+        if(textoDesc.toLowerCase() === p.nombre.toLowerCase()) textoDesc = '';
+        return `
         <div class="prod-item">
           <img class="prod-img" src="${p.imagen}">
           <div class="prod-info">
             <div class="prod-nombre">${p.nombre}</div>
             <div class="prod-precio">$${(p.precio * p.cantidad).toFixed(2)}</div>
-            <div class="prod-desc" id="desc-${idx}">${p.descripcion || p.nombre}</div>
+            <div class="prod-desc" id="desc-${idx}">${textoDesc}</div>
           </div>
           <div class="prod-controls">
             ${p.cantidad===1 ? `<button class="ctrl-btn" onclick="eliminarItem(${idx})"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>` : `<button class="ctrl-btn" onclick="cambiarCant(${idx}, -1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M5 12h14"/></svg></button>`}
@@ -144,7 +212,7 @@ function render(){
           </div>
           <button class="btn-desc-toggle" onclick="toggleDesc(${idx})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></button>
         </div>
-      `).join('')}
+      `}).join('')}
     </div>
   `;
 }
