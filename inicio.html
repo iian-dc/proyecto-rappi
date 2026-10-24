@@ -97,43 +97,97 @@ const cliente = JSON.parse(dataStr);
 fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${cliente.ubicacion?.lat}&lon=${cliente.ubicacion?.lng}&zoom=18&addressdetails=1`).then(r=>r.json()).then(data=>{ const addr=data.address; const direccion = `${addr.road||''} ${addr.house_number||''}, ${addr.suburb||''}, ${addr.city||addr.town||''}, ${addr.state||''}`; document.getElementById('txtUbi').textContent=direccion; });
 let aliadosData=[];
 const listaEl=document.getElementById('listaRestaurantes');
+function getCampo(r, ...nombres){ if(!r) return ''; for(let n of nombres){ if(r[n] !== undefined && r[n] !== null && r[n] !== '') return r[n]; const key = Object.keys(r).find(k => k.toLowerCase() === n.toLowerCase()); if(key && r[key]) return r[key]; } return ''; }
 
-function getCampo(r, ...nombres){ 
-  if(!r) return '';
-  for(let n of nombres){ 
-    if(r[n] !== undefined && r[n] !== null && r[n] !== '') return r[n]; 
-    const key = Object.keys(r).find(k => k.toLowerCase() === n.toLowerCase()); 
-    if(key && r[key]) return r[key]; 
-  } 
-  return ''; 
+// CORRECCION SOLO PARA TU CASO: toma categoria de info / perfil / _info
+function extraerCategoriaReal(root){
+  if(!root || typeof root !== 'object') return '';
+  let cat = '';
+  // 1. Directo en root si es string Burger
+  if(typeof root.categorias === 'string' && root.categorias){
+    cat = root.categorias;
+  }
+  // 2. Dentro de categorias objeto
+  if(root.categorias && typeof root.categorias === 'object'){
+    let cObj = root.categorias;
+    // _info: "Burger" - ESTA es la que señalas con la flecha, la cambiamos a su categoria
+    if(cObj._info && typeof cObj._info === 'string'){
+      cat = cObj._info;
+    }
+    // categorias interno
+    if(cObj.categorias && typeof cObj.categorias === 'object'){
+      // no tocar este, es el de abajo que dejamos tal cual
+    }
+    // info subcategoria - DE AQUI TOMAMOS LA INFO REAL DEL RESTAURANTE
+    if(cObj.info && cObj.info.categoria) cat = cObj.info.categoria;
+    if(cObj.info && cObj.info.Categoria) cat = cObj.info.Categoria;
+    // busca en cada subcategoria el info con categoria
+    for(let k in cObj){
+      let v = cObj[k];
+      if(v && typeof v === 'object'){
+        if(v.info && v.info.categoria) cat = v.info.categoria;
+        if(v.info && v.info.Categoria) cat = v.info.Categoria;
+        // dentro de salchipapas/info
+        if(v.correo && v.categoria) cat = v.categoria;
+        // perfil
+        if(v.perfil && v.perfil.categoria) cat = v.perfil.categoria;
+        // si la subcategoria es boneles, salchipapas etc y tiene info adentro
+        for(let kk in v){
+          let vv = v[kk];
+          if(vv && typeof vv === 'object' && vv.categoria && typeof vv.categoria === 'string' && vv.categoria.length<20){
+            // evita que tome categoria de producto, solo si tiene correo o es general
+            if(vv.correo || vv.categoria.toLowerCase().includes('burger') || vv.categoria.toLowerCase().includes('pizza') || vv.categoria.toLowerCase()==='general'){
+              // si es general no, busca otra
+            }else{
+              cat = vv.categoria;
+            }
+          }
+        }
+      }
+    }
+  }
+  // 3. En info raiz
+  if(root.info && root.info.categoria) cat = root.info.categoria;
+  if(root.perfil && root.perfil.categoria) cat = root.perfil.categoria;
+  // 4. Si _info existe arriba
+  if(root._info && typeof root._info === 'string') cat = root._info;
+  return cat;
 }
 
-// BUSCA PROFUNDO TU INFO DE SANTILLOS (correo, logo, abierto, etc)
 function extraerTodo(root){
   let result = {};
+  let categoriaReal = extraerCategoriaReal(root);
+  if(categoriaReal) result.categoria = categoriaReal;
+  
   function recorrer(obj, depth){
-    if(!obj || typeof obj !== 'object' || depth>5) return;
+    if(!obj || typeof obj !== 'object' || depth>6) return;
     for(let k in obj){
       let v = obj[k];
-      if(k==='categorias' && typeof v==='object'){
+      if(k==='categorias' && typeof v==='object' && depth<2){
         recorrer(v, depth+1);
         continue;
       }
+      if(k==='categorias' && typeof v==='string'){
+        result.categoria = v;
+        continue;
+      }
       if(typeof v !== 'object' || v===null){
-        // guarda campos importantes
         let lk = k.toLowerCase();
-        if(['nombre','nombreRestaurante','logo','imagen','foto','abierto','estado','categoria','correo','email','disponibilidad'].includes(lk) || lk.includes('logo') || lk.includes('imagen')){
+        if(['nombre','nombreRestaurante','logo','imagen','foto','abierto','estado','correo','email','disponibilidad','_info'].includes(lk) || lk.includes('logo') || lk.includes('imagen')){
           if(!result[k] && !result[lk]) result[k]=v;
-          result[lk]=v;
+          if(lk!=='_info') result[lk]=v;
+          if(lk==='_info' && typeof v==='string' && v.length<20){
+            // _info: "Burger" lo tomamos como categoria si no hay otra
+            if(!result.categoria) result.categoria = v;
+          }
         }
       }else{
-        // si es info, producto, etc sigue buscando
-        if(k==='info' || k==='la_mampana_1792794939936' || k==='salchipapas' || k==='boneles'){
+        if(k==='info' || k==='perfil' || k==='salchipapas' || k==='boneles' || k==='la_mampana_1792794939936'){
           recorrer(v, depth+1);
-        }else if(k!=='categorias'){
-          // tambien busca dentro
+        }else if(k!=='categorias' || depth>1){
           if(typeof v === 'object' && v.correo) {
             Object.assign(result, v);
+            if(v.categoria) result.categoria = v.categoria;
           }
           recorrer(v, depth+1);
         }
@@ -141,45 +195,32 @@ function extraerTodo(root){
     }
   }
   recorrer(root,0);
+  if(categoriaReal) result.categoria = categoriaReal;
   return result;
 }
 
 function aplanarDatos(dataPorCategoria){
   let lista=[];
   if(!dataPorCategoria) return lista;
-
   Object.keys(dataPorCategoria).forEach(topKey=>{
-    if(topKey === 'admin') return; // no mostrar admin
-
+    if(topKey === 'admin') return;
     const grupo = dataPorCategoria[topKey];
     if(!grupo || typeof grupo !== 'object') return;
-
-    // TU CASO: santillos -> categorias -> categorias -> salchipapas -> info con correo santillos@gmail.com
     let extra = extraerTodo(grupo);
     let nombreRest = extra.nombre || extra.nombreRestaurante || extra.Nombre || topKey;
-    // si nombre es "Salchipapas" (tu categoria) usa el id bonito
     if(nombreRest.toLowerCase()==='salchipapas' && topKey==='santillos') nombreRest='Santillos';
-
     let abiertoVal = true;
-    if(extra.abierto !== undefined) abiertoVal = extra.abierto===true || extra.abierto==='true' || extra.abierto==='abierto';
+    if(extra.abierto !== undefined) abiertoVal = extra.abierto===true || extra.abierto==='true' || extra.abierto==='abierto' || extra.abierto==='activo';
     else if(extra.estado !== undefined) abiertoVal = extra.estado==='abierto' || extra.estado==='activo' || extra.estado===true;
-    
     let logoVal = extra.logo || extra.Logo || extra.imagen || extra.foto || extra.logoUrl || '';
     if(!logoVal) logoVal = 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop';
-
-    // si grupo es formato viejo (categoria con restaurantes dentro)
-    if(grupo.categorias && !grupo.categorias.categorias && Object.keys(grupo.categorias).some(k=>grupo.categorias[k] && grupo.categorias[k].nombre)){
-      // formato viejo no, lo dejamos
-    }
-
-    // Si tiene subestructura de restaurantes viejos
     let esFormatoNuevo = grupo.categorias ? true : false;
-
     if(esFormatoNuevo){
       lista.push({
         id: topKey,
         categoriaOriginal: topKey,
         categoria: (extra.categoria || topKey).toLowerCase(),
+        categoriaRaw: extra.categoria || topKey,
         nombre: nombreRest,
         Nombre: nombreRest,
         abierto: abiertoVal,
@@ -193,23 +234,12 @@ function aplanarDatos(dataPorCategoria){
         rawData: grupo
       });
     } else {
-      // formato viejo alitas/alitas_factory
       Object.keys(grupo).forEach(key=>{
         const r=grupo[key];
         if(r && (r.nombre || r.Nombre || r.correo)){
-          r.id=key; 
-          r.categoriaOriginal = topKey;
-          r.categoria = getCampo(r,'categoria','Categoria') || topKey;
-          r.nombre = getCampo(r,'nombre','Nombre') || key;
-          let ab = true;
-          const est = getCampo(r,'abierto','Abierto','estado','Estado');
-          if(est!=='' ) { if(typeof est === 'boolean') ab = est; else if(typeof est === 'string') ab = est === 'true' || est === 'abierto' || est === 'activo'; }
-          r.abierto = ab;
-          r.likesReal = getCampo(r,'Likes','likes') || 0;
-          let logoRaw = getCampo(r,'Logo','logo','imagen','logoUrl','foto');
-          if(!logoRaw) logoRaw = 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop';
-          r.logoFinal = logoRaw;
-          lista.push(r); 
+          r.id=key; r.categoriaOriginal = topKey; r.categoria = getCampo(r,'categoria','Categoria') || topKey; r.nombre = getCampo(r,'nombre','Nombre') || key;
+          let ab = true; const est = getCampo(r,'abierto','Abierto','estado','Estado'); if(est!=='' ) { if(typeof est === 'boolean') ab = est; else if(typeof est === 'string') ab = est === 'true' || est === 'abierto' || est === 'activo'; } r.abierto = ab;
+          r.likesReal = getCampo(r,'Likes','likes') || 0; let logoRaw = getCampo(r,'Logo','logo','imagen','logoUrl','foto'); if(!logoRaw) logoRaw = 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop'; r.logoFinal = logoRaw; lista.push(r); 
         }
       });
     }
@@ -217,20 +247,39 @@ function aplanarDatos(dataPorCategoria){
   return lista;
 }
 
+function coincideCategoria(catRestaurante, catFiltro){
+  if(!catRestaurante || !catFiltro) return false;
+  let rc = catRestaurante.toLowerCase().trim();
+  let fc = catFiltro.toLowerCase().trim();
+  if(fc==='todos') return true;
+  // normaliza: burgers -> burger, pizzas -> pizza
+  let fcSing = fc.endsWith('s') ? fc.slice(0,-1) : fc;
+  let rcSing = rc.endsWith('s') ? rc.slice(0,-1) : rc;
+  if(rc===fc || rcSing===fcSing) return true;
+  if(rc.includes(fc) || fc.includes(rc)) return true;
+  if(rc.includes(fcSing) || fcSing.includes(rc)) return true;
+  // casos especificos
+  if(fc==='burgers' && rc.includes('burger')) return true;
+  if(fc==='pizzas' && rc.includes('pizza')) return true;
+  if(fc==='alitas' && rc.includes('alita')) return true;
+  if(fc==='tacos' && rc.includes('taco')) return true;
+  if(fc==='hotdog' && (rc.includes('hot') || rc.includes('dog'))) return true;
+  return false;
+}
+
 function renderAliados(filtroCat="todos", busqueda=""){
   let f=[...aliadosData];
   f.sort((a,b)=>{ if(a.abierto === b.abierto) return 0; return a.abierto ? -1 : 1; });
-  if(filtroCat!=="todos") f=f.filter(a=> (a.categoria||'').toLowerCase() === filtroCat.toLowerCase() || (a.categoriaOriginal||'').toLowerCase() === filtroCat.toLowerCase() || a.nombre.toLowerCase().includes(filtroCat));
+  if(filtroCat!=="todos") f=f.filter(a=> coincideCategoria(a.categoria, filtroCat) || coincideCategoria(a.categoriaOriginal, filtroCat) || coincideCategoria(a.categoriaRaw, filtroCat) );
   if(busqueda) f=f.filter(a=>a.nombre.toLowerCase().includes(busqueda.toLowerCase()));
   listaEl.innerHTML="";
   if(f.length===0){
-    listaEl.innerHTML = '<p style="padding:20px;color:#888">No hay restaurantes. Verifica Firebase.</p>';
+    listaEl.innerHTML = '<p style="padding:20px;color:#888">No hay restaurantes en '+filtroCat+' - Verifica que en Firebase tengas categoria: burger</p>';
     return;
   }
   f.forEach(a=>{
     const abierto = a.abierto === true;
     const badgeHtml = abierto ? `<div class="badge badge-open"><div class="dot"></div>Abierto</div>` : `<div class="badge badge-closed"><div class="dot closed"></div>Cerrado</div>`;
-    // CORREGIDO: para tu formato nuevo, cat = id real (santillos), id = id real (santillos)
     const onclickAttr = `onclick="ir('${a.categoriaOriginal}','${a.id}')"`;
     const logoSrc = a.logoFinal;
     listaEl.innerHTML+=`
@@ -239,7 +288,7 @@ function renderAliados(filtroCat="todos", busqueda=""){
       <div class="rest-info">
         <div class="rest-top"><div class="rest-name">${a.nombre}</div>${badgeHtml}</div>
         <div class="rating"><svg class="i" viewBox="0 0 24 24" fill="#FFB800"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> ${getCampo(a,'rating','Rating')||'4.7'} <span style="color:#777">(${a.likesReal||0})</span></div>
-        <div class="tags"><div class="tag">${a.categoria}</div>${!abierto ? '<div class="tag" style="background:#fee2e2;color:#991b1b">No recibe pedidos</div>' : ''}</div>
+        <div class="tags"><div class="tag">${a.categoriaRaw||a.categoria}</div>${!abierto ? '<div class="tag" style="background:#fee2e2;color:#991b1b">No recibe pedidos</div>' : ''}</div>
         <div class="rest-bottom">
           <svg class="moto" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M19 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M8 17h5l2-5h3.5"/><path d="M13 12l2-3h2"/></svg> ${getCampo(a,'tiempoEntrega','TiempoEntrega')||'20-30 min'}
           <span>·</span>
@@ -252,12 +301,9 @@ function renderAliados(filtroCat="todos", busqueda=""){
 }
 
 window.ir=(cat,id)=>{
-  // ENLAZADO AL PANEL REAL: guardamos el id del restaurante (santillos)
   localStorage.setItem('doloya_aliadoSeleccionado', JSON.stringify({cat,id}));
-  // para tu aliado.html nuevo que lee de doloya_aliados/santillos/categorias
   location.href=`aliado.html?cat=${cat}&id=${id}`;
 }
-
 onValue(ref(db,'doloya_aliados'), snap=>{
   const v=snap.val();
   if(v){
@@ -265,7 +311,6 @@ onValue(ref(db,'doloya_aliados'), snap=>{
     renderAliados();
   }
 });
-
 const buscador=document.getElementById('buscador');
 buscador.addEventListener('input',e=>{ const cat=document.querySelector('.cat-item.active')?.dataset.cat||'todos'; renderAliados(cat,e.target.value); });
 document.querySelectorAll('.cat-item').forEach(el=>{ el.addEventListener('click',()=>{ document.querySelectorAll('.cat-item').forEach(x=>x.classList.remove('active')); el.classList.add('active'); renderAliados(el.dataset.cat, buscador.value); }); });
