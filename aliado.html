@@ -414,6 +414,7 @@ if(!cat || !id){ document.getElementById('loading').textContent='Restaurante no 
 else {
   obtenerIPyGPS();
   renderBarraCarritoSolo();
+
   function extraerInfoCompleta(data){
     let info = {};
     if(data.perfil){
@@ -441,23 +442,18 @@ else {
     if(data.imagenPortada) info.portada = data.imagenPortada;
     if(data.subcategoria) info.categoria = data.subcategoria;
     if(data.categoria) info.categoria = data.categoria;
-    if(data.disponibilidad!==undefined) info.disponibilidad = data.disponibilidad;
-    if(data.abierto!==undefined) info.abierto = data.abierto;
-    if(data.estado!==undefined) info.estado = data.estado;
     if(data.likes!==undefined) info.likes = data.likes;
     if(data.tiempoEntrega) info.tiempoEntrega = data.tiempoEntrega;
     if(data.costoEnvio) info.costoEnvio = data.costoEnvio;
     if(data.categorias && typeof data.categorias === 'object' && data.categorias._info){
       if(!info.categoria) info.categoria = data.categorias._info;
     }
-    if(data.categorias && data.categorias.categorias._info){
-      if(!info.categoria) info.categoria = data.categorias.categorias._info;
-    }
     if(!info.nombre || info.nombre.toLowerCase().includes('mampana')){
       info.nombre = id ? id.charAt(0).toUpperCase() + id.slice(1) : 'Santillos';
     }
     return info;
   }
+
   function parsearProductos(data){
     let productos = [];
     let cats = [];
@@ -492,9 +488,9 @@ else {
       }
       Object.keys(rootCat).forEach(catKey=>{
         if(catKey.startsWith('_')) return;
+        if(catKey==='info' || catKey==='perfil' || catKey==='disponibilidad' || catKey==='santillos') return;
         let catObj = rootCat[catKey];
         if(!catObj || typeof catObj !== 'object') return;
-        if(catKey==='info' || catKey==='perfil' || catKey==='disponibilidad') return;
         let catNombre = catObj.nombre || catKey;
         let catLower = (catObj.nombreLower || catKey).toLowerCase();
         cats.push({
@@ -505,7 +501,7 @@ else {
           orden: catObj.orden ?? 99
         });
         Object.keys(catObj).forEach(prodKey=>{
-          if(['activa','fecha','key','nombre','nombreLower','orden','info','perfil','subcategorias','disponibilidad','categoria','categoriaNombre'].includes(prodKey)) return;
+          if(['activa','fecha','key','nombre','nombreLower','orden','info','perfil','subcategorias','disponibilidad','categoria','categoriaNombre','santillos'].includes(prodKey)) return;
           let prod = catObj[prodKey];
           if(!prod || typeof prod !== 'object') return;
           if(prod.nombre && (prod.precio!==undefined || prod.imagen || prod.descripcion)){
@@ -539,6 +535,29 @@ else {
     productos.sort((a,b)=> (a.ordenCategoria||99) - (b.ordenCategoria||99));
     return {productos, cats};
   }
+
+  function estaAbiertoDesdeDisponibilidad(data){
+    // SOLO desde categorias/disponibilidad como me pediste
+    let val = null;
+    if(data.categorias && data.categorias.disponibilidad) val = data.categorias.disponibilidad;
+    else if(data.categorias && data.categorias.categorias && data.categorias.categorias.disponibilidad) val = data.categorias.categorias.disponibilidad;
+    else if(data.disponibilidad) val = data.disponibilidad;
+
+    if(val===null || val===undefined) return true;
+
+    if(typeof val === 'boolean') return val;
+    if(typeof val === 'string') return val==='true' || val==='abierto' || val==='activo';
+    if(typeof val === 'object'){
+      if(val.abierto!==undefined){
+        if(typeof val.abierto==='boolean') return val.abierto;
+        if(typeof val.abierto==='string') return val.abierto==='true' || val.abierto==='abierto' || val.abierto==='activo';
+      }
+      if(val.estado!==undefined) return val.estado==='abierto' || val.estado==='activo';
+      return true;
+    }
+    return true;
+  }
+
   function cargarDesdeData(data){
     if(!data) return;
     let parsed = parsearProductos(data);
@@ -547,7 +566,6 @@ else {
     document.getElementById('contenido').style.display='block';
     let extraInfo = extraerInfoCompleta(data);
 
-    // CORRECCION 1: PORTADA SOLO SI EXISTE EN FIREBASE, SI ESTA VACIO NO COLOCA NADA
     let portadaFirebase = null;
     if(data.perfil && data.perfil.imagenPortada) portadaFirebase = data.perfil.imagenPortada;
     else if(data.info && data.info.imagenPortada) portadaFirebase = data.info.imagenPortada;
@@ -581,20 +599,8 @@ else {
     document.getElementById('txtCalificacion').textContent = calcularValoracion(likes);
     document.getElementById('txtTotalLikes').textContent = `(${likes})`;
     
-    // CORRECCION 2: DISPONIBILIDAD ENLAZADA A FIREBASE EN TIEMPO REAL
-    let disponible = true;
-    if(data.disponibilidad !== undefined){
-      disponible = data.disponibilidad === true || data.disponibilidad === 'true' || data.disponibilidad === 'abierto' || data.disponibilidad === 'disponible';
-    } else if(extraInfo.disponibilidad !== undefined){
-      disponible = extraInfo.disponibilidad === true || extraInfo.disponibilidad === 'true' || extraInfo.disponibilidad === 'abierto';
-    } else if(extraInfo.abierto !== undefined){
-      disponible = extraInfo.abierto===true || extraInfo.abierto==='true' || extraInfo.abierto==='abierto' || extraInfo.abierto==='activo';
-    } else if(extraInfo.estado !== undefined){
-      disponible = extraInfo.estado==='abierto' || extraInfo.estado==='activo';
-    } else if(data.abierto !== undefined){
-      disponible = data.abierto===true || data.abierto==='true';
-    }
-
+    // SOLO DESDE DISPONIBILIDAD
+    let disponible = estaAbiertoDesdeDisponibilidad(data);
     let badgeEl = document.getElementById('badgeAbierto');
     let txtAbiertoEl = document.getElementById('txtAbierto');
     if(disponible){
@@ -615,7 +621,7 @@ else {
         orden:o.orden??99
       }));
     }else{
-      categoriasConfig = Object.values(rawCats).filter(v=>v && typeof v==='object' && (v.nombre||v.key) && v.key!=='info' && v.key!=='perfil').map(o=>({
+      categoriasConfig = Object.values(rawCats).filter(v=>v && typeof v==='object' && (v.nombre||v.key) && v.key!=='info' && v.key!=='perfil' && v.key!=='disponibilidad' && v.key!=='santillos').map(o=>({
         key:o.key||o.nombreLower||'',
         nombre:o.nombre||o.key||'',
         nombreLower:(o.nombreLower||o.key||'').toLowerCase(),
@@ -655,22 +661,46 @@ else {
     }
     renderBarraCarritoSolo();
   }
+
   onValue(ref(db, `doloya_aliados/${id}`), snap=>{
     let data = snap.val();
     if(data){
       cargarDesdeData(data);
     }
   });
+
   onValue(ref(db, `doloya_aliados/${cat}/${id}`), snap=>{
     const data = snap.val();
     if(!data) return;
     cargarDesdeData(data);
   });
-  // Escucha directa a disponibilidad para tiempo real
+
+  // TIEMPO REAL SOLO DESDE categorias/disponibilidad
+  onValue(ref(db, `doloya_aliados/${id}/categorias/disponibilidad`), snap=>{
+    let val = snap.val();
+    if(val===null) return;
+    let disponible = true;
+    if(typeof val === 'object' && val.abierto!==undefined) disponible = val.abierto===true || val.abierto==='true' || val.abierto==='abierto';
+    else if(typeof val === 'boolean') disponible = val;
+    else if(typeof val === 'string') disponible = val==='true' || val==='abierto';
+    let badgeEl = document.getElementById('badgeAbierto');
+    let txtAbiertoEl = document.getElementById('txtAbierto');
+    if(!badgeEl || !txtAbiertoEl) return;
+    if(disponible){
+      txtAbiertoEl.textContent = 'ABIERTO';
+      badgeEl.classList.remove('cerrado');
+    } else {
+      txtAbiertoEl.textContent = 'CERRADO';
+      badgeEl.classList.add('cerrado');
+    }
+  });
+
   onValue(ref(db, `doloya_aliados/${id}/disponibilidad`), snap=>{
     let val = snap.val();
     if(val===null) return;
-    let disponible = val===true || val==='true' || val==='abierto' || val==='disponible';
+    let disponible = true;
+    if(typeof val === 'object' && val.abierto!==undefined) disponible = val.abierto===true || val.abierto==='true';
+    else if(typeof val === 'boolean') disponible = val;
     let badgeEl = document.getElementById('badgeAbierto');
     let txtAbiertoEl = document.getElementById('txtAbierto');
     if(!badgeEl || !txtAbiertoEl) return;
