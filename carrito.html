@@ -37,10 +37,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:140px}
 .btn-siguiente{flex:1;padding:16px;border-radius:999px;border:none;background:#E30613;color:white;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(227,6,19,0.25)}
 .vacio{text-align:center;padding:80px 20px;color:#9AA0A6}
 .vacio b{color:#111;font-size:18px;display:block;margin-bottom:6px}
-.envio-detalle{padding:12px 16px;margin:10px 16px;background:#F8FAFC;border:1.5px solid #E5E7EB;border-radius:14px}
-.envio-detalle b{font-size:12px}
-.envio-detalle .row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
-.envio-detalle .total{font-weight:800;font-size:13px;border-top:1px dashed #E5E7EB;margin-top:6px;padding-top:8px}
 </style>
 </head>
 <body>
@@ -50,7 +46,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:140px}
   <button class="btn-vaciar-top" onclick="vaciarTodo()">Vaciar</button>
 </div>
 <div id="contenido"></div>
-<div id="envioDetalle" style="display:none"></div>
 <div class="footer" id="footer" style="display:none">
   <button class="btn-vaciar-canasta" onclick="vaciarTodo()">Vaciar canasta</button>
   <button class="btn-siguiente" onclick="irSiguiente()">Siguiente</button>
@@ -76,7 +71,7 @@ let productosAbiertos = true;
 let logoRestaurante = dataRest?.logo || null;
 const TIEMPO_EXPIRACION = 3 * 60 * 60 * 1000;
 
-// === TARIFA GLOBAL VINCULADA A TU ADMIN $22 + $4/km ===
+// === TARIFA GLOBAL $22 + $4/km - SOLO INTERNO, NO SE MUESTRA VISUAL ===
 let tarifaGlobal = {base: 22, precio_km: 4};
 const TARIFA_SERVICIO_PORC = 0.03;
 
@@ -85,7 +80,6 @@ onValue(ref(db, 'config_global/tarifa_default'), snap=>{
   if(v){
     if(v.base !== undefined) tarifaGlobal.base = parseFloat(v.base);
     if(v.precio_km !== undefined) tarifaGlobal.precio_km = parseFloat(v.precio_km);
-    render();
   }
 });
 
@@ -117,7 +111,6 @@ async function obtenerLogo(){
         else if(data.info?.imagenPerfil) logoRestaurante = data.info.imagenPerfil;
         else if(data.logo) logoRestaurante = data.logo;
         else if(data.imagenPerfil) logoRestaurante = data.imagenPerfil;
-        
         if(logoRestaurante){
           dataRest.logo = logoRestaurante;
           localStorage.setItem('doloya_carrito_restaurante_data', JSON.stringify(dataRest));
@@ -186,36 +179,15 @@ function buscarDescripcionEnData(root, nombreBuscar){
 function render(){
   const cont = document.getElementById('contenido');
   const foot = document.getElementById('footer');
-  const envioDiv = document.getElementById('envioDetalle');
   if(carrito.length===0){
     cont.innerHTML = `<div class="vacio"><b>Tu canasta está vacía</b>Agrega productos de un restaurante</div>`;
     foot.style.display='none';
-    if(envioDiv) envioDiv.style.display='none';
     return;
   }
   foot.style.display='flex';
-  
   const totalCant = carrito.reduce((s,i)=>s+i.cantidad,0);
   const nombreRest = dataRest?.nombre || 'Restaurante';
   const inicial = nombreRest.charAt(0).toUpperCase();
-
-  // Usar envio ya calculado de inicio/aliado si existe
-  const envioGuardado = JSON.parse(localStorage.getItem('doloya_envio_actual')||'null');
-  let distanciaKm = envioGuardado ? parseFloat(envioGuardado.distanciaKm)||0.3 : 0.3;
-  let costoEnvio = envioGuardado ? parseFloat(envioGuardado.costo)||tarifaGlobal.base : tarifaGlobal.base;
-  // Si no hay envio guardado, recalcula con tarifa global y distancia guardada de carrito
-  const distGuardada = parseFloat(localStorage.getItem('doloya_distancia_km')||'0');
-  if(distanciaKm < 0.1 && distGuardada > 0){ 
-    distanciaKm = distGuardada;
-    costoEnvio = tarifaGlobal.base + (distanciaKm * tarifaGlobal.precio_km);
-  } else if(distanciaKm < 0.1){
-    costoEnvio = tarifaGlobal.base + (distanciaKm * tarifaGlobal.precio_km);
-  }
-
-  const costoProductos = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
-  const tarifaServicio = costoProductos * TARIFA_SERVICIO_PORC;
-  const totalFinal = costoProductos + costoEnvio + tarifaServicio;
-
   cont.innerHTML = `
     <div class="restaurante-box">
       <div class="restaurante-left">
@@ -249,19 +221,6 @@ function render(){
       `}).join('')}
     </div>
   `;
-
-  if(envioDiv){
-    envioDiv.innerHTML = `
-      <div class="envio-detalle">
-        <div class="row"><span>Productos (${totalCant})</span><b>$${costoProductos.toFixed(2)}</b></div>
-        <div class="row"><span>Distancia</span><b>${distanciaKm.toFixed(1)} km</b></div>
-        <div class="row"><span>Envío ($${tarifaGlobal.base} + $${tarifaGlobal.precio_km}/km)</span><b>$${costoEnvio.toFixed(2)}</b></div>
-        <div class="row"><span>Servicio (3%)</span><b>$${tarifaServicio.toFixed(2)}</b></div>
-        <div class="row total"><span>Total a pagar</span><b>$${totalFinal.toFixed(2)}</b></div>
-      </div>
-    `;
-    envioDiv.style.display='block';
-  }
 }
 window.toggleProductos = ()=>{ productosAbiertos = !productosAbiertos; render(); }
 window.toggleDesc = (idx)=>{
@@ -356,7 +315,6 @@ window.irSiguiente = async ()=>{
   const clienteUbi = obtenerUbicacionCliente();
   const restFull = await obtenerDatosRestaurante();
   const costoProductos = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
-
   const envioGuardado = JSON.parse(localStorage.getItem('doloya_envio_actual')||'null');
   let distanciaKm = 0.3;
   if(envioGuardado && envioGuardado.distanciaKm){
@@ -364,7 +322,6 @@ window.irSiguiente = async ()=>{
   } else if(restFull.lat && restFull.lng && clienteUbi.lat && clienteUbi.lng){
     distanciaKm = await calcularDistanciaKm(restFull.lat, restFull.lng, clienteUbi.lat, clienteUbi.lng);
   }
-
   const costos = calcularCostos(costoProductos, distanciaKm);
   if(dataRest && ipKey){
     const ts = localStorage.getItem('doloya_carrito_timestamp');
@@ -422,14 +379,12 @@ async function guardar(){
       const clienteUbi = obtenerUbicacionCliente();
       const restFull = await obtenerDatosRestaurante();
       const costoProductos = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
-      
       const envioGuardado = JSON.parse(localStorage.getItem('doloya_envio_actual')||'null');
       let distanciaKm = envioGuardado ? parseFloat(envioGuardado.distanciaKm) : 0.3;
       if(distanciaKm < 0.1 && restFull.lat && restFull.lng && clienteUbi.lat && clienteUbi.lng){
         distanciaKm = await calcularDistanciaKm(restFull.lat, restFull.lng, clienteUbi.lat, clienteUbi.lng);
       }
       const costos = calcularCostos(costoProductos, distanciaKm);
-
       let dataCarrito = {
         restauranteId: restFull.id,
         restauranteCat: restFull.cat,
