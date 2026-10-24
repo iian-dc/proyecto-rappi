@@ -192,6 +192,7 @@ async function toggleLike(){
   const likeRef = ref(db, `doloya_likes/${cat}_${id}/${ipKey}`);
   const countRef = ref(db, `doloya_aliados/${cat}/${id}/likes`);
   const countRef2 = ref(db, `doloya_aliados/${id}/likes`);
+  const countRef3 = ref(db, `doloya_aliados/${id}/perfil/calificacion`);
   const snap = await get(likeRef);
   const btn = document.getElementById('btnLike');
   if(snap.exists()){
@@ -413,59 +414,62 @@ else {
   obtenerIPyGPS();
   renderBarraCarritoSolo();
 
-  // CORRECCION UNIFICADA: LEE TANTO FORMATO VIEJO COMO TU FORMATO NUEVO santillos/categorias/categorias/salchipapas/la_mampana
+  // UNIFICADO A TU FIREBASE REAL: santillos/perfil/imagenPerfil y imagenPortada
   function extraerInfoCompleta(data){
     let info = {};
-    function recorrer(obj, depth){
-      if(!obj || typeof obj !== 'object' || depth>6) return;
-      for(let k in obj){
-        let v = obj[k];
-        if(k==='categorias' && typeof v==='object'){
-          recorrer(v, depth+1);
-          continue;
-        }
-        if(typeof v !== 'object' || v===null){
-          let lk = k.toLowerCase();
-          if(['nombre','nombreRestaurante','logo','portada','imagen','foto','abierto','estado','categoria','tiempoentrega','costoenvio','likes','rating'].includes(lk) || lk.includes('logo') || lk.includes('portada')){
-            if(!info[lk] && v) info[lk]=v;
-            if(k==='logo' || k==='Logo' || k==='imagen' || k==='portada') info[k]=v;
-          }
-          if(lk==='_info' && typeof v==='string' && !info.categoria){
-            info.categoria = v;
-          }
-        }else{
-          if(v.correo || v.categoria || k==='info' || k==='perfil'){
-            recorrer(v, depth+1);
-            if(v.categoria) info.categoria = v.categoria;
-            if(v.nombre && !info.nombre) info.nombre = v.nombre;
-            if(v.logo) info.logo = v.logo;
-          }else{
-            recorrer(v, depth+1);
-          }
-        }
-      }
+    // Prioridad 1: perfil (donde tienes imagenPerfil base64)
+    if(data.perfil){
+      if(data.perfil.imagenPerfil) info.logo = data.perfil.imagenPerfil;
+      if(data.perfil.imagenPortada) info.portada = data.perfil.imagenPortada;
+      if(data.perfil.calificacion!==undefined) info.calificacion = data.perfil.calificacion;
+      if(data.perfil.nombre) info.nombre = data.perfil.nombre;
+      if(data.perfil.nombreRestaurante) info.nombre = data.perfil.nombreRestaurante;
     }
-    recorrer(data,0);
-    // mezcla con data directa
-    if(data.nombre) info.nombre = data.nombre;
-    if(data.Nombre) info.nombre = data.Nombre;
+    // Prioridad 2: info
+    if(data.info){
+      if(data.info.nombre && !data.info.correo) info.nombre = data.info.nombre;
+      if(data.info.nombreRestaurante) info.nombre = data.info.nombreRestaurante;
+      if(data.info.logo) info.logo = data.info.logo;
+      if(data.info.imagenPerfil) info.logo = data.info.imagenPerfil;
+      if(data.info.portada) info.portada = data.info.portada;
+      if(data.info.imagenPortada) info.portada = data.info.imagenPortada;
+      if(data.info.categoria) info.categoria = data.info.categoria;
+      if(data.info.subcategoria) info.categoria = data.info.subcategoria;
+    }
+    // Prioridad 3: raiz
+    if(data.nombre && !data.nombre.toLowerCase().includes('mampana')) info.nombre = data.nombre;
+    if(data.Nombre && !data.Nombre.toLowerCase().includes('mampana')) info.nombre = data.Nombre;
     if(data.logo) info.logo = data.logo;
-    if(data.Logo) info.logo = data.Logo;
     if(data.portada) info.portada = data.portada;
+    if(data.imagenPerfil) info.logo = data.imagenPerfil;
+    if(data.imagenPortada) info.portada = data.imagenPortada;
+    if(data.subcategoria) info.categoria = data.subcategoria;
     if(data.categoria) info.categoria = data.categoria;
     if(data.abierto!==undefined) info.abierto = data.abierto;
+    if(data.disponibilidad!==undefined) info.abierto = data.disponibilidad;
     if(data.estado!==undefined) info.estado = data.estado;
     if(data.likes!==undefined) info.likes = data.likes;
     if(data.tiempoEntrega) info.tiempoEntrega = data.tiempoEntrega;
     if(data.costoEnvio) info.costoEnvio = data.costoEnvio;
+
+    // _info: Burger
+    if(data.categorias && typeof data.categorias === 'object' && data.categorias._info){
+      if(!info.categoria) info.categoria = data.categorias._info;
+    }
+    if(data.categorias && data.categorias.categorias && data.categorias.categorias._info){
+      if(!info.categoria) info.categoria = data.categorias.categorias._info;
+    }
+
+    // Fallback nombre: usa id capitalizado, nunca la mampana
+    if(!info.nombre || info.nombre.toLowerCase().includes('mampana')){
+      info.nombre = id ? id.charAt(0).toUpperCase() + id.slice(1) : 'Santillos';
+    }
     return info;
   }
 
   function parsearProductos(data){
     let productos = [];
     let cats = [];
-
-    // CASO VIEJO: data.menu
     if(data.menu && typeof data.menu === 'object'){
       let menuRaw = data.menu;
       productos = Object.values(menuRaw).filter(p=>p && p.nombre).map(p=>{
@@ -490,19 +494,17 @@ else {
         };
       }).filter(p=>p.activo!==false);
     }
-
-    // CASO NUEVO TUYO: data.categorias.categorias.salchipapas.la_mampana
     if(data.categorias){
       let rootCat = data.categorias;
       if(rootCat.categorias && typeof rootCat.categorias === 'object'){
         rootCat = rootCat.categorias;
       }
-      // rootCat ahora es {boneles, salchipapas}
       Object.keys(rootCat).forEach(catKey=>{
         if(catKey.startsWith('_')) return;
         let catObj = rootCat[catKey];
         if(!catObj || typeof catObj !== 'object') return;
-        // Si es categoria (boneles, salchipapas)
+        // Evita que tome info, perfil como categoria
+        if(catKey==='info' || catKey==='perfil' || catKey==='disponibilidad') return;
         let catNombre = catObj.nombre || catKey;
         let catLower = (catObj.nombreLower || catKey).toLowerCase();
         cats.push({
@@ -512,15 +514,15 @@ else {
           activa: catObj.activa!==false,
           orden: catObj.orden ?? 99
         });
-        // Busca productos dentro
         Object.keys(catObj).forEach(prodKey=>{
-          if(['activa','fecha','key','nombre','nombreLower','orden','info','perfil','subcategorias','disponibilidad'].includes(prodKey)) return;
+          if(['activa','fecha','key','nombre','nombreLower','orden','info','perfil','subcategorias','disponibilidad','categoria','categoriaNombre','disponibilidad'].includes(prodKey)) return;
           let prod = catObj[prodKey];
           if(!prod || typeof prod !== 'object') return;
-          if(prod.nombre && (prod.precio!==undefined || prod.imagen)){
-            const tienePromo = prod.descuento>0 || prod.porcentaje>0 || prod.promoActiva!==false && prod.descuento;
-            const precioOriginal = parseFloat(prod.precio||0);
+          if(prod.nombre && (prod.precio!==undefined || prod.imagen || prod.descripcion)){
+            // Evita que confunda info del restaurante con producto
+            if(prod.correo) return;
             const desc = parseFloat(prod.descuento||prod.porcentaje||0);
+            const precioOriginal = parseFloat(prod.precio||0);
             const precioDesc = desc>0 ? (precioOriginal - precioOriginal*desc/100) : precioOriginal;
             productos.push({
               nombre: prod.nombre,
@@ -540,49 +542,47 @@ else {
         });
       });
     }
-
-    // Evita duplicados por nombre
     let unicos = {};
     productos.forEach(p=>{
       if(!unicos[p.nombre]) unicos[p.nombre]=p;
     });
     productos = Object.values(unicos).filter(p=>p.activo!==false);
     productos.sort((a,b)=> (a.ordenCategoria||99) - (b.ordenCategoria||99));
-
     return {productos, cats};
   }
 
-  // Escucha en dos rutas posibles
-  let loaded = false;
   function cargarDesdeData(data){
-    if(!data || loaded) return;
-    // Si ya cargó productos no volver a sobreescribir con vacio
+    if(!data) return;
     let parsed = parsearProductos(data);
-    if(parsed.productos.length===0 && productosGlobal.length>0) return;
-    if(parsed.productos.length===0 && !data.categorias && !data.menu) return;
+    if(parsed.productos.length===0 && productosGlobal.length>0 && !data.perfil) return;
 
     document.getElementById('loading').style.display='none';
     document.getElementById('contenido').style.display='block';
 
     let extraInfo = extraerInfoCompleta(data);
     
-    let portadaSrc = extraInfo.portada || data.portada || extraInfo.logo || data.logo || '';
-    document.getElementById('imgPortada').src = portadaSrc;
+    let portadaSrc = extraInfo.portada || data.portada || extraInfo.logo || '';
+    if(portadaSrc){
+      document.getElementById('imgPortada').src = portadaSrc;
+      document.getElementById('imgPortada').style.display='block';
+    }
     
-    if(extraInfo.logo || data.logo){
-      document.getElementById('imgLogo').src = extraInfo.logo || data.logo;
+    if(extraInfo.logo){
+      document.getElementById('imgLogo').src = extraInfo.logo;
       document.getElementById('imgLogo').style.display='block';
       document.getElementById('logoInicial').style.display='none';
     } else {
       document.getElementById('logoInicial').textContent = (extraInfo.nombre||id||'S').charAt(0).toUpperCase();
+      document.getElementById('logoInicial').style.display='flex';
+      document.getElementById('imgLogo').style.display='none';
     }
 
-    nombreRestauranteGlobal = extraInfo.nombre || data.nombre || id;
+    nombreRestauranteGlobal = extraInfo.nombre;
     document.getElementById('txtNombre').textContent = nombreRestauranteGlobal;
     document.getElementById('txtEntrega').textContent = extraInfo.tiempoEntrega || data.tiempoEntrega || '12 min';
     document.getElementById('txtEnvio').textContent = `$${extraInfo.costoEnvio || data.costoEnvio || '10.00'}`;
     
-    let likes = extraInfo.likes || data.likes || 0;
+    let likes = extraInfo.likes || extraInfo.calificacion || data.likes || data.perfil?.calificacion || 0;
     document.getElementById('txtCalificacion').textContent = calcularValoracion(likes);
     document.getElementById('txtTotalLikes').textContent = `(${likes})`;
     
@@ -590,16 +590,10 @@ else {
     if(extraInfo.abierto!==undefined) abierto = extraInfo.abierto===true || extraInfo.abierto==='true' || extraInfo.abierto==='abierto' || extraInfo.abierto==='activo';
     else if(extraInfo.estado!==undefined) abierto = extraInfo.estado==='abierto' || extraInfo.estado==='activo';
     else if(data.abierto!==undefined) abierto = data.abierto;
+    else if(data.disponibilidad!==undefined) abierto = data.disponibilidad===true || data.disponibilidad==='true';
     document.getElementById('txtAbierto').textContent = abierto ? 'ABIERTO' : 'CERRADO';
 
-    // Categorias y productos
     let rawCats = data.categorias || {};
-    // Si tiene menu viejo usa ese
-    if(data.menu){
-      rawCats = data.categorias || {};
-    }
-
-    // Usa cats parseados
     if(parsed.cats.length>0){
       categoriasConfig = parsed.cats.map(o=>({
         key:o.key||o.nombreLower||'',
@@ -609,7 +603,7 @@ else {
         orden:o.orden??99
       }));
     }else{
-      categoriasConfig = Object.values(rawCats).filter(v=>v && typeof v==='object' && (v.nombre||v.key)).map(o=>({
+      categoriasConfig = Object.values(rawCats).filter(v=>v && typeof v==='object' && (v.nombre||v.key) && v.key!=='info' && v.key!=='perfil').map(o=>({
         key:o.key||o.nombreLower||'',
         nombre:o.nombre||o.key||'',
         nombreLower:(o.nombreLower||o.key||'').toLowerCase(),
@@ -621,10 +615,8 @@ else {
     mapaCategorias={};
     categoriasConfig.forEach(c=>{ mapaCategorias[c.nombreLower]=c; });
 
-    productosGlobal = parsed.productos;
-
-    if(productosGlobal.length===0 && data.menu){
-      // ya parseado arriba
+    if(parsed.productos.length>0){
+      productosGlobal = parsed.productos;
     }
 
     let tabsList = [];
@@ -654,30 +646,18 @@ else {
       renderProductos(fil.length>0?fil:productosGlobal);
     }
     renderBarraCarritoSolo();
-    loaded = productosGlobal.length>0 || categoriasConfig.length>0;
   }
 
-  // Intenta ruta nueva primero: doloya_aliados/santillos
   onValue(ref(db, `doloya_aliados/${id}`), snap=>{
     let data = snap.val();
     if(data){
-      // Si tiene categorias anidadas es tu formato nuevo
-      if(data.categorias){
-        cargarDesdeData(data);
-      }
+      cargarDesdeData(data);
     }
   });
 
-  // Ruta vieja: doloya_aliados/cat/id
   onValue(ref(db, `doloya_aliados/${cat}/${id}`), snap=>{
     const data = snap.val();
-    if(!data){
-      // Si no existe y no hemos cargado nada, intenta mostrar algo
-      if(!loaded){
-        // deja que la otra ruta cargue
-      }
-      return;
-    }
+    if(!data) return;
     cargarDesdeData(data);
   });
 }
