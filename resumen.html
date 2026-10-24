@@ -146,7 +146,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 <script type="module">
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfigAliados = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
@@ -175,9 +175,9 @@ window.addDoc = addDoc;
 window.collection = collection;
 window.refRT = ref;
 window.setRT = set;
-window.serverTimestamp = serverTimestamp;
-window.onValueRT = onValue;
 window.getRT = get;
+window.onValueRT = onValue;
+window.serverTimestamp = serverTimestamp;
 </script>
 
 <script>
@@ -200,18 +200,29 @@ let lng = ubiInit?.lng || ubiInit?.ubicacion?.lng || -100.9306;
 let direccionBase = ubiInit?.direccion || '';
 let gpsObtenido = false;
 
-// === TARIFA VINCULADA A TU ADMIN $22 + $4/km ===
+// === TARIFA REAL $22 + $4/km - VINCULADA A TU ADMIN ===
 let tarifaGlobal = {base: 22, precio_km: 4};
 const EXTRA_RAPIDO = 14.99;
 
-window.onValueRT(window.refRT(window.dbAliadosRT, 'config_global/tarifa_default'), snap=>{
-  const v = snap.val();
-  if(v){
-    if(v.base !== undefined) tarifaGlobal.base = parseFloat(v.base);
-    if(v.precio_km !== undefined) tarifaGlobal.precio_km = parseFloat(v.precio_km);
-    actualizarResumen();
+// Leer tarifa de admin y tambien del envio ya calculado en inicio
+try{
+  const envioGuardado = JSON.parse(localStorage.getItem('doloya_envio_actual')||'null');
+  if(envioGuardado){
+    if(envioGuardado.base) tarifaGlobal.base = parseFloat(envioGuardado.base);
+    if(envioGuardado.precio_km) tarifaGlobal.precio_km = parseFloat(envioGuardado.precio_km);
   }
-});
+}catch(e){}
+
+if(window.onValueRT){
+  window.onValueRT(window.refRT(window.dbAliadosRT, 'config_global/tarifa_default'), snap=>{
+    const v = snap.val();
+    if(v){
+      if(v.base !== undefined) tarifaGlobal.base = parseFloat(v.base);
+      if(v.precio_km !== undefined) tarifaGlobal.precio_km = parseFloat(v.precio_km);
+      actualizarResumen();
+    }
+  });
+}
 
 function haversine(lat1, lon1, lat2, lon2){
   const R = 6371;
@@ -226,11 +237,9 @@ let restLng = dataRest?.lng || dataRest?.restauranteLng || -100.9310;
 if(dataRest?.restauranteLat) restLat = dataRest.restauranteLat;
 if(dataRest?.restauranteLng) restLng = dataRest.restauranteLng;
 let distanciaKm = 0.3;
-
-// Usar distancia ya calculada si existe
 try{
-  const envioGuardado = JSON.parse(localStorage.getItem('doloya_envio_actual')||'null');
-  if(envioGuardado && envioGuardado.distanciaKm) distanciaKm = parseFloat(envioGuardado.distanciaKm);
+  const env = JSON.parse(localStorage.getItem('doloya_envio_actual')||'null');
+  if(env && env.distanciaKm) distanciaKm = parseFloat(env.distanciaKm);
 }catch(e){}
 
 async function obtenerDistanciaRealGoogle(oLat, oLng, dLat, dLng){
@@ -251,12 +260,6 @@ function getCostoReal(){
   return tarifaGlobal.base + (dist * tarifaGlobal.precio_km);
 }
 
-function calcularEnvioSeleccionado(){
-  const real = getCostoReal();
-  if(tipoActual==='rapido') return real + EXTRA_RAPIDO;
-  return real; // ahorra = real
-}
-
 function actualizarMapaIframe(){
   document.getElementById('mapaIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
 }
@@ -274,18 +277,13 @@ async function obtenerGPSReal(){
   const vieneDeDetalles = detCheck && detCheck.direccion && detCheck.lat && detCheck.lng;
   const edicionReciente = localStorage.getItem('doloya_direccion_editada') === '1';
   if(vieneDeDetalles && edicionReciente){
-    lat = detCheck.lat;
-    lng = detCheck.lng;
-    direccionBase = detCheck.direccion;
+    lat = detCheck.lat; lng = detCheck.lng; direccionBase = detCheck.direccion;
     document.getElementById('txtDireccion').textContent = direccionBase;
-    actualizarMapaIframe();
-    calcularDistanciaYActualizar();
-    return;
+    actualizarMapaIframe(); calcularDistanciaYActualizar(); return;
   }
   if(!navigator.geolocation){ cargarDireccionYDistanciaSinGPS(); return; }
   navigator.geolocation.getCurrentPosition(async (pos)=>{
-    const latGPS = pos.coords.latitude;
-    const lngGPS = pos.coords.longitude;
+    const latGPS = pos.coords.latitude; const lngGPS = pos.coords.longitude;
     lat = latGPS; lng = lngGPS; gpsObtenido = true;
     direccionBase = await obtenerDireccionPorGPS(latGPS, lngGPS);
     const nuevaUbi = { direccion: direccionBase, lat: latGPS, lng: lngGPS, ubicacion: {lat: latGPS, lng: lngGPS} };
@@ -293,8 +291,7 @@ async function obtenerGPSReal(){
     localStorage.removeItem('doloya_direccion_editada');
     ubicacion = nuevaUbi;
     document.getElementById('txtDireccion').textContent = direccionBase;
-    actualizarMapaIframe();
-    calcularDistanciaYActualizar();
+    actualizarMapaIframe(); calcularDistanciaYActualizar();
   }, ()=>{ cargarDireccionYDistanciaSinGPS(); }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
 }
 async function calcularDistanciaYActualizar(){
@@ -324,7 +321,7 @@ async function cargarDireccionYDistanciaSinGPS(){
 (function init(){
   const detCheck = JSON.parse(localStorage.getItem('doloya_detalles_full')||'null');
   const flagEdit = localStorage.getItem('doloya_direccion_editada') === '1';
-  if(detCheck && flagEdit){ cargarDireccionYDistanciaSinGPS(); }
+  if(detCheck && flagEdit) cargarDireccionYDistanciaSinGPS();
   else{
     const vieneDeDetalles = localStorage.getItem('doloya_viene_de_detalles') === '1';
     if(vieneDeDetalles){ localStorage.removeItem('doloya_viene_de_detalles'); cargarDireccionYDistanciaSinGPS(); }
@@ -354,21 +351,24 @@ if(metodoSel){
   document.getElementById('badgeMetodo').style.background = '#E6F9ED';
   document.getElementById('badgeMetodo').style.color = '#0A7D2E';
 }
-
 function actualizarResumen(){
   const costoReal = getCostoReal();
   const envioAhorra = costoReal;
   const envioRapido = costoReal + EXTRA_RAPIDO;
-  document.getElementById('txtAhorra').textContent = `$${envioAhorra.toFixed(2)} MXN`;
-  document.getElementById('txtRapido').textContent = `$${envioRapido.toFixed(2)} MXN`;
-
-  let envioSeleccionado = calcularEnvioSeleccionado();
-  document.getElementById('costoProd').textContent = `$${costoProductos.toFixed(2)}`;
-  document.getElementById('costoEnvio').textContent = `$${envioSeleccionado.toFixed(2)}`;
+  const elRapido = document.getElementById('txtRapido');
+  const elAhorra = document.getElementById('txtAhorra');
+  if(elRapido) elRapido.textContent = `$${envioRapido.toFixed(2)} MXN`;
+  if(elAhorra) elAhorra.textContent = `$${envioAhorra.toFixed(2)} MXN`;
+  let envioSeleccionado = tipoActual==='rapido' ? envioRapido : envioAhorra;
+  const elProd = document.getElementById('costoProd');
+  const elEnv = document.getElementById('costoEnvio');
+  const elTotal = document.getElementById('totalPagar');
+  const elFoot = document.getElementById('totalFooter');
+  if(elProd) elProd.textContent = `$${costoProductos.toFixed(2)}`;
+  if(elEnv) elEnv.textContent = `$${envioSeleccionado.toFixed(2)}`;
   let total = costoProductos + envioSeleccionado;
-  document.getElementById('totalPagar').textContent = `$${total.toFixed(2)}`;
-  document.getElementById('totalFooter').textContent = `$${total.toFixed(2)} MXN`;
-
+  if(elTotal) elTotal.textContent = `$${total.toFixed(2)}`;
+  if(elFoot) elFoot.textContent = `$${total.toFixed(2)} MXN`;
   localStorage.setItem('doloya_tipo_entrega', tipoActual);
   localStorage.setItem('doloya_costo_entrega', envioSeleccionado.toFixed(2));
   localStorage.setItem('doloya_distancia_km', distanciaKm.toFixed(2));
@@ -407,13 +407,10 @@ function validarDetallesObligatorios(){
 }
 function mostrarErrorDetalles(mensaje){
   const fila = document.getElementById('filaDetalles');
-  fila.classList.remove('error-detalles');
-  void fila.offsetWidth;
-  fila.classList.add('error-detalles');
+  fila.classList.remove('error-detalles'); void fila.offsetWidth; fila.classList.add('error-detalles');
   if(navigator.vibrate) navigator.vibrate(200);
   const toast = document.getElementById('toastResumen');
-  toast.textContent = mensaje;
-  toast.classList.add('show');
+  toast.textContent = mensaje; toast.classList.add('show');
   setTimeout(()=>{ toast.classList.remove('show'); fila.classList.remove('error-detalles'); }, 2500);
   setTimeout(()=>{ window.location.href='detalles.html'; }, 800);
 }
@@ -452,8 +449,8 @@ async function irAPagar(){
   if(!nombre){ alert('Por favor ingresa tu nombre completo'); return; }
   const btn = document.getElementById('btnFinalizar');
   btn.textContent = 'Finalizando...'; btn.disabled = true;
-  let envioFinal = calcularEnvioSeleccionado();
-  let costoReal = getCostoReal();
+  const costoReal = getCostoReal();
+  let envioFinal = tipoActual==='rapido' ? costoReal + EXTRA_RAPIDO : costoReal;
   let totalFinal = costoProductos + envioFinal;
   localStorage.setItem('doloya_cliente_nombre', nombre);
   const telefonoGuardado = localStorage.getItem('doloya_celular') || detallesFull?.celular || localStorage.getItem('doloya_cliente_tel') || '';
@@ -482,7 +479,7 @@ async function irAPagar(){
       distanciaKm: Number(distanciaKm.toFixed(2)), 
       costoEnvio: Number(envioFinal),
       costoReal: Number(costoReal.toFixed(2)),
-      extraRapido: tipoActual==='rapido' ? 14.99 : 0,
+      extraRapido: tipoActual==='rapido' ? EXTRA_RAPIDO : 0,
       tipoEntrega: String(tipoActual), 
       total: Number(totalFinal.toFixed(2)) 
     },
