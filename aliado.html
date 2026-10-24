@@ -79,9 +79,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
 </style>
 </head>
 <body>
-
 <div id="loading" class="loading">Cargando restaurante...</div>
-
 <div id="contenido" style="display:none">
   <div class="portada-wrap">
     <img id="imgPortada" src="">
@@ -90,7 +88,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
     <div class="top-right"><div class="badge-abierto"><div class="dot-green"></div><span id="txtAbierto">ABIERTO</span></div><button class="btn-heart" id="btnLike"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button></div>
     <div class="logo-float"><img id="imgLogo" src="" style="display:none"><div id="logoInicial" class="inicial">S</div></div>
   </div>
-
   <div class="nombre-wrap">
     <h1 id="txtNombre">Pizzería Nonna Mia</h1>
     <div class="info-centro">
@@ -99,12 +96,10 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
       <div class="info-col"><div class="info-label">Calificación <svg viewBox="0 0 24 24" fill="#FF2D55"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div><div class="info-value"><span id="txtCalificacion">3.9</span><span class="total-likes" id="txtTotalLikes">(0)</span></div></div>
     </div>
   </div>
-
   <div class="tabs" id="tabs"></div>
   <div class="menu-title">Menú</div>
   <div class="productos" id="listaProductos"></div>
 </div>
-
 <div class="carrito-bar" id="carritoBar">
   <div class="carrito-left">
     <div class="imagenes-stack" id="imagenesCarrito"></div>
@@ -112,7 +107,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
   </div>
   <button class="btn-ver-carrito" id="btnVerCarrito">Ver carrito</button>
 </div>
-
 <div class="modal-overlay" id="modalCambio">
   <div class="modal-cambio">
     <h2>¿Quieres cambiar tu pedido?</h2>
@@ -124,11 +118,9 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
     </div>
   </div>
 </div>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, onValue, get, set, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
 const firebaseConfig = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
   authDomain: "doloya-aliados.firebaseapp.com",
@@ -140,7 +132,6 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-
 const params = new URLSearchParams(window.location.search);
 let cat = params.get('cat');
 let id = params.get('id');
@@ -149,7 +140,6 @@ if(!cat || !id){
   const guardado = localStorage.getItem('doloya_aliadoSeleccionado');
   if(guardado){ const j=JSON.parse(guardado); cat=j.cat; id=j.id; }
 }
-
 let ipCliente = null;
 let ipKey = null;
 let ubicacionGPS = {lat:null,lng:null};
@@ -162,16 +152,13 @@ let productosGlobal = [];
 let categoriasConfig = [];
 let mapaCategorias = {};
 const TIEMPO_EXPIRACION = 3 * 60 * 60 * 1000;
-
 function irAlInicio(){ window.location.href = 'inicio.html'; }
 window.irAlInicio = irAlInicio;
-
 function fmtPrecio(n){
   const num = parseFloat(n);
   if(isNaN(num)) return '0';
   return Number.isInteger(num) ? num.toFixed(0) : num.toFixed(2);
 }
-
 async function obtenerIPyGPS(){
   try{
     const r = await fetch('https://api.ipify.org?format=json');
@@ -193,7 +180,6 @@ async function obtenerIPyGPS(){
     });
   }
 }
-
 function verificarLike(){
   if(!cat || !id || !ipKey) return;
   get(ref(db, `doloya_likes/${cat}_${id}/${ipKey}`)).then(snap=>{
@@ -201,31 +187,31 @@ function verificarLike(){
     else{ document.getElementById('btnLike').classList.remove('liked'); }
   });
 }
-
 async function toggleLike(){
   if(!ipKey){ await obtenerIPyGPS(); }
   const likeRef = ref(db, `doloya_likes/${cat}_${id}/${ipKey}`);
   const countRef = ref(db, `doloya_aliados/${cat}/${id}/likes`);
+  const countRef2 = ref(db, `doloya_aliados/${id}/likes`);
   const snap = await get(likeRef);
   const btn = document.getElementById('btnLike');
   if(snap.exists()){
     await set(likeRef, null);
     await runTransaction(countRef, (curr)=> (curr||1)-1 );
+    await runTransaction(countRef2, (curr)=> (curr||1)-1 );
     btn.classList.remove('liked');
   }else{
     await set(likeRef, {fecha: Date.now(), ip: ipCliente});
     await runTransaction(countRef, (curr)=> (curr||0)+1 );
+    await runTransaction(countRef2, (curr)=> (curr||0)+1 );
     btn.classList.add('liked');
   }
 }
 document.getElementById('btnLike').onclick = toggleLike;
-
 function calcularValoracion(likes){
   let valor = 3.9 + Math.floor(likes/100);
   if(valor>5.0) valor=5.0;
   return valor.toFixed(1);
 }
-
 function guardarCarrito(){
   localStorage.setItem('doloya_carrito_v2', JSON.stringify(carrito));
   if(carrito.length>0){
@@ -241,7 +227,6 @@ function guardarCarrito(){
   renderBarraCarritoSolo();
   guardarCarritoFirebase(false);
 }
-
 async function guardarCarritoFirebase(esFinal){
   if(!cat || !id || !ipKey) return;
   const total = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
@@ -275,19 +260,20 @@ async function guardarCarritoFirebase(esFinal){
   if(carrito.length>0){
     await set(ref(db, `carrito/${cat}/${id}/${ipKey}`), dataCarrito);
     await set(ref(db, `doloya_aliados/${cat}/${id}/carritos/${ipKey}`), dataCarrito);
+    await set(ref(db, `doloya_aliados/${id}/carritos/${ipKey}`), dataCarrito);
   }else{
     await set(ref(db, `carrito/${cat}/${id}/${ipKey}`), null);
     await set(ref(db, `doloya_aliados/${cat}/${id}/carritos/${ipKey}`), null);
+    await set(ref(db, `doloya_aliados/${id}/carritos/${ipKey}`), null);
   }
 }
-
 async function eliminarCarritoFirebaseCompleto(catBorrar, idBorrar, ipKeyBorrar){
   try{
     await set(ref(db, `carrito/${catBorrar}/${idBorrar}/${ipKeyBorrar}`), null);
     await set(ref(db, `doloya_aliados/${catBorrar}/${idBorrar}/carritos/${ipKeyBorrar}`), null);
+    await set(ref(db, `doloya_aliados/${idBorrar}/carritos/${ipKeyBorrar}`), null);
   }catch(e){ console.log("Error borrando firebase:", e); }
 }
-
 async function verificarExpiracion(){
   const timestamp = localStorage.getItem('doloya_carrito_timestamp');
   if(!timestamp || carrito.length===0) return;
@@ -310,7 +296,6 @@ async function verificarExpiracion(){
   }
 }
 setInterval(verificarExpiracion, 5 * 60 * 1000);
-
 function verificarCambioRestaurante(){
   if(carrito.length>0 && restauranteActualCarrito && restauranteActualCarrito!==id){
     const nombreAnt = restauranteAnteriorData?.nombre || restauranteActualCarrito;
@@ -341,7 +326,6 @@ function getCantidad(nombre){
   const existe = carrito.find(p=>p.nombre===nombre);
   return existe?existe.cantidad:0;
 }
-
 function renderBarraCarritoSolo(){
   const bar = document.getElementById('carritoBar');
   if(carrito.length===0){ bar.style.display='none'; }
@@ -376,7 +360,6 @@ function renderBarraCarritoSolo(){
     }
   });
 }
-
 function renderProductos(lista){
   const cont=document.getElementById('listaProductos');
   cont.innerHTML='';
@@ -411,7 +394,6 @@ function renderProductos(lista){
     </div>`;
   });
 }
-
 function filtrarProductos(catFiltro){
   categoriaSeleccionada = catFiltro.toLowerCase();
   document.querySelectorAll('.tab').forEach(t=>{
@@ -426,73 +408,224 @@ function filtrarProductos(catFiltro){
   }
 }
 window.filtrarProductos=filtrarProductos;
-
 if(!cat || !id){ document.getElementById('loading').textContent='Restaurante no encontrado'; }
 else {
   obtenerIPyGPS();
   renderBarraCarritoSolo();
-  onValue(ref(db, `doloya_aliados/${cat}/${id}`), snap=>{
-    const data = snap.val();
-    if(!data){ document.getElementById('loading').textContent='Restaurante no encontrado'; return; }
+
+  // CORRECCION UNIFICADA: LEE TANTO FORMATO VIEJO COMO TU FORMATO NUEVO santillos/categorias/categorias/salchipapas/la_mampana
+  function extraerInfoCompleta(data){
+    let info = {};
+    function recorrer(obj, depth){
+      if(!obj || typeof obj !== 'object' || depth>6) return;
+      for(let k in obj){
+        let v = obj[k];
+        if(k==='categorias' && typeof v==='object'){
+          recorrer(v, depth+1);
+          continue;
+        }
+        if(typeof v !== 'object' || v===null){
+          let lk = k.toLowerCase();
+          if(['nombre','nombreRestaurante','logo','portada','imagen','foto','abierto','estado','categoria','tiempoentrega','costoenvio','likes','rating'].includes(lk) || lk.includes('logo') || lk.includes('portada')){
+            if(!info[lk] && v) info[lk]=v;
+            if(k==='logo' || k==='Logo' || k==='imagen' || k==='portada') info[k]=v;
+          }
+          if(lk==='_info' && typeof v==='string' && !info.categoria){
+            info.categoria = v;
+          }
+        }else{
+          if(v.correo || v.categoria || k==='info' || k==='perfil'){
+            recorrer(v, depth+1);
+            if(v.categoria) info.categoria = v.categoria;
+            if(v.nombre && !info.nombre) info.nombre = v.nombre;
+            if(v.logo) info.logo = v.logo;
+          }else{
+            recorrer(v, depth+1);
+          }
+        }
+      }
+    }
+    recorrer(data,0);
+    // mezcla con data directa
+    if(data.nombre) info.nombre = data.nombre;
+    if(data.Nombre) info.nombre = data.Nombre;
+    if(data.logo) info.logo = data.logo;
+    if(data.Logo) info.logo = data.Logo;
+    if(data.portada) info.portada = data.portada;
+    if(data.categoria) info.categoria = data.categoria;
+    if(data.abierto!==undefined) info.abierto = data.abierto;
+    if(data.estado!==undefined) info.estado = data.estado;
+    if(data.likes!==undefined) info.likes = data.likes;
+    if(data.tiempoEntrega) info.tiempoEntrega = data.tiempoEntrega;
+    if(data.costoEnvio) info.costoEnvio = data.costoEnvio;
+    return info;
+  }
+
+  function parsearProductos(data){
+    let productos = [];
+    let cats = [];
+
+    // CASO VIEJO: data.menu
+    if(data.menu && typeof data.menu === 'object'){
+      let menuRaw = data.menu;
+      productos = Object.values(menuRaw).filter(p=>p && p.nombre).map(p=>{
+        const tienePromo = p.promoActiva!==false && (p.promo||p.porcentaje>0) && parseFloat(p.porcentaje||0)>0;
+        const precioOriginal = parseFloat(p.precio||0);
+        const precioDescRaw = parseFloat(p.precioDescuento||0);
+        const porcentaje = parseFloat(p.porcentaje||0);
+        const precioDesc = precioDescRaw>0 ? precioDescRaw : (tienePromo ? (precioOriginal - precioOriginal*porcentaje/100) : precioOriginal);
+        return {
+          nombre: p.nombre||'Producto',
+          descripcion: p.descripcion||'',
+          precio: tienePromo ? precioDesc : precioOriginal,
+          precioOriginal: tienePromo ? precioOriginal : null,
+          porcentaje: tienePromo ? porcentaje : 0,
+          promo: tienePromo ? (p.promo||`-${porcentaje}%`) : '',
+          tienePromo: tienePromo,
+          categoria: (p.categoria||'Combos').toLowerCase(),
+          categoriaOriginal: p.categoria||'Combos',
+          imagenFinal: p.imagen||p.img||'https://via.placeholder.com/150',
+          activo: p.activo!==false,
+          ordenCategoria: p.ordenCategoria ?? 99
+        };
+      }).filter(p=>p.activo!==false);
+    }
+
+    // CASO NUEVO TUYO: data.categorias.categorias.salchipapas.la_mampana
+    if(data.categorias){
+      let rootCat = data.categorias;
+      if(rootCat.categorias && typeof rootCat.categorias === 'object'){
+        rootCat = rootCat.categorias;
+      }
+      // rootCat ahora es {boneles, salchipapas}
+      Object.keys(rootCat).forEach(catKey=>{
+        if(catKey.startsWith('_')) return;
+        let catObj = rootCat[catKey];
+        if(!catObj || typeof catObj !== 'object') return;
+        // Si es categoria (boneles, salchipapas)
+        let catNombre = catObj.nombre || catKey;
+        let catLower = (catObj.nombreLower || catKey).toLowerCase();
+        cats.push({
+          key: catKey,
+          nombre: catNombre,
+          nombreLower: catLower,
+          activa: catObj.activa!==false,
+          orden: catObj.orden ?? 99
+        });
+        // Busca productos dentro
+        Object.keys(catObj).forEach(prodKey=>{
+          if(['activa','fecha','key','nombre','nombreLower','orden','info','perfil','subcategorias','disponibilidad'].includes(prodKey)) return;
+          let prod = catObj[prodKey];
+          if(!prod || typeof prod !== 'object') return;
+          if(prod.nombre && (prod.precio!==undefined || prod.imagen)){
+            const tienePromo = prod.descuento>0 || prod.porcentaje>0 || prod.promoActiva!==false && prod.descuento;
+            const precioOriginal = parseFloat(prod.precio||0);
+            const desc = parseFloat(prod.descuento||prod.porcentaje||0);
+            const precioDesc = desc>0 ? (precioOriginal - precioOriginal*desc/100) : precioOriginal;
+            productos.push({
+              nombre: prod.nombre,
+              descripcion: prod.descripcion||'',
+              precio: desc>0 ? precioDesc : precioOriginal,
+              precioOriginal: desc>0 ? precioOriginal : null,
+              porcentaje: desc,
+              promo: desc>0 ? `-${desc}%` : (prod.promo||''),
+              tienePromo: desc>0,
+              categoria: catLower,
+              categoriaOriginal: catNombre,
+              imagenFinal: prod.imagen||'https://via.placeholder.com/150',
+              activo: prod.activo!==false && prod.disponibilidad!==false,
+              ordenCategoria: catObj.orden ?? 99
+            });
+          }
+        });
+      });
+    }
+
+    // Evita duplicados por nombre
+    let unicos = {};
+    productos.forEach(p=>{
+      if(!unicos[p.nombre]) unicos[p.nombre]=p;
+    });
+    productos = Object.values(unicos).filter(p=>p.activo!==false);
+    productos.sort((a,b)=> (a.ordenCategoria||99) - (b.ordenCategoria||99));
+
+    return {productos, cats};
+  }
+
+  // Escucha en dos rutas posibles
+  let loaded = false;
+  function cargarDesdeData(data){
+    if(!data || loaded) return;
+    // Si ya cargó productos no volver a sobreescribir con vacio
+    let parsed = parsearProductos(data);
+    if(parsed.productos.length===0 && productosGlobal.length>0) return;
+    if(parsed.productos.length===0 && !data.categorias && !data.menu) return;
+
     document.getElementById('loading').style.display='none';
     document.getElementById('contenido').style.display='block';
-    document.getElementById('imgPortada').src = data.portada || data.logo || '';
-    if(data.logo){ document.getElementById('imgLogo').src=data.logo; document.getElementById('imgLogo').style.display='block'; document.getElementById('logoInicial').style.display='none'; }
-    nombreRestauranteGlobal = data.nombre||'';
-    document.getElementById('txtNombre').textContent=data.nombre||'Pizzería Nonna Mia';
-    document.getElementById('txtEntrega').textContent=data.tiempoEntrega||'12 min';
-    document.getElementById('txtEnvio').textContent=`$${data.costoEnvio||'10.00'}`;
-    const likes = data.likes||0;
-    document.getElementById('txtCalificacion').textContent=calcularValoracion(likes);
-    document.getElementById('txtTotalLikes').textContent=`(${likes})`;
-    document.getElementById('txtAbierto').textContent=data.abierto?'ABIERTO':'CERRADO';
+
+    let extraInfo = extraerInfoCompleta(data);
     
-    // CATEGORIAS CONFIG
-    const rawCats = data.categorias || {};
-    categoriasConfig = Object.values(rawCats).map(o=>({
-      key:o.key||o.nombreLower||'',
-      nombre:o.nombre||o.key||'',
-      nombreLower:(o.nombreLower||o.key||'').toLowerCase(),
-      activa:o.activa!==false,
-      orden:o.orden??99
-    }));
+    let portadaSrc = extraInfo.portada || data.portada || extraInfo.logo || data.logo || '';
+    document.getElementById('imgPortada').src = portadaSrc;
+    
+    if(extraInfo.logo || data.logo){
+      document.getElementById('imgLogo').src = extraInfo.logo || data.logo;
+      document.getElementById('imgLogo').style.display='block';
+      document.getElementById('logoInicial').style.display='none';
+    } else {
+      document.getElementById('logoInicial').textContent = (extraInfo.nombre||id||'S').charAt(0).toUpperCase();
+    }
+
+    nombreRestauranteGlobal = extraInfo.nombre || data.nombre || id;
+    document.getElementById('txtNombre').textContent = nombreRestauranteGlobal;
+    document.getElementById('txtEntrega').textContent = extraInfo.tiempoEntrega || data.tiempoEntrega || '12 min';
+    document.getElementById('txtEnvio').textContent = `$${extraInfo.costoEnvio || data.costoEnvio || '10.00'}`;
+    
+    let likes = extraInfo.likes || data.likes || 0;
+    document.getElementById('txtCalificacion').textContent = calcularValoracion(likes);
+    document.getElementById('txtTotalLikes').textContent = `(${likes})`;
+    
+    let abierto = true;
+    if(extraInfo.abierto!==undefined) abierto = extraInfo.abierto===true || extraInfo.abierto==='true' || extraInfo.abierto==='abierto' || extraInfo.abierto==='activo';
+    else if(extraInfo.estado!==undefined) abierto = extraInfo.estado==='abierto' || extraInfo.estado==='activo';
+    else if(data.abierto!==undefined) abierto = data.abierto;
+    document.getElementById('txtAbierto').textContent = abierto ? 'ABIERTO' : 'CERRADO';
+
+    // Categorias y productos
+    let rawCats = data.categorias || {};
+    // Si tiene menu viejo usa ese
+    if(data.menu){
+      rawCats = data.categorias || {};
+    }
+
+    // Usa cats parseados
+    if(parsed.cats.length>0){
+      categoriasConfig = parsed.cats.map(o=>({
+        key:o.key||o.nombreLower||'',
+        nombre:o.nombre||o.key||'',
+        nombreLower:(o.nombreLower||o.key||'').toLowerCase(),
+        activa:o.activa!==false,
+        orden:o.orden??99
+      }));
+    }else{
+      categoriasConfig = Object.values(rawCats).filter(v=>v && typeof v==='object' && (v.nombre||v.key)).map(o=>({
+        key:o.key||o.nombreLower||'',
+        nombre:o.nombre||o.key||'',
+        nombreLower:(o.nombreLower||o.key||'').toLowerCase(),
+        activa:o.activa!==false,
+        orden:o.orden??99
+      }));
+    }
     categoriasConfig.sort((a,b)=>a.orden-b.orden);
     mapaCategorias={};
     categoriasConfig.forEach(c=>{ mapaCategorias[c.nombreLower]=c; });
 
-    const menuRaw = data.menu || {};
-    productosGlobal = Object.values(menuRaw)
-      .filter(p=> {
-        if(p.activo===false || p.activo===0 || p.activo==='false') return false;
-        if(p.categoriaActiva===false) return false;
-        const catL = (p.categoria||'').toLowerCase();
-        if(mapaCategorias[catL] && mapaCategorias[catL].activa===false) return false;
-        return true;
-      })
-      .map(p=>{
-        const tienePromo = p.promoActiva!==false && (p.promo||p.porcentaje>0) && parseFloat(p.porcentaje||0)>0;
-        const precioOriginal = parseFloat(p.precio||p.Precio||0);
-        const precioDescRaw = parseFloat(p.precioDescuento||0);
-        const porcentaje = parseFloat(p.porcentaje||0);
-        const precioDesc = precioDescRaw>0 ? precioDescRaw : (tienePromo ? (precioOriginal - precioOriginal*porcentaje/100) : precioOriginal);
-        const precioFinal = tienePromo ? precioDesc : precioOriginal;
-        return {
-          nombre: p.nombre||p.Nombre||'Producto',
-          descripcion: p.descripcion||p.Descripcion||'',
-          precio: precioFinal,
-          precioOriginal: tienePromo ? precioOriginal : null,
-          porcentaje: tienePromo ? porcentaje : 0,
-          promo: tienePromo ? (p.promo||`-${fmtPrecio(porcentaje)}%`) : '',
-          tienePromo: tienePromo,
-          categoria: (p.categoria||p.Categoria||'Combos').toLowerCase(),
-          categoriaOriginal: p.categoria||'Combos',
-          imagenFinal: p.imagen||p.img||p.Imagen||'https://via.placeholder.com/150',
-          ordenCategoria: p.ordenCategoria ?? mapaCategorias[(p.categoria||'').toLowerCase()]?.orden ?? 99
-        };
-      });
+    productosGlobal = parsed.productos;
 
-    // ORDENAR PRODUCTOS POR ORDEN DE CATEGORIA
-    productosGlobal.sort((a,b)=>a.ordenCategoria - b.ordenCategoria);
+    if(productosGlobal.length===0 && data.menu){
+      // ya parseado arriba
+    }
 
     let tabsList = [];
     if(categoriasConfig.length>0){
@@ -521,12 +654,36 @@ else {
       renderProductos(fil.length>0?fil:productosGlobal);
     }
     renderBarraCarritoSolo();
+    loaded = productosGlobal.length>0 || categoriasConfig.length>0;
+  }
+
+  // Intenta ruta nueva primero: doloya_aliados/santillos
+  onValue(ref(db, `doloya_aliados/${id}`), snap=>{
+    let data = snap.val();
+    if(data){
+      // Si tiene categorias anidadas es tu formato nuevo
+      if(data.categorias){
+        cargarDesdeData(data);
+      }
+    }
+  });
+
+  // Ruta vieja: doloya_aliados/cat/id
+  onValue(ref(db, `doloya_aliados/${cat}/${id}`), snap=>{
+    const data = snap.val();
+    if(!data){
+      // Si no existe y no hemos cargado nada, intenta mostrar algo
+      if(!loaded){
+        // deja que la otra ruta cargue
+      }
+      return;
+    }
+    cargarDesdeData(data);
   });
 }
 
 window.handleAdd=(nombre, precio, imagen)=>{ addProducto(nombre, precio, imagen); }
 window.handleRestar=(nombre)=>{ restarProducto(nombre); }
-
 document.getElementById('btnVerCarrito').onclick = async ()=>{
   if(carrito.length===0) return;
   const btn = document.getElementById('btnVerCarrito');
@@ -534,7 +691,6 @@ document.getElementById('btnVerCarrito').onclick = async ()=>{
   await guardarCarritoFirebase(true);
   window.location.href = 'carrito.html';
 }
-
 document.getElementById('btnConservar').onclick=()=>{
   productoPendiente = null;
   document.getElementById('modalCambio').classList.remove('show');
@@ -544,7 +700,6 @@ document.getElementById('btnConservar').onclick=()=>{
     window.location.replace('inicio.html');
   }
 }
-
 document.getElementById('btnEliminar').onclick=async ()=>{
   const btn = document.getElementById('btnEliminar');
   btn.textContent = 'Eliminando...';
