@@ -95,15 +95,45 @@ const dataStr = localStorage.getItem('doloya_ubicacion');
 if(!dataStr) location.href="index.html";
 const cliente = JSON.parse(dataStr);
 fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${cliente.ubicacion?.lat}&lon=${cliente.ubicacion?.lng}&zoom=18&addressdetails=1`).then(r=>r.json()).then(data=>{ const addr=data.address; const direccion = `${addr.road||''} ${addr.house_number||''}, ${addr.suburb||''}, ${addr.city||addr.town||''}, ${addr.state||''}`; document.getElementById('txtUbi').textContent=direccion; });
+
 let aliadosData=[];
 const listaEl=document.getElementById('listaRestaurantes');
 function getCampo(r, ...nombres){ if(!r) return ''; for(let n of nombres){ if(r[n] !== undefined && r[n] !== null && r[n] !== '') return r[n]; const key = Object.keys(r).find(k => k.toLowerCase() === n.toLowerCase()); if(key && r[key]) return r[key]; } return ''; }
 
-// CORREGIDO: LEE EL DE ARRIBA false/cerrado - NO EL DE ABAJO true/activo
+// === TARIFA GLOBAL $22 + $4/km - VINCULADO A TU ADMIN ===
+let tarifaGlobal = {base: 22, precio_km: 4};
+onValue(ref(db, 'config_global/tarifa_default'), snap=>{
+  const v = snap.val();
+  if(v){
+    if(v.base !== undefined) tarifaGlobal.base = parseFloat(v.base);
+    if(v.precio_km !== undefined) tarifaGlobal.precio_km = parseFloat(v.precio_km);
+    if(aliadosData.length>0) renderAliados(document.querySelector('.cat-item.active')?.dataset.cat||'todos', document.getElementById('buscador').value);
+  }
+});
+
+function haversine(lat1, lon1, lat2, lon2){
+  const R = 6371;
+  const dLat = (lat2-lat1)*Math.PI/180;
+  const dLon = (lon2-lon1)*Math.PI/180;
+  const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  const c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R*c;
+}
+
+function extraerUbicacionReal(root){
+  if(!root || typeof root !== 'object') return null;
+  if(root.info && root.info.ubicacion && root.info.ubicacion.lat) return root.info.ubicacion;
+  if(root.info && root.info.coordenadas && root.info.coordenadas.lat) return root.info.coordenadas;
+  if(root.ubicacion && root.ubicacion.lat) return root.ubicacion;
+  if(root.coordenadas && root.coordenadas.lat) return root.coordenadas;
+  if(root.info && root.info.lat && root.info.lng) return {lat: parseFloat(root.info.lat), lng: parseFloat(root.info.lng)};
+  if(root.lat && root.lng) return {lat: parseFloat(root.lat), lng: parseFloat(root.lng)};
+  if(root.categorias && root.categorias.ubicacion && root.categorias.ubicacion.lat) return root.categorias.ubicacion;
+  return null;
+}
+
 function obtenerDisponibilidadReal(root){
   if(!root || typeof root !== 'object') return true;
-  
-  // 1. PRIORIDAD MAXIMA: doloya_aliados/ID/categorias/disponibilidad (el de ARRIBA de tu foto)
   if(root.categorias && root.categorias.disponibilidad){
     let d = root.categorias.disponibilidad;
     if(typeof d.abierto === 'boolean') return d.abierto;
@@ -116,23 +146,18 @@ function obtenerDisponibilidadReal(root){
       if(d.estado === 'abierto' || d.estado === 'activo') return true;
     }
   }
-
-  // 2. Segunda prioridad: categorias/categorias/disponibilidad (por si tu estructura es anidada)
-  if(root.categorias && root.categorias.categorias.disponibilidad){
+  if(root.categorias && root.categorias.categorias && root.categorias.categorias.disponibilidad){
     let d = root.categorias.categorias.disponibilidad;
     if(typeof d.abierto === 'boolean') return d.abierto;
     if(d.estado === 'cerrado' || d.abierto === false) return false;
     if(d.estado === 'abierto' || d.abierto === true) return true;
   }
-
-  // 3. Raiz: doloya_aliados/ID/disponibilidad
   if(root.disponibilidad){
     let d = root.disponibilidad;
     if(typeof d.abierto === 'boolean') return d.abierto;
     if(d.estado === 'cerrado') return false;
     if(d.estado === 'abierto') return true;
   }
-
   return true;
 }
 
@@ -197,33 +222,51 @@ function aplanarDatos(dataPorCategoria){
   let lista=[];
   if(!dataPorCategoria) return lista;
   Object.keys(dataPorCategoria).forEach(topKey=>{
-    if(topKey === 'admin') return;
+    if(topKey === 'admin' || topKey === 'config_global') return;
     const grupo = dataPorCategoria[topKey];
     if(!grupo || typeof grupo !== 'object') return;
     if(grupo.precio !== undefined && grupo.nombre) return;
+    if(grupo.base !== undefined && grupo.precio_km !== undefined) return;
     let categoriaReal = extraerCategoriaReal(grupo);
     let abiertoVal = obtenerDisponibilidadReal(grupo);
     let infoReal = extraerInfoRestauranteReal(grupo, topKey);
-    let nombreRest = infoReal.nombre;
-    let logoVal = infoReal.logo;
+    let ubicacionRest = extraerUbicacionReal(grupo);
+    
+    // CALCULO AUTOMATICO POR KM - BASE $22 + $4/km
+    let distanciaKm = 0;
+    let distanciaTexto = '0.5 km';
+    let costoEnvioCalc = tarifaGlobal.base;
+    
+    if(ubicacionRest && cliente.ubicacion && cliente.ubicacion.lat && cliente.ubicacion.lng){
+      distanciaKm = haversine(cliente.ubicacion.lat, cliente.ubicacion.lng, parseFloat(ubicacionRest.lat), parseFloat(ubicacionRest.lng));
+      costoEnvioCalc = tarifaGlobal.base + (distanciaKm * tarifaGlobal.precio_km);
+      if(distanciaKm < 1) distanciaTexto = distanciaKm.toFixed(1) + ' km';
+      else distanciaTexto = distanciaKm.toFixed(1) + ' km';
+    }
+    
     lista.push({
       id: topKey,
       categoriaOriginal: topKey,
       categoria: (categoriaReal || topKey).toLowerCase(),
       categoriaRaw: categoriaReal || topKey,
-      nombre: nombreRest,
-      Nombre: nombreRest,
+      nombre: infoReal.nombre,
+      Nombre: infoReal.nombre,
       abierto: abiertoVal,
       estado: abiertoVal ? 'abierto' : 'cerrado',
       likesReal: grupo.likes || 0,
-      logoFinal: logoVal,
+      logoFinal: infoReal.logo,
+      distanciaKm: distanciaKm,
+      distanciaTexto: distanciaTexto,
+      costoEnvioCalculado: costoEnvioCalc.toFixed(2),
+      costoEnvio: costoEnvioCalc.toFixed(2),
       tiempoEntrega: grupo.tiempoEntrega || '20-30 min',
-      costoEnvio: grupo.costoEnvio || '35',
-      distancia: grupo.distancia || '180 m',
       rating: grupo.rating || '4.8',
-      rawData: grupo
+      rawData: grupo,
+      ubicacionReal: ubicacionRest
     });
   });
+  // Ordenar por distancia más cercana
+  lista.sort((a,b)=> a.distanciaKm - b.distanciaKm);
   return lista;
 }
 
@@ -247,7 +290,11 @@ function coincideCategoria(catRestaurante, catFiltro){
 
 function renderAliados(filtroCat="todos", busqueda=""){
   let f=[...aliadosData];
-  f.sort((a,b)=>{ if(a.abierto === b.abierto) return 0; return a.abierto ? -1 : 1; });
+  // Abiertos primero, luego por distancia
+  f.sort((a,b)=>{ 
+    if(a.abierto !== b.abierto) return a.abierto ? -1 : 1;
+    return a.distanciaKm - b.distanciaKm;
+  });
   if(filtroCat!=="todos") f=f.filter(a=> coincideCategoria(a.categoria, filtroCat) || coincideCategoria(a.categoriaOriginal, filtroCat) || coincideCategoria(a.categoriaRaw, filtroCat) );
   if(busqueda) f=f.filter(a=>a.nombre.toLowerCase().includes(busqueda.toLowerCase()));
   listaEl.innerHTML="";
@@ -268,12 +315,22 @@ function renderAliados(filtroCat="todos", busqueda=""){
         <div class="rest-top"><div class="rest-name">${nombreMostrar}</div>${badgeHtml}</div>
         <div class="rating"><svg class="i" viewBox="0 0 24 24" fill="#FFB800"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> ${getCampo(a,'rating','Rating')||'4.7'} <span style="color:#777">(${a.likesReal||0})</span></div>
         <div class="tags"><div class="tag">${(a.categoriaRaw||a.categoria).replace(/_/g,' ')}</div>${!abierto ? '<div class="tag" style="background:#fee2e2;color:#991b1b">No recibe pedidos</div>' : ''}</div>
+        <div class="rest-bottom">
+          <svg class="moto" viewBox="0 0 24 24" fill="none" stroke="#00C950" stroke-width="2"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v6h-4V6z"/><path d="M2 17.5h4M15 17.5h0.5"/></svg>
+          <span class="distancia">${a.distanciaTexto}</span>
+          <span style="font-size:10px">Envío $${a.costoEnvioCalculado} • $${tarifaGlobal.base} + $${tarifaGlobal.precio_km}/km</span>
+        </div>
       </div>
     </div>`;
   });
 }
 
 window.ir=(cat,id)=>{
+  // Guardamos también costo de envio calculado para aliado.html
+  const rest = aliadosData.find(r=> r.id===id);
+  if(rest){
+    localStorage.setItem('doloya_envio_actual', JSON.stringify({distanciaKm: rest.distanciaKm, costo: rest.costoEnvioCalculado, base: tarifaGlobal.base, precio_km: tarifaGlobal.precio_km}));
+  }
   localStorage.setItem('doloya_aliadoSeleccionado', JSON.stringify({cat,id}));
   location.href=`aliado.html?cat=${cat}&id=${id}`;
 }
