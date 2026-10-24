@@ -27,9 +27,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
 .logo-float .inicial{width:100%;height:100%;background:#6B0F2A;color:white;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:30px}
 .nombre-wrap{margin-top:14px;text-align:center;padding:0 16px;display:flex;justify-content:center;flex-direction:column;align-items:center}
 .nombre-wrap h1{font-size:28px;font-weight:900;letter-spacing:-0.5px;text-align:center}
-.envio-info{display:flex;gap:6px;align-items:center;justify-content:center;margin-top:8px;background:#F3F4F6;padding:6px 12px;border-radius:999px;border:1px solid #E5E7EB}
-.envio-info .dist{background:#E6F9ED;color:#0A7D2E;border:1px solid #B5ECC5;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:800}
-.envio-info span{font-size:11px;font-weight:600;color:#333}
 .tabs{margin-top:18px;padding:0 16px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;justify-content:flex-start}
 .tabs::-webkit-scrollbar{display:none}
 .tab{padding:10px 18px;border-radius:999px;border:1.5px solid #E5E7EB;background:white;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0}
@@ -98,11 +95,6 @@ body.bloqueado .btn-add, body.bloqueado .qty-btn{pointer-events:none !important;
   </div>
   <div class="nombre-wrap">
     <h1 id="txtNombre">Pizzería Nonna Mia</h1>
-    <div id="envioInfo" class="envio-info" style="display:none">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00C950" stroke-width="2"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v6h-4V6z"/></svg>
-      <span class="dist" id="txtDistancia">0 km</span>
-      <span id="txtEnvioCosto">Envío $22.00 • $22 + $4/km</span>
-    </div>
   </div>
   <div class="tabs" id="tabs"></div>
   <div class="menu-title">Menú</div>
@@ -158,17 +150,17 @@ if(!cat || !id){
 let ipCliente = null;
 let ipKey = null;
 let ubicacionGPS = {lat:null,lng:null};
-
-// === TARIFA GLOBAL $22 + $4/km VINCULADA A ADMIN ===
-let tarifaGlobal = {base: 22, precio_km: 4};
-let distanciaKmActual = 0;
-let costoEnvioActual = 22;
-
 const clienteUbicacionData = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
 if(clienteUbicacionData && clienteUbicacionData.ubicacion){
   ubicacionGPS.lat = clienteUbicacionData.ubicacion.lat;
   ubicacionGPS.lng = clienteUbicacionData.ubicacion.lng;
 }
+
+// === TARIFA GLOBAL $22 + $4/km - SOLO INTERNO, NO VISUAL ===
+let tarifaGlobal = {base: 22, precio_km: 4};
+let distanciaKmActual = 0;
+let costoEnvioActual = 22;
+let ubicacionRestauranteActual = null;
 
 onValue(ref(db, 'config_global/tarifa_default'), snap=>{
   const v = snap.val();
@@ -178,7 +170,6 @@ onValue(ref(db, 'config_global/tarifa_default'), snap=>{
     recalcularEnvio();
   }
 });
-
 function haversine(lat1, lon1, lat2, lon2){
   const R = 6371;
   const dLat = (lat2-lat1)*Math.PI/180;
@@ -187,7 +178,6 @@ function haversine(lat1, lon1, lat2, lon2){
   const c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   return R*c;
 }
-
 function extraerUbicacionReal(root){
   if(!root || typeof root !== 'object') return null;
   if(root.info && root.info.ubicacion && root.info.ubicacion.lat) return root.info.ubicacion;
@@ -199,9 +189,6 @@ function extraerUbicacionReal(root){
   if(root.categorias && root.categorias.ubicacion && root.categorias.ubicacion.lat) return root.categorias.ubicacion;
   return null;
 }
-
-let ubicacionRestauranteActual = null;
-
 function recalcularEnvio(){
   const envioGuardado = JSON.parse(localStorage.getItem('doloya_envio_actual')||'null');
   if(envioGuardado && envioGuardado.costo){
@@ -211,14 +198,6 @@ function recalcularEnvio(){
   if(ubicacionRestauranteActual && ubicacionGPS.lat && ubicacionGPS.lng){
     distanciaKmActual = haversine(ubicacionGPS.lat, ubicacionGPS.lng, parseFloat(ubicacionRestauranteActual.lat), parseFloat(ubicacionRestauranteActual.lng));
     costoEnvioActual = tarifaGlobal.base + (distanciaKmActual * tarifaGlobal.precio_km);
-  }
-  const elDist = document.getElementById('txtDistancia');
-  const elCosto = document.getElementById('txtEnvioCosto');
-  const cont = document.getElementById('envioInfo');
-  if(elDist && elCosto && cont){
-    elDist.textContent = distanciaKmActual.toFixed(1) + ' km';
-    elCosto.textContent = `Envío $${costoEnvioActual.toFixed(2)} • $${tarifaGlobal.base} + $${tarifaGlobal.precio_km}/km`;
-    cont.style.display = 'flex';
   }
   localStorage.setItem('doloya_envio_actual', JSON.stringify({distanciaKm: distanciaKmActual, costo: costoEnvioActual.toFixed(2), base: tarifaGlobal.base, precio_km: tarifaGlobal.precio_km}));
 }
@@ -309,11 +288,6 @@ async function toggleLike(){
   }
 }
 document.getElementById('btnLike').onclick = toggleLike;
-function calcularValoracion(likes){
-  let valor = 3.9 + Math.floor(likes/100);
-  if(valor>5.0) valor=5.0;
-  return valor.toFixed(1);
-}
 function guardarCarrito(){
   localStorage.setItem('doloya_carrito_v2', JSON.stringify(carrito));
   if(carrito.length>0){
@@ -455,7 +429,7 @@ function renderBarraCarritoSolo(){
   const txt = document.getElementById('carritoTexto');
   const prc = document.getElementById('carritoPrecio');
   if(txt) txt.textContent = totalProductos===1?`1 producto`:`${totalProductos} productos`;
-  if(prc) prc.textContent = `$${fmtPrecio(totalPrecio)} + $${parseFloat(costoEnvioActual).toFixed(2)} envío`;
+  if(prc) prc.textContent = `$${fmtPrecio(totalPrecio)}`;
   document.querySelectorAll('.prod-card').forEach(card=>{
     const nombre = card.getAttribute('data-nombre');
     if(!nombre) return;
@@ -700,7 +674,6 @@ else {
     nombreRestauranteGlobal = (extraInfo.nombre||'').replace(/_/g,' ').trim();
     document.getElementById('txtNombre').textContent = nombreRestauranteGlobal;
 
-    // === CALCULO DE UBICACION REAL Y ENVIO ===
     let ubi = extraerUbicacionReal(data);
     if(ubi){
       ubicacionRestauranteActual = ubi;
