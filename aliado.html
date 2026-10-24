@@ -328,7 +328,7 @@ function verificarCambioRestaurante(){
   if(restauranteCerrado){ mostrarTarjetaCerrado(); return true; }
   if(carrito.length>0 && restauranteActualCarrito && restauranteActualCarrito!==id){
     const nombreAnt = restauranteAnteriorData?.nombre || restauranteActualCarrito;
-    document.getElementById('txtRestauranteAnterior').textContent = nombreAnt;
+    document.getElementById('txtRestauranteAnterior').textContent = (nombreAnt||'').replace(/_/g,' ');
     document.getElementById('modalCambio').classList.add('show');
     return true;
   }
@@ -479,7 +479,12 @@ else {
       if(!info.categoria) info.categoria = data.categorias._info;
     }
     if(!info.nombre || info.nombre.toLowerCase().includes('mampana')){
-      info.nombre = id ? id.charAt(0).toUpperCase() + id.slice(1) : 'Santillos';
+      let idLimpio = (id||'Santillos').replace(/_/g,' ').trim();
+      info.nombre = idLimpio.charAt(0).toUpperCase() + idLimpio.slice(1);
+    }
+    // CORREGIDO: quitar siempre _ al mostrar nombre
+    if(info.nombre){
+      info.nombre = info.nombre.replace(/_/g,' ').trim();
     }
     return info;
   }
@@ -612,7 +617,7 @@ else {
       document.getElementById('logoInicial').style.display='flex';
       document.getElementById('imgLogo').style.display='none';
     }
-    nombreRestauranteGlobal = extraInfo.nombre;
+    nombreRestauranteGlobal = (extraInfo.nombre||'').replace(/_/g,' ').trim();
     document.getElementById('txtNombre').textContent = nombreRestauranteGlobal;
     let disponible = estaAbiertoDesdeDisponibilidad(data);
     let badgeEl = document.getElementById('badgeAbierto');
