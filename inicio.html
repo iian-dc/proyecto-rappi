@@ -108,42 +108,40 @@ function getCampo(r, ...nombres){
   return ''; 
 }
 
-// CORRECCION: ENLAZADO A TU ESTRUCTURA REAL DE FIREBASE (santillos/categorias/categorias/...)
-function buscarInfoRestaurante(obj){
-  if(!obj || typeof obj !== 'object') return null;
-  // Si directamente tiene correo, es info
-  if(obj.correo || obj.email || obj.contrasena){
-    return obj;
-  }
-  // Busca en info
-  if(obj.info && typeof obj.info === 'object'){
-    return obj.info;
-  }
-  // Busca recursivo en categorias/categorias/xxx/info
-  if(obj.categorias){
-    let cat = obj.categorias;
-    if(cat.categorias){
-      cat = cat.categorias;
-    }
-    for(let k in cat){
-      let v = cat[k];
-      if(v && v.info) return v.info;
-      // Caso de tu foto: info está dentro de salchipapas junto con el producto
-      if(v && (v.correo || v.email)){
-        return v;
+// BUSCA PROFUNDO TU INFO DE SANTILLOS (correo, logo, abierto, etc)
+function extraerTodo(root){
+  let result = {};
+  function recorrer(obj, depth){
+    if(!obj || typeof obj !== 'object' || depth>5) return;
+    for(let k in obj){
+      let v = obj[k];
+      if(k==='categorias' && typeof v==='object'){
+        recorrer(v, depth+1);
+        continue;
       }
-      // Busca dentro de la categoria si hay info escondida
-      if(v && typeof v === 'object'){
-        for(let kk in v){
-          let vv = v[kk];
-          if(vv && typeof vv === 'object' && (vv.correo || vv.categoria === 'general')){
-            return vv;
+      if(typeof v !== 'object' || v===null){
+        // guarda campos importantes
+        let lk = k.toLowerCase();
+        if(['nombre','nombreRestaurante','logo','imagen','foto','abierto','estado','categoria','correo','email','disponibilidad'].includes(lk) || lk.includes('logo') || lk.includes('imagen')){
+          if(!result[k] && !result[lk]) result[k]=v;
+          result[lk]=v;
+        }
+      }else{
+        // si es info, producto, etc sigue buscando
+        if(k==='info' || k==='la_mampana_1792794939936' || k==='salchipapas' || k==='boneles'){
+          recorrer(v, depth+1);
+        }else if(k!=='categorias'){
+          // tambien busca dentro
+          if(typeof v === 'object' && v.correo) {
+            Object.assign(result, v);
           }
+          recorrer(v, depth+1);
         }
       }
     }
   }
-  return null;
+  recorrer(root,0);
+  return result;
 }
 
 function aplanarDatos(dataPorCategoria){
@@ -151,59 +149,66 @@ function aplanarDatos(dataPorCategoria){
   if(!dataPorCategoria) return lista;
 
   Object.keys(dataPorCategoria).forEach(topKey=>{
-    if(topKey === 'admin') {
-      // admin/admin tiene abierto pero no es restaurante cliente
-      return;
-    }
+    if(topKey === 'admin') return; // no mostrar admin
 
     const grupo = dataPorCategoria[topKey];
+    if(!grupo || typeof grupo !== 'object') return;
 
-    // CASO NUEVO TUYO: topKey = santillos, y grupo = {categorias: {categorias: {boneles, salchipapas}}}
-    if(grupo && typeof grupo === 'object' && grupo.categorias){
-      let info = buscarInfoRestaurante(grupo);
-      let nombreRest = info ? (info.nombre || info.nombreRestaurante || topKey) : topKey;
-      let catRest = info ? (info.categoria || topKey) : topKey;
-      // Si no hay info, usa el key como nombre bonito
-      if(!info){
-        nombreRest = topKey.charAt(0).toUpperCase() + topKey.slice(1);
-      }
+    // TU CASO: santillos -> categorias -> categorias -> salchipapas -> info con correo santillos@gmail.com
+    let extra = extraerTodo(grupo);
+    let nombreRest = extra.nombre || extra.nombreRestaurante || extra.Nombre || topKey;
+    // si nombre es "Salchipapas" (tu categoria) usa el id bonito
+    if(nombreRest.toLowerCase()==='salchipapas' && topKey==='santillos') nombreRest='Santillos';
 
-      lista.push({
-        id: topKey,
-        categoria: (catRest || topKey).toLowerCase(),
-        categoriaOriginal: topKey,
-        nombre: nombreRest,
-        Nombre: nombreRest,
-        abierto: true,
-        estado: 'abierto',
-        likesReal: 0,
-        logoFinal: grupo.logo || grupo.Logo || (info && (info.logo || info.Logo)) || 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop',
-        tiempoEntrega: '20-30 min',
-        costoEnvio: '35',
-        distancia: '180 m',
-        rating: '4.8',
-        esNuevoFormato: true,
-        rawData: grupo
-      });
-      return;
+    let abiertoVal = true;
+    if(extra.abierto !== undefined) abiertoVal = extra.abierto===true || extra.abierto==='true' || extra.abierto==='abierto';
+    else if(extra.estado !== undefined) abiertoVal = extra.estado==='abierto' || extra.estado==='activo' || extra.estado===true;
+    
+    let logoVal = extra.logo || extra.Logo || extra.imagen || extra.foto || extra.logoUrl || '';
+    if(!logoVal) logoVal = 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop';
+
+    // si grupo es formato viejo (categoria con restaurantes dentro)
+    if(grupo.categorias && !grupo.categorias.categorias && Object.keys(grupo.categorias).some(k=>grupo.categorias[k] && grupo.categorias[k].nombre)){
+      // formato viejo no, lo dejamos
     }
 
-    // CASO VIEJO: doloya_aliados/{categoria}/{idRestaurante}
-    if(grupo && typeof grupo === 'object'){
+    // Si tiene subestructura de restaurantes viejos
+    let esFormatoNuevo = grupo.categorias ? true : false;
+
+    if(esFormatoNuevo){
+      lista.push({
+        id: topKey,
+        categoriaOriginal: topKey,
+        categoria: (extra.categoria || topKey).toLowerCase(),
+        nombre: nombreRest,
+        Nombre: nombreRest,
+        abierto: abiertoVal,
+        estado: abiertoVal ? 'abierto' : 'cerrado',
+        likesReal: extra.likes || 0,
+        logoFinal: logoVal,
+        tiempoEntrega: extra.tiempoEntrega || '20-30 min',
+        costoEnvio: extra.costoEnvio || '35',
+        distancia: extra.distancia || '180 m',
+        rating: extra.rating || '4.8',
+        rawData: grupo
+      });
+    } else {
+      // formato viejo alitas/alitas_factory
       Object.keys(grupo).forEach(key=>{
         const r=grupo[key];
         if(r && (r.nombre || r.Nombre || r.correo)){
           r.id=key; 
-          if(!r.categoria && !r.Categoria) r.categoria=topKey;
+          r.categoriaOriginal = topKey;
           r.categoria = getCampo(r,'categoria','Categoria') || topKey;
           r.nombre = getCampo(r,'nombre','Nombre') || key;
-          if(r.abierto === undefined && r.Abierto === undefined && r.estado === undefined && r.Estado === undefined) r.abierto = true;
-          else { const est = getCampo(r,'abierto','Abierto','estado','Estado'); if(typeof est === 'boolean') r.abierto = est; else if(typeof est === 'string') r.abierto = est === 'true' || est === 'abierto'; else r.abierto = true; }
+          let ab = true;
+          const est = getCampo(r,'abierto','Abierto','estado','Estado');
+          if(est!=='' ) { if(typeof est === 'boolean') ab = est; else if(typeof est === 'string') ab = est === 'true' || est === 'abierto' || est === 'activo'; }
+          r.abierto = ab;
           r.likesReal = getCampo(r,'Likes','likes') || 0;
           let logoRaw = getCampo(r,'Logo','logo','imagen','logoUrl','foto');
           if(!logoRaw) logoRaw = 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop';
           r.logoFinal = logoRaw;
-          r.categoriaOriginal = topKey;
           lista.push(r); 
         }
       });
@@ -215,25 +220,25 @@ function aplanarDatos(dataPorCategoria){
 function renderAliados(filtroCat="todos", busqueda=""){
   let f=[...aliadosData];
   f.sort((a,b)=>{ if(a.abierto === b.abierto) return 0; return a.abierto ? -1 : 1; });
-  if(filtroCat!=="todos") f=f.filter(a=> (a.categoria||'').toLowerCase() === filtroCat.toLowerCase() || (a.categoriaOriginal||'').toLowerCase() === filtroCat.toLowerCase());
+  if(filtroCat!=="todos") f=f.filter(a=> (a.categoria||'').toLowerCase() === filtroCat.toLowerCase() || (a.categoriaOriginal||'').toLowerCase() === filtroCat.toLowerCase() || a.nombre.toLowerCase().includes(filtroCat));
   if(busqueda) f=f.filter(a=>a.nombre.toLowerCase().includes(busqueda.toLowerCase()));
   listaEl.innerHTML="";
   if(f.length===0){
-    listaEl.innerHTML = '<p style="padding:20px;color:#888">No hay restaurantes aún. Crea el restaurante santillos.</p>';
+    listaEl.innerHTML = '<p style="padding:20px;color:#888">No hay restaurantes. Verifica Firebase.</p>';
     return;
   }
   f.forEach(a=>{
     const abierto = a.abierto === true;
     const badgeHtml = abierto ? `<div class="badge badge-open"><div class="dot"></div>Abierto</div>` : `<div class="badge badge-closed"><div class="dot closed"></div>Cerrado</div>`;
-    const onclickAttr = abierto ? `onclick="ir('${a.categoriaOriginal||a.categoria}','${a.id}')"` : ``;
-    const likesMostrar = a.likesReal;
-    const logoSrc = a.logoFinal || 'https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop';
+    // CORREGIDO: para tu formato nuevo, cat = id real (santillos), id = id real (santillos)
+    const onclickAttr = `onclick="ir('${a.categoriaOriginal}','${a.id}')"`;
+    const logoSrc = a.logoFinal;
     listaEl.innerHTML+=`
     <div class="rest-card ${!abierto ? 'cerrado' : ''}" ${onclickAttr}>
       <img class="rest-logo" src="${logoSrc}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1527477396000-e27163b489c2?w=200&h=200&fit=crop'">
       <div class="rest-info">
         <div class="rest-top"><div class="rest-name">${a.nombre}</div>${badgeHtml}</div>
-        <div class="rating"><svg class="i" viewBox="0 0 24 24" fill="#FFB800"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> ${getCampo(a,'rating','Rating')||'4.7'} <span style="color:#777">(${likesMostrar})</span></div>
+        <div class="rating"><svg class="i" viewBox="0 0 24 24" fill="#FFB800"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> ${getCampo(a,'rating','Rating')||'4.7'} <span style="color:#777">(${a.likesReal||0})</span></div>
         <div class="tags"><div class="tag">${a.categoria}</div>${!abierto ? '<div class="tag" style="background:#fee2e2;color:#991b1b">No recibe pedidos</div>' : ''}</div>
         <div class="rest-bottom">
           <svg class="moto" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M19 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M8 17h5l2-5h3.5"/><path d="M13 12l2-3h2"/></svg> ${getCampo(a,'tiempoEntrega','TiempoEntrega')||'20-30 min'}
@@ -247,8 +252,9 @@ function renderAliados(filtroCat="todos", busqueda=""){
 }
 
 window.ir=(cat,id)=>{
-  // CORRECCION ENLACE AL PANEL: ahora cat es el id real del restaurante (santillos)
+  // ENLAZADO AL PANEL REAL: guardamos el id del restaurante (santillos)
   localStorage.setItem('doloya_aliadoSeleccionado', JSON.stringify({cat,id}));
+  // para tu aliado.html nuevo que lee de doloya_aliados/santillos/categorias
   location.href=`aliado.html?cat=${cat}&id=${id}`;
 }
 
@@ -256,7 +262,6 @@ onValue(ref(db,'doloya_aliados'), snap=>{
   const v=snap.val();
   if(v){
     aliadosData=aplanarDatos(v);
-    console.log('Restaurantes encontrados:', aliadosData);
     renderAliados();
   }
 });
