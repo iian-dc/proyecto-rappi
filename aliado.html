@@ -27,12 +27,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
 .logo-float .inicial{width:100%;height:100%;background:#6B0F2A;color:white;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:30px}
 .nombre-wrap{margin-top:14px;text-align:center;padding:0 16px;display:flex;justify-content:center;flex-direction:column;align-items:center}
 .nombre-wrap h1{font-size:28px;font-weight:900;letter-spacing:-0.5px;text-align:center}
-.info-centro{margin-top:10px;display:flex;justify-content:center;align-items:flex-start;gap:28px;width:100%;padding:0 16px}
-.info-col{display:flex;flex-direction:column;align-items:center;gap:2px}
-.info-label{font-size:11.5px;color:#9AA0A6;font-weight:600;display:flex;align-items:center;gap:4px}
-.info-label svg{width:14px;height:14px;fill:#9AA0A6}
-.info-value{font-size:12.5px;font-weight:800;color:#111;display:flex;align-items:center;gap:4px}
-.info-value .total-likes{font-weight:500;color:#6B7280;font-size:12px}
 .tabs{margin-top:18px;padding:0 16px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;justify-content:flex-start}
 .tabs::-webkit-scrollbar{display:none}
 .tab{padding:10px 18px;border-radius:999px;border:1.5px solid #E5E7EB;background:white;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0}
@@ -78,7 +72,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
 .btn-conservar{flex:1;padding:16px;border-radius:999px;border:1.5px solid #E5E7EB;background:white;font-size:15px;font-weight:800;cursor:pointer}
 .btn-eliminar{flex:1;padding:16px;border-radius:999px;border:none;background:#E30613;color:white;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(227,6,19,0.3)}
 .loading{text-align:center;padding:40px;color:#999}
-/* SOLO AGREGADO PARA CIERRE */
 #overlayCerrado{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999999;display:none;align-items:center;justify-content:center;padding:24px}
 #overlayCerrado.show{display:flex}
 .card-cerrado{background:white;border-radius:22px;padding:26px 22px;text-align:center;max-width:340px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,0.35);animation:popCerrado 0.3s ease}
@@ -102,11 +95,6 @@ body.bloqueado .btn-add, body.bloqueado .qty-btn{pointer-events:none !important;
   </div>
   <div class="nombre-wrap">
     <h1 id="txtNombre">Pizzería Nonna Mia</h1>
-    <div class="info-centro">
-      <div class="info-col"><div class="info-label">Entrega <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg></div><div class="info-value" id="txtEntrega">12 min</div></div>
-      <div class="info-col"><div class="info-label">Envío <svg viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="1.8"><path d="M5 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M19 16a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M8 17h5l2-5h3.5"/><path d="M13 12l2-3h2"/></svg></div><div class="info-value" id="txtEnvio">$10.00</div></div>
-      <div class="info-col"><div class="info-label">Calificación <svg viewBox="0 0 24 24" fill="#FF2D55"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div><div class="info-value"><span id="txtCalificacion">3.9</span><span class="total-likes" id="txtTotalLikes">(0)</span></div></div>
-    </div>
   </div>
   <div class="tabs" id="tabs"></div>
   <div class="menu-title">Menú</div>
@@ -130,7 +118,6 @@ body.bloqueado .btn-add, body.bloqueado .qty-btn{pointer-events:none !important;
     </div>
   </div>
 </div>
-<!-- SOLO AGREGADO PARA CIERRE -->
 <div id="overlayCerrado">
   <div class="card-cerrado">
     <h2>Lo sentimos</h2>
@@ -172,7 +159,6 @@ let productosGlobal = [];
 let categoriasConfig = [];
 let mapaCategorias = {};
 const TIEMPO_EXPIRACION = 3 * 60 * 60 * 1000;
-// SOLO AGREGADO PARA CIERRE
 let restauranteCerrado = false;
 let overlayCerradoMostrado = false;
 function mostrarTarjetaCerrado(){
@@ -457,7 +443,6 @@ if(!cat || !id){ document.getElementById('loading').textContent='Restaurante no 
 else {
   obtenerIPyGPS();
   renderBarraCarritoSolo();
-
   function extraerInfoCompleta(data){
     let info = {};
     if(data.perfil){
@@ -496,7 +481,6 @@ else {
     }
     return info;
   }
-
   function parsearProductos(data){
     let productos = [];
     let cats = [];
@@ -578,15 +562,12 @@ else {
     productos.sort((a,b)=> (a.ordenCategoria||99) - (b.ordenCategoria||99));
     return {productos, cats};
   }
-
   function estaAbiertoDesdeDisponibilidad(data){
     let val = null;
     if(data.categorias && data.categorias.disponibilidad) val = data.categorias.disponibilidad;
     else if(data.categorias && data.categorias.categorias.disponibilidad) val = data.categorias.categorias.disponibilidad;
     else if(data.disponibilidad) val = data.disponibilidad;
-
     if(val===null || val===undefined) return true;
-
     if(typeof val === 'boolean') return val;
     if(typeof val === 'string') return val==='true' || val==='abierto' || val==='activo';
     if(typeof val === 'object'){
@@ -599,7 +580,6 @@ else {
     }
     return true;
   }
-
   function cargarDesdeData(data){
     if(!data) return;
     let parsed = parsearProductos(data);
@@ -607,14 +587,12 @@ else {
     document.getElementById('loading').style.display='none';
     document.getElementById('contenido').style.display='block';
     let extraInfo = extraerInfoCompleta(data);
-
     let portadaFirebase = null;
     if(data.perfil && data.perfil.imagenPortada) portadaFirebase = data.perfil.imagenPortada;
     else if(data.info && data.info.imagenPortada) portadaFirebase = data.info.imagenPortada;
     else if(data.imagenPortada) portadaFirebase = data.imagenPortada;
     else if(data.portada) portadaFirebase = data.portada;
     else portadaFirebase = extraInfo.portada;
-
     let imgPortadaEl = document.getElementById('imgPortada');
     if(portadaFirebase && typeof portadaFirebase === 'string' && portadaFirebase.trim() !== '' && portadaFirebase.trim() !== '""'){
       imgPortadaEl.src = portadaFirebase;
@@ -623,7 +601,6 @@ else {
       imgPortadaEl.removeAttribute('src');
       imgPortadaEl.style.display = 'none';
     }
-    
     if(extraInfo.logo){
       document.getElementById('imgLogo').src = extraInfo.logo;
       document.getElementById('imgLogo').style.display='block';
@@ -635,12 +612,6 @@ else {
     }
     nombreRestauranteGlobal = extraInfo.nombre;
     document.getElementById('txtNombre').textContent = nombreRestauranteGlobal;
-    document.getElementById('txtEntrega').textContent = extraInfo.tiempoEntrega || data.tiempoEntrega || '12 min';
-    document.getElementById('txtEnvio').textContent = `$${extraInfo.costoEnvio || data.costoEnvio || '10.00'}`;
-    let likes = extraInfo.likes || extraInfo.calificacion || data.likes || data.perfil?.calificacion || 0;
-    document.getElementById('txtCalificacion').textContent = calcularValoracion(likes);
-    document.getElementById('txtTotalLikes').textContent = `(${likes})`;
-    
     let disponible = estaAbiertoDesdeDisponibilidad(data);
     let badgeEl = document.getElementById('badgeAbierto');
     let txtAbiertoEl = document.getElementById('txtAbierto');
@@ -653,7 +624,6 @@ else {
       badgeEl.classList.add('cerrado');
       mostrarTarjetaCerrado();
     }
-
     let rawCats = data.categorias || {};
     if(parsed.cats.length>0){
       categoriasConfig = parsed.cats.map(o=>({
@@ -704,20 +674,17 @@ else {
     }
     renderBarraCarritoSolo();
   }
-
   onValue(ref(db, `doloya_aliados/${id}`), snap=>{
     let data = snap.val();
     if(data){
       cargarDesdeData(data);
     }
   });
-
   onValue(ref(db, `doloya_aliados/${cat}/${id}`), snap=>{
     const data = snap.val();
     if(!data) return;
     cargarDesdeData(data);
   });
-
   onValue(ref(db, `doloya_aliados/${id}/categorias/disponibilidad`), snap=>{
     let val = snap.val();
     if(val===null) return;
@@ -738,7 +705,6 @@ else {
       mostrarTarjetaCerrado();
     }
   });
-
   onValue(ref(db, `doloya_aliados/${id}/disponibilidad`), snap=>{
     let val = snap.val();
     if(val===null) return;
