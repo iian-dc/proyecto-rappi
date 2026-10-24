@@ -18,7 +18,9 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
 .btn-heart.liked{background:#FFE4E6;border:1px solid #FF2D55}
 .btn-heart.liked svg{fill:#FF2D55;stroke:#FF2D55}
 .badge-abierto{background:rgba(0,0,0,0.65);border:1.5px solid #00FF6A;color:white;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px;backdrop-filter:blur(6px);box-shadow:0 0 14px rgba(0,255,106,0.5);animation:zoomActivo 1.8s ease-in-out infinite}
+.badge-abierto.cerrado{border-color:#FF3B30;box-shadow:0 0 14px rgba(255,59,48,0.5)}
 .badge-abierto .dot-green{width:10px;height:10px;background:#00FF6A;border-radius:50%;box-shadow:0 0 8px #00FF6A}
+.badge-abierto.cerrado .dot-green{background:#FF3B30;box-shadow:0 0 8px #FF3B30}
 @keyframes zoomActivo{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
 .logo-float{position:absolute;top:50%;left:50%;transform:translate(-50%,-30%);width:115px;height:115px;border-radius:50%;background:white;border:4px solid white;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,0.28);z-index:4;display:flex;align-items:center;justify-content:center}
 .logo-float img{width:100%;height:100%;object-fit:cover}
@@ -82,10 +84,10 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
 <div id="loading" class="loading">Cargando restaurante...</div>
 <div id="contenido" style="display:none">
   <div class="portada-wrap">
-    <img id="imgPortada" src="">
+    <img id="imgPortada" src="" style="display:none">
     <div class="portada-fade"></div>
     <div class="top-bar"><button class="btn-back" onclick="irAlInicio()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button></div>
-    <div class="top-right"><div class="badge-abierto"><div class="dot-green"></div><span id="txtAbierto">ABIERTO</span></div><button class="btn-heart" id="btnLike"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button></div>
+    <div class="top-right"><div class="badge-abierto" id="badgeAbierto"><div class="dot-green" id="dotAbierto"></div><span id="txtAbierto">ABIERTO</span></div><button class="btn-heart" id="btnLike"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button></div>
     <div class="logo-float"><img id="imgLogo" src="" style="display:none"><div id="logoInicial" class="inicial">S</div></div>
   </div>
   <div class="nombre-wrap">
@@ -192,7 +194,6 @@ async function toggleLike(){
   const likeRef = ref(db, `doloya_likes/${cat}_${id}/${ipKey}`);
   const countRef = ref(db, `doloya_aliados/${cat}/${id}/likes`);
   const countRef2 = ref(db, `doloya_aliados/${id}/likes`);
-  const countRef3 = ref(db, `doloya_aliados/${id}/perfil/calificacion`);
   const snap = await get(likeRef);
   const btn = document.getElementById('btnLike');
   if(snap.exists()){
@@ -413,11 +414,8 @@ if(!cat || !id){ document.getElementById('loading').textContent='Restaurante no 
 else {
   obtenerIPyGPS();
   renderBarraCarritoSolo();
-
-  // UNIFICADO A TU FIREBASE REAL: santillos/perfil/imagenPerfil y imagenPortada
   function extraerInfoCompleta(data){
     let info = {};
-    // Prioridad 1: perfil (donde tienes imagenPerfil base64)
     if(data.perfil){
       if(data.perfil.imagenPerfil) info.logo = data.perfil.imagenPerfil;
       if(data.perfil.imagenPortada) info.portada = data.perfil.imagenPortada;
@@ -425,7 +423,6 @@ else {
       if(data.perfil.nombre) info.nombre = data.perfil.nombre;
       if(data.perfil.nombreRestaurante) info.nombre = data.perfil.nombreRestaurante;
     }
-    // Prioridad 2: info
     if(data.info){
       if(data.info.nombre && !data.info.correo) info.nombre = data.info.nombre;
       if(data.info.nombreRestaurante) info.nombre = data.info.nombreRestaurante;
@@ -436,7 +433,6 @@ else {
       if(data.info.categoria) info.categoria = data.info.categoria;
       if(data.info.subcategoria) info.categoria = data.info.subcategoria;
     }
-    // Prioridad 3: raiz
     if(data.nombre && !data.nombre.toLowerCase().includes('mampana')) info.nombre = data.nombre;
     if(data.Nombre && !data.Nombre.toLowerCase().includes('mampana')) info.nombre = data.Nombre;
     if(data.logo) info.logo = data.logo;
@@ -445,28 +441,23 @@ else {
     if(data.imagenPortada) info.portada = data.imagenPortada;
     if(data.subcategoria) info.categoria = data.subcategoria;
     if(data.categoria) info.categoria = data.categoria;
+    if(data.disponibilidad!==undefined) info.disponibilidad = data.disponibilidad;
     if(data.abierto!==undefined) info.abierto = data.abierto;
-    if(data.disponibilidad!==undefined) info.abierto = data.disponibilidad;
     if(data.estado!==undefined) info.estado = data.estado;
     if(data.likes!==undefined) info.likes = data.likes;
     if(data.tiempoEntrega) info.tiempoEntrega = data.tiempoEntrega;
     if(data.costoEnvio) info.costoEnvio = data.costoEnvio;
-
-    // _info: Burger
     if(data.categorias && typeof data.categorias === 'object' && data.categorias._info){
       if(!info.categoria) info.categoria = data.categorias._info;
     }
-    if(data.categorias && data.categorias.categorias && data.categorias.categorias._info){
+    if(data.categorias && data.categorias.categorias._info){
       if(!info.categoria) info.categoria = data.categorias.categorias._info;
     }
-
-    // Fallback nombre: usa id capitalizado, nunca la mampana
     if(!info.nombre || info.nombre.toLowerCase().includes('mampana')){
       info.nombre = id ? id.charAt(0).toUpperCase() + id.slice(1) : 'Santillos';
     }
     return info;
   }
-
   function parsearProductos(data){
     let productos = [];
     let cats = [];
@@ -503,7 +494,6 @@ else {
         if(catKey.startsWith('_')) return;
         let catObj = rootCat[catKey];
         if(!catObj || typeof catObj !== 'object') return;
-        // Evita que tome info, perfil como categoria
         if(catKey==='info' || catKey==='perfil' || catKey==='disponibilidad') return;
         let catNombre = catObj.nombre || catKey;
         let catLower = (catObj.nombreLower || catKey).toLowerCase();
@@ -515,11 +505,10 @@ else {
           orden: catObj.orden ?? 99
         });
         Object.keys(catObj).forEach(prodKey=>{
-          if(['activa','fecha','key','nombre','nombreLower','orden','info','perfil','subcategorias','disponibilidad','categoria','categoriaNombre','disponibilidad'].includes(prodKey)) return;
+          if(['activa','fecha','key','nombre','nombreLower','orden','info','perfil','subcategorias','disponibilidad','categoria','categoriaNombre'].includes(prodKey)) return;
           let prod = catObj[prodKey];
           if(!prod || typeof prod !== 'object') return;
           if(prod.nombre && (prod.precio!==undefined || prod.imagen || prod.descripcion)){
-            // Evita que confunda info del restaurante con producto
             if(prod.correo) return;
             const desc = parseFloat(prod.descuento||prod.porcentaje||0);
             const precioOriginal = parseFloat(prod.precio||0);
@@ -550,21 +539,29 @@ else {
     productos.sort((a,b)=> (a.ordenCategoria||99) - (b.ordenCategoria||99));
     return {productos, cats};
   }
-
   function cargarDesdeData(data){
     if(!data) return;
     let parsed = parsearProductos(data);
     if(parsed.productos.length===0 && productosGlobal.length>0 && !data.perfil) return;
-
     document.getElementById('loading').style.display='none';
     document.getElementById('contenido').style.display='block';
-
     let extraInfo = extraerInfoCompleta(data);
-    
-    let portadaSrc = extraInfo.portada || data.portada || extraInfo.logo || '';
-    if(portadaSrc){
-      document.getElementById('imgPortada').src = portadaSrc;
-      document.getElementById('imgPortada').style.display='block';
+
+    // CORRECCION 1: PORTADA SOLO SI EXISTE EN FIREBASE, SI ESTA VACIO NO COLOCA NADA
+    let portadaFirebase = null;
+    if(data.perfil && data.perfil.imagenPortada) portadaFirebase = data.perfil.imagenPortada;
+    else if(data.info && data.info.imagenPortada) portadaFirebase = data.info.imagenPortada;
+    else if(data.imagenPortada) portadaFirebase = data.imagenPortada;
+    else if(data.portada) portadaFirebase = data.portada;
+    else portadaFirebase = extraInfo.portada;
+
+    let imgPortadaEl = document.getElementById('imgPortada');
+    if(portadaFirebase && typeof portadaFirebase === 'string' && portadaFirebase.trim() !== '' && portadaFirebase.trim() !== '""'){
+      imgPortadaEl.src = portadaFirebase;
+      imgPortadaEl.style.display = 'block';
+    } else {
+      imgPortadaEl.removeAttribute('src');
+      imgPortadaEl.style.display = 'none';
     }
     
     if(extraInfo.logo){
@@ -576,22 +573,37 @@ else {
       document.getElementById('logoInicial').style.display='flex';
       document.getElementById('imgLogo').style.display='none';
     }
-
     nombreRestauranteGlobal = extraInfo.nombre;
     document.getElementById('txtNombre').textContent = nombreRestauranteGlobal;
     document.getElementById('txtEntrega').textContent = extraInfo.tiempoEntrega || data.tiempoEntrega || '12 min';
     document.getElementById('txtEnvio').textContent = `$${extraInfo.costoEnvio || data.costoEnvio || '10.00'}`;
-    
     let likes = extraInfo.likes || extraInfo.calificacion || data.likes || data.perfil?.calificacion || 0;
     document.getElementById('txtCalificacion').textContent = calcularValoracion(likes);
     document.getElementById('txtTotalLikes').textContent = `(${likes})`;
     
-    let abierto = true;
-    if(extraInfo.abierto!==undefined) abierto = extraInfo.abierto===true || extraInfo.abierto==='true' || extraInfo.abierto==='abierto' || extraInfo.abierto==='activo';
-    else if(extraInfo.estado!==undefined) abierto = extraInfo.estado==='abierto' || extraInfo.estado==='activo';
-    else if(data.abierto!==undefined) abierto = data.abierto;
-    else if(data.disponibilidad!==undefined) abierto = data.disponibilidad===true || data.disponibilidad==='true';
-    document.getElementById('txtAbierto').textContent = abierto ? 'ABIERTO' : 'CERRADO';
+    // CORRECCION 2: DISPONIBILIDAD ENLAZADA A FIREBASE EN TIEMPO REAL
+    let disponible = true;
+    if(data.disponibilidad !== undefined){
+      disponible = data.disponibilidad === true || data.disponibilidad === 'true' || data.disponibilidad === 'abierto' || data.disponibilidad === 'disponible';
+    } else if(extraInfo.disponibilidad !== undefined){
+      disponible = extraInfo.disponibilidad === true || extraInfo.disponibilidad === 'true' || extraInfo.disponibilidad === 'abierto';
+    } else if(extraInfo.abierto !== undefined){
+      disponible = extraInfo.abierto===true || extraInfo.abierto==='true' || extraInfo.abierto==='abierto' || extraInfo.abierto==='activo';
+    } else if(extraInfo.estado !== undefined){
+      disponible = extraInfo.estado==='abierto' || extraInfo.estado==='activo';
+    } else if(data.abierto !== undefined){
+      disponible = data.abierto===true || data.abierto==='true';
+    }
+
+    let badgeEl = document.getElementById('badgeAbierto');
+    let txtAbiertoEl = document.getElementById('txtAbierto');
+    if(disponible){
+      txtAbiertoEl.textContent = 'ABIERTO';
+      badgeEl.classList.remove('cerrado');
+    } else {
+      txtAbiertoEl.textContent = 'CERRADO';
+      badgeEl.classList.add('cerrado');
+    }
 
     let rawCats = data.categorias || {};
     if(parsed.cats.length>0){
@@ -614,11 +626,9 @@ else {
     categoriasConfig.sort((a,b)=>a.orden-b.orden);
     mapaCategorias={};
     categoriasConfig.forEach(c=>{ mapaCategorias[c.nombreLower]=c; });
-
     if(parsed.productos.length>0){
       productosGlobal = parsed.productos;
     }
-
     let tabsList = [];
     if(categoriasConfig.length>0){
       tabsList = ['todos', ...categoriasConfig.filter(c=>c.activa!==false).map(c=>c.nombreLower)];
@@ -626,7 +636,6 @@ else {
       const categoriasConProductos = [...new Set(productosGlobal.map(m=>m.categoria))].filter(Boolean);
       tabsList = ['todos', ...categoriasConProductos];
     }
-
     const tabsEl=document.getElementById('tabs');
     const currentActive = categoriaSeleccionada;
     tabsEl.innerHTML='';
@@ -638,7 +647,6 @@ else {
       btn.onclick=()=>{ filtrarProductos(c); };
       tabsEl.appendChild(btn);
     });
-
     if(categoriaSeleccionada==='todos'){
       renderProductos(productosGlobal);
     }else{
@@ -647,21 +655,34 @@ else {
     }
     renderBarraCarritoSolo();
   }
-
   onValue(ref(db, `doloya_aliados/${id}`), snap=>{
     let data = snap.val();
     if(data){
       cargarDesdeData(data);
     }
   });
-
   onValue(ref(db, `doloya_aliados/${cat}/${id}`), snap=>{
     const data = snap.val();
     if(!data) return;
     cargarDesdeData(data);
   });
+  // Escucha directa a disponibilidad para tiempo real
+  onValue(ref(db, `doloya_aliados/${id}/disponibilidad`), snap=>{
+    let val = snap.val();
+    if(val===null) return;
+    let disponible = val===true || val==='true' || val==='abierto' || val==='disponible';
+    let badgeEl = document.getElementById('badgeAbierto');
+    let txtAbiertoEl = document.getElementById('txtAbierto');
+    if(!badgeEl || !txtAbiertoEl) return;
+    if(disponible){
+      txtAbiertoEl.textContent = 'ABIERTO';
+      badgeEl.classList.remove('cerrado');
+    } else {
+      txtAbiertoEl.textContent = 'CERRADO';
+      badgeEl.classList.add('cerrado');
+    }
+  });
 }
-
 window.handleAdd=(nombre, precio, imagen)=>{ addProducto(nombre, precio, imagen); }
 window.handleRestar=(nombre)=>{ restarProducto(nombre); }
 document.getElementById('btnVerCarrito').onclick = async ()=>{
