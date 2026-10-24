@@ -334,15 +334,16 @@ function verificarCambioRestaurante(){
   }
   return false;
 }
-function addProducto(nombre, precio, imagen){
+// SOLO MODIFICADO PARA GUARDAR DESCRIPCION
+function addProducto(nombre, precio, imagen, descripcion){
   if(restauranteCerrado){ mostrarTarjetaCerrado(); return; }
   if(verificarCambioRestaurante()){
-    productoPendiente = {nombre, precio, imagen};
+    productoPendiente = {nombre, precio, imagen, descripcion};
     return;
   }
   const existe = carrito.find(p=>p.nombre===nombre);
-  if(existe){ existe.cantidad++; }
-  else{ carrito.push({nombre, precio, imagen, cantidad:1}); }
+  if(existe){ existe.cantidad++; if(descripcion) existe.descripcion = descripcion; }
+  else{ carrito.push({nombre, precio, imagen, descripcion: descripcion||'', cantidad:1}); }
   guardarCarrito();
 }
 function restarProducto(nombre){
@@ -407,6 +408,7 @@ function renderProductos(lista){
       htmlPrecio = `$${fmtPrecio(p.precio)}`;
     }
     const badgePromo = p.promo ? `<div class="badge-promo-prod">${p.promo}</div>` : '';
+    const descSafe = (p.descripcion||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
     cont.innerHTML+=`
     <div class="prod-card" data-nombre="${p.nombre.replace(/"/g,'&quot;')}">
       ${badgePromo}
@@ -416,11 +418,11 @@ function renderProductos(lista){
         ${p.descripcion?`<div class="prod-desc">${p.descripcion}</div>`:''}
         <div class="prod-price">${htmlPrecio}</div>
       </div>
-      <button class="btn-add" style="${cant>0?'display:none':'display:flex'}" onclick="handleAdd('${p.nombre.replace(/'/g,"\\'")}', ${p.precio}, '${p.imagenFinal}')">+</button>
+      <button class="btn-add" style="${cant>0?'display:none':'display:flex'}" onclick="handleAdd('${p.nombre.replace(/'/g,"\\'")}', ${p.precio}, '${p.imagenFinal}', '${descSafe}')">+</button>
       <div class="qty-controls" style="${cant>0?'display:flex':'display:none'}">
         <button class="qty-btn" onclick="handleRestar('${p.nombre.replace(/'/g,"\\'")}')">−</button>
         <span class="qty-num">${cant}</span>
-        <button class="qty-btn mas" onclick="handleAdd('${p.nombre.replace(/'/g,"\\'")}', ${p.precio}, '${p.imagenFinal}')">+</button>
+        <button class="qty-btn mas" onclick="handleAdd('${p.nombre.replace(/'/g,"\\'")}', ${p.precio}, '${p.imagenFinal}', '${descSafe}')">+</button>
       </div>
     </div>`;
   });
@@ -725,7 +727,7 @@ else {
     }
   });
 }
-window.handleAdd=(nombre, precio, imagen)=>{ addProducto(nombre, precio, imagen); }
+window.handleAdd=(nombre, precio, imagen, descripcion)=>{ addProducto(nombre, precio, imagen, descripcion); }
 window.handleRestar=(nombre)=>{ restarProducto(nombre); }
 document.getElementById('btnVerCarrito').onclick = async ()=>{
   if(restauranteCerrado){ mostrarTarjetaCerrado(); return; }
@@ -764,7 +766,7 @@ document.getElementById('btnEliminar').onclick=async ()=>{
   renderBarraCarritoSolo();
   if(productoPendiente){
     setTimeout(()=>{
-      addProducto(productoPendiente.nombre, productoPendiente.precio, productoPendiente.imagen);
+      addProducto(productoPendiente.nombre, productoPendiente.precio, productoPendiente.imagen, productoPendiente.descripcion);
       productoPendiente = null;
       btn.textContent = 'Sí, eliminar';
     }, 300);
