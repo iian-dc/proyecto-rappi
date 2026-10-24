@@ -37,6 +37,10 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:140px}
 .btn-siguiente{flex:1;padding:16px;border-radius:999px;border:none;background:#E30613;color:white;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(227,6,19,0.25)}
 .vacio{text-align:center;padding:80px 20px;color:#9AA0A6}
 .vacio b{color:#111;font-size:18px;display:block;margin-bottom:6px}
+.envio-detalle{padding:12px 16px;margin:10px 16px;background:#F8FAFC;border:1.5px solid #E5E7EB;border-radius:14px}
+.envio-detalle b{font-size:12px}
+.envio-detalle .row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
+.envio-detalle .total{font-weight:800;font-size:13px;border-top:1px dashed #E5E7EB;margin-top:6px;padding-top:8px}
 </style>
 </head>
 <body>
@@ -46,13 +50,14 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:140px}
   <button class="btn-vaciar-top" onclick="vaciarTodo()">Vaciar</button>
 </div>
 <div id="contenido"></div>
+<div id="envioDetalle" style="display:none"></div>
 <div class="footer" id="footer" style="display:none">
   <button class="btn-vaciar-canasta" onclick="vaciarTodo()">Vaciar canasta</button>
   <button class="btn-siguiente" onclick="irSiguiente()">Siguiente</button>
 </div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 const firebaseConfig = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
   authDomain: "doloya-aliados.firebaseapp.com",
@@ -71,9 +76,18 @@ let productosAbiertos = true;
 let logoRestaurante = dataRest?.logo || null;
 const TIEMPO_EXPIRACION = 3 * 60 * 60 * 1000;
 
-const TARIFA_BASE_KM = 30;
-const PRECIO_POR_KM = 4;
+// === TARIFA GLOBAL VINCULADA A TU ADMIN $22 + $4/km ===
+let tarifaGlobal = {base: 22, precio_km: 4};
 const TARIFA_SERVICIO_PORC = 0.03;
+
+onValue(ref(db, 'config_global/tarifa_default'), snap=>{
+  const v = snap.val();
+  if(v){
+    if(v.base !== undefined) tarifaGlobal.base = parseFloat(v.base);
+    if(v.precio_km !== undefined) tarifaGlobal.precio_km = parseFloat(v.precio_km);
+    render();
+  }
+});
 
 async function obtenerIP(){
   try{
@@ -85,7 +99,6 @@ async function obtenerIP(){
   }
 }
 
-// CORREGIDO: AHORA SI SACA EL LOGO REAL
 async function obtenerLogo(){
   if(logoRestaurante){ render(); enriquecerDescripciones(); return; }
   if(dataRest?.cat && dataRest?.id){
@@ -114,6 +127,7 @@ async function obtenerLogo(){
         if(data.lng) dataRest.lng = data.lng;
         if(data.ubicacion?.lat) dataRest.lat = data.ubicacion.lat;
         if(data.ubicacion?.lng) dataRest.lng = data.ubicacion.lng;
+        if(data.info?.ubicacion?.lat){ dataRest.lat = data.info.ubicacion.lat; dataRest.lng = data.info.ubicacion.lng; }
       }
     }catch(e){}
   }
@@ -121,7 +135,6 @@ async function obtenerLogo(){
   enriquecerDescripciones();
 }
 
-// NUEVO: BUSCA DESCRIPCION REAL SI EL CARRITO NO LA TRAE
 async function enriquecerDescripciones(){
   if(!dataRest?.id) return;
   let necesitaUpdate = false;
@@ -173,15 +186,36 @@ function buscarDescripcionEnData(root, nombreBuscar){
 function render(){
   const cont = document.getElementById('contenido');
   const foot = document.getElementById('footer');
+  const envioDiv = document.getElementById('envioDetalle');
   if(carrito.length===0){
     cont.innerHTML = `<div class="vacio"><b>Tu canasta está vacía</b>Agrega productos de un restaurante</div>`;
     foot.style.display='none';
+    if(envioDiv) envioDiv.style.display='none';
     return;
   }
   foot.style.display='flex';
+  
   const totalCant = carrito.reduce((s,i)=>s+i.cantidad,0);
   const nombreRest = dataRest?.nombre || 'Restaurante';
   const inicial = nombreRest.charAt(0).toUpperCase();
+
+  // Usar envio ya calculado de inicio/aliado si existe
+  const envioGuardado = JSON.parse(localStorage.getItem('doloya_envio_actual')||'null');
+  let distanciaKm = envioGuardado ? parseFloat(envioGuardado.distanciaKm)||0.3 : 0.3;
+  let costoEnvio = envioGuardado ? parseFloat(envioGuardado.costo)||tarifaGlobal.base : tarifaGlobal.base;
+  // Si no hay envio guardado, recalcula con tarifa global y distancia guardada de carrito
+  const distGuardada = parseFloat(localStorage.getItem('doloya_distancia_km')||'0');
+  if(distanciaKm < 0.1 && distGuardada > 0){ 
+    distanciaKm = distGuardada;
+    costoEnvio = tarifaGlobal.base + (distanciaKm * tarifaGlobal.precio_km);
+  } else if(distanciaKm < 0.1){
+    costoEnvio = tarifaGlobal.base + (distanciaKm * tarifaGlobal.precio_km);
+  }
+
+  const costoProductos = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
+  const tarifaServicio = costoProductos * TARIFA_SERVICIO_PORC;
+  const totalFinal = costoProductos + costoEnvio + tarifaServicio;
+
   cont.innerHTML = `
     <div class="restaurante-box">
       <div class="restaurante-left">
@@ -215,6 +249,19 @@ function render(){
       `}).join('')}
     </div>
   `;
+
+  if(envioDiv){
+    envioDiv.innerHTML = `
+      <div class="envio-detalle">
+        <div class="row"><span>Productos (${totalCant})</span><b>$${costoProductos.toFixed(2)}</b></div>
+        <div class="row"><span>Distancia</span><b>${distanciaKm.toFixed(1)} km</b></div>
+        <div class="row"><span>Envío ($${tarifaGlobal.base} + $${tarifaGlobal.precio_km}/km)</span><b>$${costoEnvio.toFixed(2)}</b></div>
+        <div class="row"><span>Servicio (3%)</span><b>$${tarifaServicio.toFixed(2)}</b></div>
+        <div class="row total"><span>Total a pagar</span><b>$${totalFinal.toFixed(2)}</b></div>
+      </div>
+    `;
+    envioDiv.style.display='block';
+  }
 }
 window.toggleProductos = ()=>{ productosAbiertos = !productosAbiertos; render(); }
 window.toggleDesc = (idx)=>{
@@ -236,6 +283,9 @@ window.vaciarTodo = async ()=>{
   localStorage.removeItem('doloya_carrito_restaurante');
   localStorage.removeItem('doloya_carrito_restaurante_data');
   localStorage.removeItem('doloya_carrito_timestamp');
+  localStorage.removeItem('doloya_distancia_km');
+  localStorage.removeItem('doloya_costo_envio');
+  localStorage.removeItem('doloya_envio_actual');
   render();
   window.location.href='inicio.html';
 }
@@ -289,8 +339,8 @@ async function calcularDistanciaKm(restLat, restLng, cliLat, cliLng){
 }
 function calcularCostos(costoProductos, distanciaKm){
   let dist = distanciaKm;
-  if(dist < 0.3) dist = 0.3;
-  const costoEnvio = TARIFA_BASE_KM + (dist * PRECIO_POR_KM);
+  if(dist < 0.1) dist = 0.1;
+  const costoEnvio = tarifaGlobal.base + (dist * tarifaGlobal.precio_km);
   const tarifaServicio = costoProductos * TARIFA_SERVICIO_PORC;
   const totalFinal = costoProductos + costoEnvio + tarifaServicio;
   return {
@@ -306,10 +356,15 @@ window.irSiguiente = async ()=>{
   const clienteUbi = obtenerUbicacionCliente();
   const restFull = await obtenerDatosRestaurante();
   const costoProductos = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
+
+  const envioGuardado = JSON.parse(localStorage.getItem('doloya_envio_actual')||'null');
   let distanciaKm = 0.3;
-  if(restFull.lat && restFull.lng && clienteUbi.lat && clienteUbi.lng){
+  if(envioGuardado && envioGuardado.distanciaKm){
+    distanciaKm = parseFloat(envioGuardado.distanciaKm);
+  } else if(restFull.lat && restFull.lng && clienteUbi.lat && clienteUbi.lng){
     distanciaKm = await calcularDistanciaKm(restFull.lat, restFull.lng, clienteUbi.lat, clienteUbi.lng);
   }
+
   const costos = calcularCostos(costoProductos, distanciaKm);
   if(dataRest && ipKey){
     const ts = localStorage.getItem('doloya_carrito_timestamp');
@@ -328,7 +383,7 @@ window.irSiguiente = async ()=>{
       costoProductos: parseFloat(costoProductos.toFixed(2)),
       distanciaKm: costos.distanciaKm,
       costoEnvio: costos.costoEnvio,
-      costoEnvioDetalle: `$${TARIFA_BASE_KM} base + $${PRECIO_POR_KM} x ${costos.distanciaKm}km`,
+      costoEnvioDetalle: `$${tarifaGlobal.base} base + $${tarifaGlobal.precio_km} x ${costos.distanciaKm}km`,
       tarifaServicio: costos.tarifaServicio,
       tarifaServicioPorcentaje: "3%",
       total: costos.totalFinal,
@@ -346,6 +401,7 @@ window.irSiguiente = async ()=>{
     localStorage.setItem('doloya_distancia_km', costos.distanciaKm);
     localStorage.setItem('doloya_costo_envio', costos.costoEnvio);
     localStorage.setItem('doloya_tarifa_servicio', costos.tarifaServicio);
+    localStorage.setItem('doloya_envio_actual', JSON.stringify({distanciaKm: costos.distanciaKm, costo: costos.costoEnvio, base: tarifaGlobal.base, precio_km: tarifaGlobal.precio_km}));
   }
   window.location.href='resumen.html';
 }
@@ -366,11 +422,14 @@ async function guardar(){
       const clienteUbi = obtenerUbicacionCliente();
       const restFull = await obtenerDatosRestaurante();
       const costoProductos = carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
-      let distanciaKm = 0.3;
-      if(restFull.lat && restFull.lng && clienteUbi.lat && clienteUbi.lng){
+      
+      const envioGuardado = JSON.parse(localStorage.getItem('doloya_envio_actual')||'null');
+      let distanciaKm = envioGuardado ? parseFloat(envioGuardado.distanciaKm) : 0.3;
+      if(distanciaKm < 0.1 && restFull.lat && restFull.lng && clienteUbi.lat && clienteUbi.lng){
         distanciaKm = await calcularDistanciaKm(restFull.lat, restFull.lng, clienteUbi.lat, clienteUbi.lng);
       }
       const costos = calcularCostos(costoProductos, distanciaKm);
+
       let dataCarrito = {
         restauranteId: restFull.id,
         restauranteCat: restFull.cat,
@@ -385,7 +444,7 @@ async function guardar(){
         costoProductos: parseFloat(costoProductos.toFixed(2)),
         distanciaKm: costos.distanciaKm,
         costoEnvio: costos.costoEnvio,
-        costoEnvioDetalle: `$${TARIFA_BASE_KM} base + $${PRECIO_POR_KM} x ${costos.distanciaKm}km`,
+        costoEnvioDetalle: `$${tarifaGlobal.base} base + $${tarifaGlobal.precio_km} x ${costos.distanciaKm}km`,
         tarifaServicio: costos.tarifaServicio,
         tarifaServicioPorcentaje: "3%",
         total: costos.totalFinal,
@@ -399,6 +458,7 @@ async function guardar(){
       }
       await set(ref(db, `carrito/${restFull.cat}/${restFull.id}/${ipKey}`), dataCarrito);
       await set(ref(db, `doloya_aliados/${restFull.cat}/${restFull.id}/carritos/${ipKey}`), dataCarrito);
+      localStorage.setItem('doloya_envio_actual', JSON.stringify({distanciaKm: costos.distanciaKm, costo: costos.costoEnvio, base: tarifaGlobal.base, precio_km: tarifaGlobal.precio_km}));
     }
   }
   render();
