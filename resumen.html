@@ -417,36 +417,71 @@ function limpiarProductosParaFirestore(arr){
     };
   }).filter(p=> p.nombre && p.precio>=0 && p.cantidad>0);
 }
+
+// === FUNCION CORREGIDA - VINCULA TODA LA INFO DEL CLIENTE ===
 async function irAPagar(){
   const nombre = document.getElementById('inputNombre').value.trim();
   if(!nombre){ alert('Por favor ingresa tu nombre completo'); return; }
   const btn = document.getElementById('btnFinalizar');
   btn.textContent = 'Finalizando...'; btn.disabled = true;
+
+  const ubiData = JSON.parse(localStorage.getItem('doloya_ubicacion')||'{}');
+  const detFull = JSON.parse(localStorage.getItem('doloya_detalles_full')||'{}');
+  const clienteId = localStorage.getItem('doloya_clienteId') || 'cli_'+Date.now();
+
   const costoReal = getCostoReal();
   let envioFinal = tipoActual==='rapido' ? costoReal + EXTRA_RAPIDO : costoReal;
   let tarifaServicio = costoProductos * TARIFA_SERVICIO_PORC;
   let totalFinal = costoProductos + envioFinal + tarifaServicio;
   localStorage.setItem('doloya_cliente_nombre', nombre);
-  const telefonoGuardado = localStorage.getItem('doloya_celular') || detallesFull?.celular || localStorage.getItem('doloya_cliente_tel') || '';
-  const direccionClienteFinal = direccionBase || detallesFull?.direccion || ubicacion?.direccion || document.getElementById('txtDireccion').textContent || '';
+
+  const telefonoGuardado = localStorage.getItem('doloya_celular') || detFull?.celular || localStorage.getItem('doloya_cliente_tel') || '';
+  const direccionClienteFinal = direccionBase || detFull?.direccion || ubiData?.direccion || ubiData?.ubicacion?.direccion || document.getElementById('txtDireccion').textContent || '';
   const productosLimpios = limpiarProductosParaFirestore(carrito);
+  
   if(productosLimpios.length===0){ alert('Carrito vacío'); btn.textContent='Finalizar pedido'; btn.disabled=false; return; }
+
   const clienteLimpio = {
+    clienteId: clienteId,
     nombre: String(nombre).substring(0,100),
     celular: String(telefonoGuardado || '').substring(0,20),
+    telefono: String(telefonoGuardado || '').substring(0,20),
     direccion: String(direccionClienteFinal).substring(0,300),
-    referencia: String(detallesRef || '').substring(0,300),
-    ubicacion: { lat: Number(lat||0), lng: Number(lng||0) }
+    referencia: String(detallesRef || detFull?.instrucciones || '').substring(0,300),
+    tipoDireccion: String(detFull?.tipoDireccion || '').substring(0,50),
+    nombreEdificio: String(detFull?.nombreEdificio || '').substring(0,100),
+    piso: String(detFull?.piso || '').substring(0,50),
+    ubicacion: { 
+      lat: Number(lat||ubiData?.ubicacion?.lat||ubiData?.lat||0), 
+      lng: Number(lng||ubiData?.ubicacion?.lng||ubiData?.lng||0),
+      accuracy: Number(ubiData?.ubicacion?.accuracy || ubiData?.accuracy || 0),
+      googleMapsUrl: ubiData?.ubicacion?.googleMapsUrl || `https://www.google.com/maps?q=${lat},${lng}`
+    },
+    gpsActualCliente: {
+      lat: Number(lat||0),
+      lng: Number(lng||0),
+      accuracy: Number(ubiData?.ubicacion?.accuracy || 0),
+      timestamp: new Date().toISOString()
+    }
   };
-  const restauranteLimpio = {
-    id: String(dataRest?.id || 'la_catrina_burger'),
-    cat: String(dataRest?.cat || 'burgers'),
-    nombre: String(dataRest?.nombre || document.getElementById('nombreRest').textContent || 'Restaurante').substring(0,100),
-    lat: Number(restLat||0), lng: Number(restLng||0)
-  };
+
   const pedidoCompleto = {
-    restaurante: restauranteLimpio,
+    restaurante: {
+      id: String(dataRest?.id || 'la_catrina_burger'),
+      cat: String(dataRest?.cat || 'burgers'),
+      nombre: String(dataRest?.nombre || document.getElementById('nombreRest').textContent || 'Restaurante').substring(0,100),
+      lat: Number(restLat||0), lng: Number(restLng||0)
+    },
     cliente: clienteLimpio,
+    ip: ubiData?.ip || ubiData?.ipInfo?.ip || '0.0.0.0',
+    ipInfo: ubiData?.ipInfo || {},
+    dispositivo: ubiData?.dispositivo || { userAgent: navigator.userAgent },
+    clienteId: clienteId,
+    ubicacionCompleta: ubiData,
+    detalles: detFull,
+    gps: { lat: Number(lat||0), lng: Number(lng||0), accuracy: Number(ubiData?.ubicacion?.accuracy||0) },
+    userAgent: navigator.userAgent,
+    plataforma: navigator.platform,
     productos: productosLimpios,
     totales: { 
       costoProductos: Number(costoProductos.toFixed(2)), 
@@ -462,10 +497,12 @@ async function irAPagar(){
     estado: 'confirmado',
     fecha: new Date().toISOString()
   };
+
   try{
     const refDoc = await window.addDoc(window.collection(window.dbConfirmacionFS, "pedidos"), pedidoCompleto);
     localStorage.setItem('doloya_pedido_confirmacion_id', refDoc.id);
     localStorage.setItem('doloya_pedido_final', JSON.stringify(pedidoCompleto));
+    
     const ipKey = await obtenerIpKey();
     const cat = dataRest?.cat || 'burgers';
     const idRest = dataRest?.id || 'la_catrina_burger';
@@ -482,6 +519,7 @@ async function irAPagar(){
     btn.textContent = 'Finalizar pedido'; btn.disabled = false;
   }
 }
+
 if(dataRest){
   document.getElementById('nombreRest').textContent = dataRest.nombre || dataRest.restauranteNombre || 'Restaurante';
   document.getElementById('cantProductos').textContent = `${carrito.reduce((s,i)=>s+(i.cantidad||0),0)} Productos`;
