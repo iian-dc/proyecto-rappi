@@ -9,7 +9,7 @@
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
 body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
 .header{padding:14px 16px 8px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;background:#fff;z-index:10}
-.logo-d{width:44px;height:44px;background:#D5000F;border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:26px;font-style:italic;transform:skew(-6deg);flex-shrink:0}
+.logo-d{width:44px;height:44px;border-radius:12px;object-fit:cover;flex-shrink:0;display:block;background:transparent}
 .header-text{flex:1;overflow:hidden;min-width:0}
 .ubi-label{font-size:10px;color:#888;font-weight:600;text-transform:capitalize}
 .ubi-city{font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;width:100%}
@@ -62,7 +62,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
 .btn-flotante-left{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;letter-spacing:0.2px}
 .badge-flotante{background:white;color:#E30613;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900}
 @keyframes flotar{from{transform:translateX(-50%) translateY(20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
-/* === BLOQUEO EN TIEMPO REAL - MISMA TARJETA QUE INDEX === */
 .block-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.82);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:999999;padding:20px}
 .block-overlay.open{display:flex;animation:fadeIn .25s}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -75,7 +74,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
 </style>
 </head>
 <body>
-<div class="header"><div class="logo-d">D</div><div class="header-text"><div class="ubi-label">Tu ubicación</div><div class="ubi-city"><svg class="loc-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><span id="txtUbi">Obteniendo ubicación...</span></div></div></div>
+<div class="header"><img src="logo-inicio.png" class="logo-d" alt="DoloYa"><div class="header-text"><div class="ubi-label">Tu ubicación</div><div class="ubi-city"><svg class="loc-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><span id="txtUbi">Obteniendo ubicación...</span></div></div></div>
 <div id="contenidoDolores">
 <div class="search-wrap"><div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M21 21l-4.3-4.3"/></svg><input id="buscador" type="text" placeholder="Busca restaurantes..." autocomplete="off"></div><div id="searchResult" class="search-result"></div></div>
 <div class="banners"><div class="banner"><img class="banner-bg" src="https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=600&h=300&fit=crop"><div class="banner-gradient"></div><div class="banner-text"><h2>Tu antojo,<br>en minutos</h2><p>Restaurantes cerca de ti</p><div class="btn-mini">Pide ahora</div></div></div><div class="banner"><img class="banner-bg" src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&h=300&fit=crop"><div class="banner-gradient"></div><div class="banner-text"><h2>Promo del día</h2><p>Envío gratis +$150</p><div class="btn-mini">Ver promos</div></div></div></div>
@@ -92,8 +91,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
 </div>
 <div id="noDolores" style="display:none" class="no-ubi"><h2>Sin cobertura para tu ubicación</h2><p id="msgNoUbi"></p></div>
 <div id="btnFlotanteCanasta" class="btn-flotante-canasta" onclick="window.location.href='carrito.html'" style="display:none"><div class="btn-flotante-left"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.5" fill="white" stroke="none"/><circle cx="20" cy="21" r="1.5" fill="white" stroke="none"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span>Ver canasta</span></div><div class="badge-flotante" id="badgeFlotante">0</div></div>
-
-<!-- OVERLAY BLOQUEO EN TIEMPO REAL - NO DEJA CLICAR NADA -->
 <div id="blockOverlay" class="block-overlay">
   <div class="block-card">
     <div class="block-icon">
@@ -107,17 +104,13 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
     </a>
   </div>
 </div>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
 const firebaseConfig = { apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ", authDomain: "doloya-aliados.firebaseapp.com", databaseURL: "https://doloya-aliados-default-rtdb.firebaseio.com", projectId: "doloya-aliados", storageBucket: "doloya-aliados.firebasestorage.app", messagingSenderId: "122314467740", appId: "1:122314467740:web:9947a0a9560557e3a00059" };
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-
-// === CONFIG HISTORIAL PARA BLOQUEO EN TIEMPO REAL ===
 const configHistorial = {
   apiKey: "AIzaSyCRx4B7mO444s0yU-WTnsqMjBHDWX4IRv8",
   authDomain: "doloya-historial.firebaseapp.com",
@@ -128,7 +121,6 @@ const configHistorial = {
 };
 const appHistorial = initializeApp(configHistorial, "historialApp");
 const dbHistorial = getFirestore(appHistorial);
-
 function mostrarBloqueado(){
   document.getElementById('blockOverlay').classList.add('open');
   document.body.style.overflow='hidden';
@@ -136,7 +128,6 @@ function mostrarBloqueado(){
   document.getElementById('blockOverlay').style.pointerEvents='auto';
   document.querySelector('.block-card').style.pointerEvents='auto';
 }
-
 async function esIpBloqueada(ip){
   if(!ip || ip==="0.0.0.0" || ip==="-") return false;
   try{
@@ -147,7 +138,6 @@ async function esIpBloqueada(ip){
   }catch{}
   return false;
 }
-
 let unsub1=null, unsub2=null;
 function escucharBloqueoTiempoReal(ip){
   if(!ip) return;
@@ -159,8 +149,6 @@ function escucharBloqueoTiempoReal(ip){
     if(snap.exists() && snap.data().bloqueado===true) mostrarBloqueado();
   });
 }
-
-// VALIDAR IP AL ENTRAR EN TIEMPO REAL
 (async ()=>{
   try{
     const dataStr = localStorage.getItem('doloya_ubicacion');
@@ -175,7 +163,6 @@ function escucharBloqueoTiempoReal(ip){
     if(ipActual){
       if(await esIpBloqueada(ipActual)) mostrarBloqueado();
       escucharBloqueoTiempoReal(ipActual);
-      // Revisa cada 4 seg por si cambia IP o lo bloqueas después
       setInterval(async ()=>{
         try{
           const r=await fetch('https://api.ipify.org?format=json'); const j=await r.json();
@@ -186,7 +173,6 @@ function escucharBloqueoTiempoReal(ip){
     }
   }catch{}
 })();
-
 const dataStr = localStorage.getItem('doloya_ubicacion');
 if(!dataStr) location.href="index.html";
 const cliente = JSON.parse(dataStr);
