@@ -78,14 +78,12 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
 <div id="contenidoDolores">
 <div class="search-wrap"><div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M21 21l-4.3-4.3"/></svg><input id="buscador" type="text" placeholder="Busca restaurantes..." autocomplete="off"></div><div id="searchResult" class="search-result"></div></div>
 <div class="banners"><div class="banner"><img class="banner-bg" src="https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=600&h=300&fit=crop"><div class="banner-gradient"></div><div class="banner-text"><h2>Tu antojo,<br>en minutos</h2><p>Restaurantes cerca de ti</p><div class="btn-mini">Pide ahora</div></div></div><div class="banner"><img class="banner-bg" src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&h=300&fit=crop"><div class="banner-gradient"></div><div class="banner-text"><h2>Promo del día</h2><p>Envío gratis +$150</p><div class="btn-mini">Ver promos</div></div></div></div>
-<div class="categories">
+
+<!-- CATEGORIAS DINAMICAS DESDE paneladmin-configuraciones.html -->
+<div class="categories" id="contCategorias">
   <div class="cat-item active" data-cat="todos"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/bento.png"></div><span>Todos</span></div>
-  <div class="cat-item" data-cat="burgers"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/hamburger.png"></div><span>Burger</span></div>
-  <div class="cat-item" data-cat="pizzas"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/pizza.png" onerror="this.src='https://img.icons8.com/color/96/pizza.png'"></div><span>Pizza</span></div>
-  <div class="cat-item" data-cat="alitas"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/fried-chicken.png"></div><span>Alitas</span></div>
-  <div class="cat-item" data-cat="tacos"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/taco.png"></div><span>Tacos</span></div>
-  <div class="cat-item" data-cat="hotdog"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/hot-dog.png"></div><span>Hot Dog</span></div>
 </div>
+
 <div class="section-title"><h3>Restaurantes cerca de ti</h3><a href="vertodos.html">Ver todos</a></div>
 <div class="restaurants" id="listaRestaurantes"></div>
 </div>
@@ -181,6 +179,54 @@ let aliadosData=[];
 const listaEl=document.getElementById('listaRestaurantes');
 function getCampo(r, ...nombres){ if(!r) return ''; for(let n of nombres){ if(r[n] !== undefined && r[n] !== null && r[n] !== '') return r[n]; const key = Object.keys(r).find(k => k.toLowerCase() === n.toLowerCase()); if(key && r[key]) return r[key]; } return ''; }
 let tarifaGlobal = {base: 22, precio_km: 4};
+
+// === NUEVO: CATEGORIAS DINAMICAS DESDE paneladmin-configuraciones.html ===
+const contCategorias = document.getElementById('contCategorias');
+function esInfoCat(k){
+  if(!k) return false;
+  const v = String(k).toLowerCase().trim();
+  return v==='info' || v==='_info' || v==='informacion' || v.startsWith('_info');
+}
+function renderCategoriasInicio(dataObj){
+  if(!contCategorias) return;
+  if(!dataObj || Object.keys(dataObj).length===0){
+    // fallback por si aun no has restablecido
+    const fallback = [
+      {key:'todos', nombre:'Todos', imagen:'https://img.icons8.com/3d-fluency/94/bento.png', orden:0, activa:true},
+      {key:'burgers', nombre:'Burger', imagen:'https://img.icons8.com/3d-fluency/94/hamburger.png', orden:1, activa:true},
+      {key:'pizzas', nombre:'Pizza', imagen:'https://img.icons8.com/3d-fluency/94/pizza.png', orden:2, activa:true},
+      {key:'alitas', nombre:'Alitas', imagen:'https://img.icons8.com/3d-fluency/94/fried-chicken.png', orden:3, activa:true},
+      {key:'tacos', nombre:'Tacos', imagen:'https://img.icons8.com/3d-fluency/94/taco.png', orden:4, activa:true},
+      {key:'hotdog', nombre:'Hot Dog', imagen:'https://img.icons8.com/3d-fluency/94/hot-dog.png', orden:5, activa:true},
+    ];
+    pintarCats(fallback);
+    return;
+  }
+  const arr = Object.values(dataObj).filter(c=>!esInfoCat(c.key) && !esInfoCat(c.nombre)).filter(c=>c.activa!==false).sort((a,b)=>(a.orden||99)-(b.orden||99));
+  pintarCats(arr);
+}
+function pintarCats(lista){
+  const activoActual = contCategorias.querySelector('.cat-item.active')?.dataset.cat || 'todos';
+  contCategorias.innerHTML = lista.map(c=>`
+    <div class="cat-item ${c.key===activoActual?'active':''}" data-cat="${c.key}">
+      <div class="cat-icon"><img class="icon-3d" src="${c.imagen}" onerror="this.src='https://img.icons8.com/3d-fluency/94/bento.png'"></div>
+      <span>${c.nombre}</span>
+    </div>
+  `).join('');
+  contCategorias.querySelectorAll('.cat-item').forEach(el=>{
+    el.addEventListener('click',()=>{
+      if(document.getElementById('blockOverlay').classList.contains('open')) return;
+      contCategorias.querySelectorAll('.cat-item').forEach(x=>x.classList.remove('active'));
+      el.classList.add('active');
+      renderAliados(el.dataset.cat, document.getElementById('buscador').value);
+    });
+  });
+}
+onValue(ref(db, 'config_global/categorias_inicio'), snap=>{
+  renderCategoriasInicio(snap.val());
+});
+// === FIN NUEVO ===
+
 onValue(ref(db, 'config_global/tarifa_default'), snap=>{
   const v = snap.val();
   if(v){
@@ -390,12 +436,11 @@ onValue(ref(db,'doloya_aliados'), snap=>{
   const v=snap.val();
   if(v){
     aliadosData=aplanarDatos(v);
-    renderAliados();
+    renderAliados(document.querySelector('.cat-item.active')?.dataset.cat||'todos', document.getElementById('buscador').value);
   }
 });
 const buscador=document.getElementById('buscador');
 buscador.addEventListener('input',e=>{ const cat=document.querySelector('.cat-item.active')?.dataset.cat||'todos'; renderAliados(cat,e.target.value); });
-document.querySelectorAll('.cat-item').forEach(el=>{ el.addEventListener('click',()=>{ if(document.getElementById('blockOverlay').classList.contains('open')) return; document.querySelectorAll('.cat-item').forEach(x=>x.classList.remove('active')); el.classList.add('active'); renderAliados(el.dataset.cat, buscador.value); }); });
 function actualizarBotonFlotante(){ const carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]'); const btn = document.getElementById('btnFlotanteCanasta'); const badge = document.getElementById('badgeFlotante'); if(!btn || !badge) return; if(carrito.length===0){ btn.style.display='none'; } else { const total = carrito.reduce((s,i)=>s+i.cantidad,0); badge.textContent = total; btn.style.display='flex'; } }
 actualizarBotonFlotante(); setInterval(actualizarBotonFlotante, 1000);
 window.addEventListener('storage', actualizarBotonFlotante);
