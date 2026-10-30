@@ -427,11 +427,49 @@ function coincideCategoria(catRestaurante, catFiltro){
   if(fc==='hotdog' && (rc.includes('hot') || rc.includes('dog'))) return true;
   return false;
 }
+
+// ===== NUEVA LOGICA ROTACION DIARIA ALEATORIA - ABIERTOS ARRIBA, CERRADOS ABAJO =====
+function hashString(str){
+  let hash = 0;
+  for(let i=0;i<str.length;i++){
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+function seededRandom(seed){
+  let x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+function shuffleDiario(array, categoriaFiltro){
+  const hoy = new Date();
+  const fechaKey = hoy.getFullYear() + '-' + (hoy.getMonth()+1) + '-' + hoy.getDate();
+  const baseSeed = hashString(fechaKey + '_' + categoriaFiltro);
+  let arr = [...array];
+  for(let i = arr.length -1; i>0; i--){
+    const j = Math.floor(seededRandom(baseSeed + i*999) * (i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 function renderAliados(filtroCat="todos", busqueda=""){
   let f=[...aliadosData];
-  f.sort((a,b)=>{ if(a.abierto === b.abierto) return 0; return a.abierto ? -1 : 1; });
+  // filtro por categoria y busqueda
   if(filtroCat!=="todos") f=f.filter(a=> coincideCategoria(a.categoria, filtroCat) || coincideCategoria(a.categoriaOriginal, filtroCat) || coincideCategoria(a.categoriaRaw, filtroCat) );
   if(busqueda) f=f.filter(a=>a.nombre.toLowerCase().includes(busqueda.toLowerCase()));
+
+  // separar abiertos y cerrados
+  let abiertos = f.filter(a=> a.abierto === true);
+  let cerrados = f.filter(a=> a.abierto !== true);
+
+  // rotacion aleatoria diaria solo para abiertos, con semilla por categoria
+  abiertos = shuffleDiario(abiertos, filtroCat);
+  // cerrados tambien rotan entre ellos pero siempre al final
+  cerrados = shuffleDiario(cerrados, filtroCat + '_cerrados');
+
+  f = [...abiertos, ...cerrados];
+
   listaEl.innerHTML="";
   if(f.length===0){
     listaEl.innerHTML = '<p style="padding:20px;color:#888">No hay restaurantes en '+filtroCat+'</p>';
