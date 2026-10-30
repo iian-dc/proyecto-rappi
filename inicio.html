@@ -109,7 +109,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
   </div>
 </div>
 <script>
-// === INSTALAR APP - ARRIBA DERECHA ===
 let deferredPrompt = null;
 const btnInstalar = document.getElementById('btnInstalar');
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -213,6 +212,7 @@ const cliente = JSON.parse(dataStr);
 fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${cliente.ubicacion?.lat}&lon=${cliente.ubicacion?.lng}&zoom=18&addressdetails=1`).then(r=>r.json()).then(data=>{ const addr=data.address; const direccion = `${addr.road||''} ${addr.house_number||''}, ${addr.suburb||''}, ${addr.city||addr.town||''}, ${addr.state||''}`; document.getElementById('txtUbi').textContent=direccion; });
 let aliadosData=[];
 const listaEl=document.getElementById('listaRestaurantes');
+const bannersCont=document.getElementById('bannersCont');
 function getCampo(r, ...nombres){ if(!r) return ''; for(let n of nombres){ if(r[n] !== undefined && r[n] !== null && r[n] !== '') return r[n]; const key = Object.keys(r).find(k => k.toLowerCase() === n.toLowerCase()); if(key && r[key]) return r[key]; } return ''; }
 let tarifaGlobal = {base: 22, precio_km: 4};
 const contCategorias = document.getElementById('contCategorias');
@@ -267,15 +267,7 @@ onValue(ref(db, 'config_global/tarifa_default'), snap=>{
   }
 });
 
-// ===== BANNERS DINAMICOS DESDE PANEL ADMIN PROMOCIONES - CORREGIDO =====
-const bannersCont = document.getElementById('bannersCont');
-
-function pintarBannersDefault(){
-  bannersCont.innerHTML = `
-  <div class="banner"><img class="banner-bg" src="https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=600&h=300&fit=crop"><div class="banner-gradient"></div><div class="banner-text"><h2>Tu antojo,<br>en minutos</h2><p>Restaurantes cerca de ti</p><div class="btn-mini">Pide ahora</div></div></div>
-  <div class="banner"><img class="banner-bg" src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&h=300&fit=crop"><div class="banner-gradient"></div><div class="banner-text"><h2>Promo del día</h2><p>Envío gratis +$150</p><div class="btn-mini">Ver promos</div></div></div>`;
-}
-
+// ===== BANNERS 100% VINCULADOS A ADMIN-PROMOCIONES - SIN BANNERS FALSOS =====
 window.clickBanner = function(restauranteId){
   if(document.getElementById('blockOverlay').classList.contains('open')) return;
   if(!restauranteId) return;
@@ -293,12 +285,12 @@ window.clickBanner = function(restauranteId){
 onValue(ref(db, 'config_global/banners_promociones'), snap=>{
   const val = snap.val();
   if(!val){
-    pintarBannersDefault();
+    bannersCont.innerHTML = '';
     return;
   }
   const lista = Object.values(val).filter(b=>b.activo!==false);
   if(lista.length===0){
-    pintarBannersDefault();
+    bannersCont.innerHTML = '';
     return;
   }
   lista.sort((a,b)=>(b.fecha||0)-(a.fecha||0));
@@ -309,7 +301,7 @@ onValue(ref(db, 'config_global/banners_promociones'), snap=>{
     const rId = b.restauranteId || '';
     div.addEventListener('click', ()=> window.clickBanner(rId));
     div.innerHTML = `
-      <img class="banner-bg" src="${b.imagen}" onerror="this.src='https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=600&h=300&fit=crop'">
+      <img class="banner-bg" src="${b.imagen}" onerror="this.src='https://via.placeholder.com/600x300'">
       <div class="banner-gradient"></div>
       <div class="banner-text"><h2>${b.titulo||''}</h2><p>${b.subtitulo||''}</p><div class="btn-mini">${b.btnTexto||'Pide ahora'}</div></div>
     `;
