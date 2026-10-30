@@ -1,0 +1,22 @@
+{
+  "name": "DoloYa - Comida a domicilio",
+  "short_name": "DoloYa",
+  "description": "Tu antojo en minutos, restaurantes cerca de ti",
+  "start_url": "./inicio.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#E30613",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "logo-inicio.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo-inicio.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
