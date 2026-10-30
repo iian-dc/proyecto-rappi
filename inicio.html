@@ -31,13 +31,14 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
 .search-item img{width:36px;height:36px;border-radius:8px;object-fit:cover}
 .banners{padding:0 16px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none}
 .banners::-webkit-scrollbar{display:none}
-.banner{scroll-snap-align:start;min-width:88%;height:112px;border-radius:16px;position:relative;overflow:hidden;display:flex;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,0.12);cursor:pointer}
+.banner{scroll-snap-align:start;min-width:88%;height:138px;border-radius:16px;position:relative;overflow:hidden;display:flex;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,0.12);cursor:pointer}
 .banner-gradient{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,0.6) 0%,rgba(0,0,0,0.2) 60%,rgba(0,0,0,0) 100%);z-index:1}
 .banner-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .banner-text{position:relative;z-index:2;padding:14px 16px;width:62%;display:flex;flex-direction:column;justify-content:center}
 .banner-text h2{color:white;font-size:15.5px;font-weight:800;line-height:1.15}
 .banner-text p{color:rgba(255,255,255,0.92);font-size:11px;margin-top:3px;font-weight:500}
 .banner-text .btn-mini{margin-top:8px;background:white;color:#111;padding:6px 12px;border-radius:999px;font-weight:800;font-size:10.5px;display:inline-block;width:fit-content}
+.banner-logo{position:absolute;right:12px;bottom:12px;z-index:3;width:54px;height:54px;border-radius:50%;background:white;border:2.5px solid white;object-fit:cover;box-shadow:0 4px 12px rgba(0,0,0,0.35)}
 .categories{padding:12px 0 12px 16px;display:flex;gap:11px;overflow-x:auto;scrollbar-width:none}
 .categories::-webkit-scrollbar{display:none}
 .cat-item{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;min-width:64px;flex-shrink:0}
@@ -267,7 +268,31 @@ onValue(ref(db, 'config_global/tarifa_default'), snap=>{
   }
 });
 
-// ===== BANNERS 100% VINCULADOS A ADMIN-PROMOCIONES - SIN FALSOS =====
+// ===== BANNERS 100% VINCULADOS A ADMIN-PROMOCIONES - CON LOGO EN LA FLECHA =====
+let bannersCache = [];
+function dibujarBanners(){
+  if(!bannersCache || bannersCache.length===0){
+    bannersCont.innerHTML = '';
+    return;
+  }
+  bannersCont.innerHTML = '';
+  bannersCache.forEach(b=>{
+    const rId = b.restauranteId || '';
+    const aliado = aliadosData.find(a=>a.id===rId);
+    const logoRest = aliado ? aliado.logoFinal : '';
+    const div = document.createElement('div');
+    div.className = 'banner';
+    div.addEventListener('click', ()=> window.clickBanner(rId));
+    div.innerHTML = `
+      <img class="banner-bg" src="${b.imagen}" onerror="this.src='https://via.placeholder.com/600x300'">
+      <div class="banner-gradient"></div>
+      <div class="banner-text"><h2>${b.titulo||''}</h2><p>${b.subtitulo||''}</p><div class="btn-mini">${b.btnTexto||'Pide ahora'}</div></div>
+      ${logoRest ? `<img class="banner-logo" src="${logoRest}" onerror="this.style.display='none'">` : ''}
+    `;
+    bannersCont.appendChild(div);
+  });
+}
+
 window.clickBanner = function(restauranteId){
   if(document.getElementById('blockOverlay').classList.contains('open')) return;
   if(!restauranteId) return;
@@ -285,28 +310,14 @@ window.clickBanner = function(restauranteId){
 onValue(ref(db, 'config_global/banners_promociones'), snap=>{
   const val = snap.val();
   if(!val){
-    bannersCont.innerHTML = '';
+    bannersCache = [];
+    dibujarBanners();
     return;
   }
   const lista = Object.values(val).filter(b=>b.activo!==false);
-  if(lista.length===0){
-    bannersCont.innerHTML = '';
-    return;
-  }
   lista.sort((a,b)=>(b.fecha||0)-(a.fecha||0));
-  bannersCont.innerHTML = '';
-  lista.forEach(b=>{
-    const div = document.createElement('div');
-    div.className = 'banner';
-    const rId = b.restauranteId || '';
-    div.addEventListener('click', ()=> window.clickBanner(rId));
-    div.innerHTML = `
-      <img class="banner-bg" src="${b.imagen}" onerror="this.src='https://via.placeholder.com/600x300'">
-      <div class="banner-gradient"></div>
-      <div class="banner-text"><h2>${b.titulo||''}</h2><p>${b.subtitulo||''}</p><div class="btn-mini">${b.btnTexto||'Pide ahora'}</div></div>
-    `;
-    bannersCont.appendChild(div);
-  });
+  bannersCache = lista;
+  dibujarBanners();
 });
 
 function haversine(lat1, lon1, lat2, lon2){
@@ -538,6 +549,7 @@ onValue(ref(db,'doloya_aliados'), snap=>{
   if(v){
     aliadosData=aplanarDatos(v);
     renderAliados(document.querySelector('.cat-item.active')?.dataset.cat||'todos', document.getElementById('buscador').value);
+    dibujarBanners();
   }
 });
 const buscador=document.getElementById('buscador');
