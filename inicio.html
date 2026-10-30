@@ -267,7 +267,7 @@ onValue(ref(db, 'config_global/tarifa_default'), snap=>{
   }
 });
 
-// ===== BANNERS 100% VINCULADOS A ADMIN-PROMOCIONES - SIN BANNERS FALSOS =====
+// ===== BANNERS 100% VINCULADOS A ADMIN-PROMOCIONES - SIN FALSOS =====
 window.clickBanner = function(restauranteId){
   if(document.getElementById('blockOverlay').classList.contains('open')) return;
   if(!restauranteId) return;
@@ -550,8 +550,8 @@ window.addEventListener('focus', actualizarBotonFlotante);
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('service-worker.js')
-    .then(()=>console.log('DoloYa SW registrado'))
+    navigator.serviceWorker.register('service-worker.js?v=10')
+    .then(()=>console.log('DoloYa SW v10'))
     .catch(e=>console.log('Error SW',e));
   });
 }
