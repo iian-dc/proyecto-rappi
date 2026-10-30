@@ -38,7 +38,7 @@ body{background:#fff;min-height:100vh;display:flex;flex-direction:column;height:
   <div id="map"></div>
   <div class="pin-center">
     <div class="pin">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5 2.5-1.12 2.5-2.5-1.12-2.5-2.5z"/></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
     </div>
   </div>
   <button class="btn-recenter" onclick="recenterMap()">
@@ -120,7 +120,7 @@ function recenterMap(){
 }
 
 function guardarUbicacion(){
-  // 1. Guardar en doloya_ubicacion (lo que lee resumen.html y carrito.html)
+  // 1. Guardar en doloya_ubicacion (lo que lee resumen.html)
   const dataUbi = ubicacionGuardada || {};
   dataUbi.ubicacion = {lat: nuevoLat, lng: nuevoLng};
   dataUbi.direccion = nuevaDireccion;
@@ -128,7 +128,7 @@ function guardarUbicacion(){
   dataUbi.lng = nuevoLng;
   localStorage.setItem('doloya_ubicacion', JSON.stringify(dataUbi));
 
-  // 2. También actualizar doloya_detalles_full para que resumen lo muestre arriba
+  // 2. También actualizar doloya_detalles_full
   const dataDet = detallesGuardados || {};
   dataDet.lat = nuevoLat;
   dataDet.lng = nuevoLng;
@@ -136,12 +136,17 @@ function guardarUbicacion(){
   dataDet.ubicacion = {lat: nuevoLat, lng: nuevoLng};
   localStorage.setItem('doloya_detalles_full', JSON.stringify(dataDet));
 
-  // 3. IMPORTANTE: Borrar costos viejos para forzar recálculo de distancia real
+  // 3. BANDERAS PARA QUE RESUMEN NO VUELVA AL GPS Y USE ESTE PUNTO NUEVO
+  localStorage.setItem('doloya_punto_ajustado', '1');
+  localStorage.setItem('doloya_direccion_editada', '1');
+
+  // 4. Borrar costos viejos para forzar recálculo de distancia real
   localStorage.removeItem('doloya_distancia_km');
   localStorage.removeItem('doloya_costo_envio');
   localStorage.removeItem('doloya_costo_entrega');
   localStorage.removeItem('doloya_tarifa_servicio');
   localStorage.removeItem('doloya_total');
+  localStorage.removeItem('doloya_envio_actual');
 
   window.location.href = 'resumen.html';
 }
