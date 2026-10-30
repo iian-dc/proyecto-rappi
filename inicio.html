@@ -31,7 +31,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
 .search-item img{width:36px;height:36px;border-radius:8px;object-fit:cover}
 .banners{padding:0 16px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none}
 .banners::-webkit-scrollbar{display:none}
-.banner{scroll-snap-align:start;min-width:88%;height:112px;border-radius:16px;position:relative;overflow:hidden;display:flex;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,0.12)}
+.banner{scroll-snap-align:start;min-width:88%;height:112px;border-radius:16px;position:relative;overflow:hidden;display:flex;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,0.12);cursor:pointer}
 .banner-gradient{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,0.6) 0%,rgba(0,0,0,0.2) 60%,rgba(0,0,0,0) 100%);z-index:1}
 .banner-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .banner-text{position:relative;z-index:2;padding:14px 16px;width:62%;display:flex;flex-direction:column;justify-content:center}
@@ -84,7 +84,12 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
 <div class="header"><img src="logo-inicio.png" class="logo-d" alt="DoloYa"><div class="header-text"><div class="ubi-label">Tu ubicación</div><div class="ubi-city"><svg class="loc-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><span id="txtUbi">Obteniendo ubicación...</span></div></div><button id="btnInstalar" class="btn-instalar"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/></svg>Instalar App</button></div>
 <div id="contenidoDolores">
 <div class="search-wrap"><div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M21 21l-4.3-4.3"/></svg><input id="buscador" type="text" placeholder="Busca restaurantes..." autocomplete="off"></div><div id="searchResult" class="search-result"></div></div>
-<div class="banners"><div class="banner"><img class="banner-bg" src="https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=600&h=300&fit=crop"><div class="banner-gradient"></div><div class="banner-text"><h2>Tu antojo,<br>en minutos</h2><p>Restaurantes cerca de ti</p><div class="btn-mini">Pide ahora</div></div></div><div class="banner"><img class="banner-bg" src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&h=300&fit=crop"><div class="banner-gradient"></div><div class="banner-text"><h2>Promo del día</h2><p>Envío gratis +$150</p><div class="btn-mini">Ver promos</div></div></div></div>
+
+<div class="banners" id="bannersCont">
+  <!-- Cargado dinámico desde admin-promociones.html -->
+  <div class="banner"><img class="banner-bg" src="https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=600&h=300&fit=crop"><div class="banner-gradient"></div><div class="banner-text"><h2>Tu antojo,<br>en minutos</h2><p>Restaurantes cerca de ti</p><div class="btn-mini">Pide ahora</div></div></div>
+  <div class="banner"><img class="banner-bg" src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&h=300&fit=crop"><div class="banner-gradient"></div><div class="banner-text"><h2>Promo del día</h2><p>Envío gratis +$150</p><div class="btn-mini">Ver promos</div></div></div>
+</div>
 
 <div class="categories" id="contCategorias">
   <div class="cat-item active" data-cat="todos"><div class="cat-icon"><img class="icon-3d" src="https://img.icons8.com/3d-fluency/94/bento.png"></div><span>Todos</span></div>
@@ -266,6 +271,58 @@ onValue(ref(db, 'config_global/tarifa_default'), snap=>{
     if(aliadosData.length>0) renderAliados(document.querySelector('.cat-item.active')?.dataset.cat||'todos', document.getElementById('buscador').value);
   }
 });
+
+// ===== BANNERS DINAMICOS DESDE PANEL ADMIN PROMOCIONES =====
+const bannersCont = document.getElementById('bannersCont');
+function pintarBannersDefault(){
+  bannersCont.innerHTML = `
+  <div class="banner"><img class="banner-bg" src="https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=600&h=300&fit=crop"><div class="banner-gradient"></div><div class="banner-text"><h2>Tu antojo,<br>en minutos</h2><p>Restaurantes cerca de ti</p><div class="btn-mini">Pide ahora</div></div></div>
+  <div class="banner"><img class="banner-bg" src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&h=300&fit=crop"><div class="banner-gradient"></div><div class="banner-text"><h2>Promo del día</h2><p>Envío gratis +$150</p><div class="btn-mini">Ver promos</div></div></div>`;
+}
+function clickBanner(restauranteId){
+  if(document.getElementById('blockOverlay').classList.contains('open')) return;
+  if(!restauranteId){
+    return; // solo informativo, no va a ningun lado
+  }
+  const rest = aliadosData.find(r=> r.id===restauranteId);
+  if(rest){
+    localStorage.setItem('doloya_envio_actual', JSON.stringify({distanciaKm: rest.distanciaKm, costo: rest.costoEnvioCalculado, base: tarifaGlobal.base, precio_km: tarifaGlobal.precio_km}));
+    localStorage.setItem('doloya_aliadoSeleccionado', JSON.stringify({cat: rest.categoriaOriginal, id: restauranteId}));
+    location.href=`aliado.html?cat=${rest.categoriaOriginal}&id=${restauranteId}`;
+  } else {
+    // si aun no cargan los aliados, espera y navega directo
+    localStorage.setItem('doloya_aliadoSeleccionado', JSON.stringify({cat: restauranteId, id: restauranteId}));
+    location.href=`aliado.html?cat=${restauranteId}&id=${restauranteId}`;
+  }
+}
+onValue(ref(db, 'config_global/banners_promociones'), snap=>{
+  const val = snap.val();
+  if(!val){
+    pintarBannersDefault();
+    return;
+  }
+  const lista = Object.values(val).filter(b=>b.activo!==false).sort((a,b)=>(b.fecha||0)-(a.fecha||0));
+  if(lista.length===0){
+    pintarBannersDefault();
+    return;
+  }
+  bannersCont.innerHTML = '';
+  lista.forEach(b=>{
+    const safeTitulo = (b.titulo||'Promo').replace(/</g,'');
+    const safeSub = (b.subtitulo||'').replace(/</g,'');
+    const safeBtn = (b.btnTexto||'Pide ahora').replace(/</g,'');
+    const div = document.createElement('div');
+    div.className = 'banner';
+    div.setAttribute('onclick', `clickBanner('${(b.restauranteId||'').replace(/'/g,'')}')`);
+    div.innerHTML = `
+      <img class="banner-bg" src="${b.imagen}" onerror="this.src='https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=600&h=300&fit=crop'">
+      <div class="banner-gradient"></div>
+      <div class="banner-text"><h2>${safeTitulo}</h2><p>${safeSub}</p><div class="btn-mini">${safeBtn}</div></div>
+    `;
+    bannersCont.appendChild(div);
+  });
+});
+
 function haversine(lat1, lon1, lat2, lon2){
   const R = 6371;
   const dLat = (lat2-lat1)*Math.PI/180;
@@ -428,7 +485,7 @@ function coincideCategoria(catRestaurante, catFiltro){
   return false;
 }
 
-// ===== NUEVA LOGICA ROTACION DIARIA ALEATORIA - ABIERTOS ARRIBA, CERRADOS ABAJO =====
+// ===== ROTACION DIARIA ALEATORIA - ABIERTOS ARRIBA, CERRADOS ABAJO =====
 function hashString(str){
   let hash = 0;
   for(let i=0;i<str.length;i++){
@@ -455,21 +512,13 @@ function shuffleDiario(array, categoriaFiltro){
 
 function renderAliados(filtroCat="todos", busqueda=""){
   let f=[...aliadosData];
-  // filtro por categoria y busqueda
   if(filtroCat!=="todos") f=f.filter(a=> coincideCategoria(a.categoria, filtroCat) || coincideCategoria(a.categoriaOriginal, filtroCat) || coincideCategoria(a.categoriaRaw, filtroCat) );
   if(busqueda) f=f.filter(a=>a.nombre.toLowerCase().includes(busqueda.toLowerCase()));
-
-  // separar abiertos y cerrados
   let abiertos = f.filter(a=> a.abierto === true);
   let cerrados = f.filter(a=> a.abierto !== true);
-
-  // rotacion aleatoria diaria solo para abiertos, con semilla por categoria
   abiertos = shuffleDiario(abiertos, filtroCat);
-  // cerrados tambien rotan entre ellos pero siempre al final
   cerrados = shuffleDiario(cerrados, filtroCat + '_cerrados');
-
   f = [...abiertos, ...cerrados];
-
   listaEl.innerHTML="";
   if(f.length===0){
     listaEl.innerHTML = '<p style="padding:20px;color:#888">No hay restaurantes en '+filtroCat+'</p>';
