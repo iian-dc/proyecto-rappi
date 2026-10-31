@@ -81,6 +81,16 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
 @keyframes popCerrado{from{transform:scale(0.85);opacity:0}to{transform:scale(1);opacity:1}}
 body.bloqueado{overflow:hidden}
 body.bloqueado .btn-add, body.bloqueado .qty-btn{pointer-events:none !important;opacity:0.4}
+/* OVERLAY UBICACION TIEMPO REAL */
+.overlay-ubi{position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:999998;padding:20px}
+.overlay-ubi.open{display:flex;animation:fadeIn .25s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.card-ubi{background:white;border-radius:22px;padding:28px 22px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.4);animation:popCerrado .3s}
+.icon-ubi{width:64px;height:64px;background:#FFF1F2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.card-ubi h2{color:#111;font-size:19px;font-weight:900;margin-bottom:8px}
+.card-ubi p{color:#64748b;font-size:13px;line-height:1.4}
+.btn-ubi{width:100%;background:#E30613;color:white;border:none;border-radius:999px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;margin-top:18px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-ubi:active{transform:scale(0.97)}
 </style>
 </head>
 <body>
@@ -125,6 +135,23 @@ body.bloqueado .btn-add, body.bloqueado .qty-btn{pointer-events:none !important;
     <div class="count">Regresando al inicio en <span id="countNum">5</span>s...</div>
   </div>
 </div>
+
+<!-- OVERLAY UBICACION -->
+<div id="overlayUbicacion" class="overlay-ubi">
+  <div class="card-ubi">
+    <div class="icon-ubi">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2.2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+    </div>
+    <h2>Activa tu ubicación</h2>
+    <p>Necesitamos tu ubicación actual para calcular el envío y continuar con tu pedido.</p>
+    <button class="btn-ubi" onclick="window.intentarUbicacionAliado(true)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+      Permitir ubicación
+    </button>
+    <p style="margin-top:12px;font-size:11px;color:#94a3b8">Activa el GPS para poder seguir comprando</p>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, onValue, get, set, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -155,12 +182,41 @@ if(clienteUbicacionData && clienteUbicacionData.ubicacion){
   ubicacionGPS.lat = clienteUbicacionData.ubicacion.lat;
   ubicacionGPS.lng = clienteUbicacionData.ubicacion.lng;
 }
-
-// === TARIFA GLOBAL $22 + $4/km - SOLO INTERNO, NO VISUAL ===
 let tarifaGlobal = {base: 22, precio_km: 4};
 let distanciaKmActual = 0;
 let costoEnvioActual = 22;
 let ubicacionRestauranteActual = null;
+
+// ===== UBICACION TIEMPO REAL - NUEVO =====
+const overlayUbiEl = document.getElementById('overlayUbicacion');
+let gpsValido = true;
+function mostrarOverlayUbiAliado(){ if(overlayUbiEl) overlayUbiEl.classList.add('open'); gpsValido = false; }
+function ocultarOverlayUbiAliado(){ if(overlayUbiEl) overlayUbiEl.classList.remove('open'); gpsValido = true; }
+function intentarUbicacionAliado(esClick=false){
+  if(!navigator.geolocation){ mostrarOverlayUbiAliado(); return; }
+  navigator.geolocation.getCurrentPosition((pos)=>{
+    ubicacionGPS.lat = pos.coords.latitude;
+    ubicacionGPS.lng = pos.coords.longitude;
+    // actualizar storage principal
+    try{
+      const dataUbi = JSON.parse(localStorage.getItem('doloya_ubicacion')||'{}');
+      dataUbi.ubicacion = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+      dataUbi.timestamp = Date.now();
+      localStorage.setItem('doloya_ubicacion', JSON.stringify(dataUbi));
+    }catch{}
+    ocultarOverlayUbiAliado();
+    recalcularEnvio();
+  }, (err)=>{
+    console.log('GPS aliado apagado', err.code);
+    mostrarOverlayUbiAliado();
+  }, {enableHighAccuracy:true, timeout:10000, maximumAge:0});
+}
+window.intentarUbicacionAliado = intentarUbicacionAliado;
+// checar al entrar y en tiempo real
+intentarUbicacionAliado(false);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) intentarUbicacionAliado(false); });
+window.addEventListener('pageshow', ()=>{ intentarUbicacionAliado(false); });
+setInterval(()=>{ if(!document.hidden) intentarUbicacionAliado(false); }, 120000);
 
 onValue(ref(db, 'config_global/tarifa_default'), snap=>{
   const v = snap.val();
@@ -201,7 +257,6 @@ function recalcularEnvio(){
   }
   localStorage.setItem('doloya_envio_actual', JSON.stringify({distanciaKm: distanciaKmActual, costo: costoEnvioActual.toFixed(2), base: tarifaGlobal.base, precio_km: tarifaGlobal.precio_km}));
 }
-
 let carrito = JSON.parse(localStorage.getItem('doloya_carrito_v2')||'[]');
 let restauranteActualCarrito = localStorage.getItem('doloya_carrito_restaurante')||null;
 let restauranteAnteriorData = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
@@ -382,6 +437,7 @@ async function verificarExpiracion(){
 setInterval(verificarExpiracion, 5 * 60 * 1000);
 function verificarCambioRestaurante(){
   if(restauranteCerrado){ mostrarTarjetaCerrado(); return true; }
+  if(!gpsValido){ mostrarOverlayUbiAliado(); return true; }
   if(carrito.length>0 && restauranteActualCarrito && restauranteActualCarrito!==id){
     const nombreAnt = restauranteAnteriorData?.nombre || restauranteActualCarrito;
     document.getElementById('txtRestauranteAnterior').textContent = (nombreAnt||'').replace(/_/g,' ');
@@ -392,6 +448,7 @@ function verificarCambioRestaurante(){
 }
 function addProducto(nombre, precio, imagen, descripcion){
   if(restauranteCerrado){ mostrarTarjetaCerrado(); return; }
+  if(!gpsValido){ mostrarOverlayUbiAliado(); intentarUbicacionAliado(false); return; }
   if(verificarCambioRestaurante()){
     productoPendiente = {nombre, precio, imagen, descripcion};
     return;
@@ -403,6 +460,7 @@ function addProducto(nombre, precio, imagen, descripcion){
 }
 function restarProducto(nombre){
   if(restauranteCerrado){ mostrarTarjetaCerrado(); return; }
+  if(!gpsValido){ mostrarOverlayUbiAliado(); return; }
   const idx = carrito.findIndex(p=>p.nombre===nombre);
   if(idx===-1) return;
   carrito[idx].cantidad--;
@@ -673,13 +731,11 @@ else {
     }
     nombreRestauranteGlobal = (extraInfo.nombre||'').replace(/_/g,' ').trim();
     document.getElementById('txtNombre').textContent = nombreRestauranteGlobal;
-
     let ubi = extraerUbicacionReal(data);
     if(ubi){
       ubicacionRestauranteActual = ubi;
       recalcularEnvio();
     }
-
     let disponible = estaAbiertoDesdeDisponibilidad(data);
     let badgeEl = document.getElementById('badgeAbierto');
     let txtAbiertoEl = document.getElementById('txtAbierto');
@@ -797,6 +853,7 @@ window.handleAdd=(nombre, precio, imagen, descripcion)=>{ addProducto(nombre, pr
 window.handleRestar=(nombre)=>{ restarProducto(nombre); }
 document.getElementById('btnVerCarrito').onclick = async ()=>{
   if(restauranteCerrado){ mostrarTarjetaCerrado(); return; }
+  if(!gpsValido){ mostrarOverlayUbiAliado(); intentarUbicacionAliado(false); return; }
   if(carrito.length===0) return;
   const btn = document.getElementById('btnVerCarrito');
   btn.textContent = 'Guardando...';
