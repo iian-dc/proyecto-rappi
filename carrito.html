@@ -37,6 +37,16 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:140px}
 .btn-siguiente{flex:1;padding:16px;border-radius:999px;border:none;background:#E30613;color:white;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(227,6,19,0.25)}
 .vacio{text-align:center;padding:80px 20px;color:#9AA0A6}
 .vacio b{color:#111;font-size:18px;display:block;margin-bottom:6px}
+/* OVERLAY UBICACION */
+.overlay-ubi{position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:999998;padding:20px}
+.overlay-ubi.open{display:flex;animation:fadeIn .25s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.card-ubi{background:white;border-radius:22px;padding:28px 22px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.4);animation:pop .3s}
+@keyframes pop{0%{transform:scale(.9)}100%{transform:scale(1)}}
+.icon-ubi{width:64px;height:64px;background:#FFF1F2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.card-ubi h2{color:#111;font-size:19px;font-weight:900;margin-bottom:8px}
+.card-ubi p{color:#64748b;font-size:13px;line-height:1.4}
+.btn-ubi{width:100%;background:#E30613;color:white;border:none;border-radius:999px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;margin-top:18px;display:flex;align-items:center;justify-content:center;gap:8px}
 </style>
 </head>
 <body>
@@ -50,6 +60,22 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:140px}
   <button class="btn-vaciar-canasta" onclick="vaciarTodo()">Vaciar canasta</button>
   <button class="btn-siguiente" onclick="irSiguiente()">Siguiente</button>
 </div>
+
+<div id="overlayUbicacion" class="overlay-ubi">
+  <div class="card-ubi">
+    <div class="icon-ubi">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2.2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+    </div>
+    <h2>Activa tu ubicación</h2>
+    <p>Necesitamos tu ubicación actual para continuar con tu pedido y calcular el envío.</p>
+    <button class="btn-ubi" onclick="window.intentarUbicacionCarrito(true)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+      Permitir ubicación
+    </button>
+    <p style="margin-top:12px;font-size:11px;color:#94a3b8">Activa el GPS para poder seguir con tu compra</p>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -70,10 +96,34 @@ let ipKey = null;
 let productosAbiertos = true;
 let logoRestaurante = dataRest?.logo || null;
 const TIEMPO_EXPIRACION = 3 * 60 * 60 * 1000;
-
-// === TARIFA GLOBAL $22 + $4/km - SOLO INTERNO, NO SE MUESTRA VISUAL ===
 let tarifaGlobal = {base: 22, precio_km: 4};
 const TARIFA_SERVICIO_PORC = 0.03;
+
+// ===== UBICACION EN TIEMPO REAL =====
+const overlayUbiEl = document.getElementById('overlayUbicacion');
+let gpsValido = true;
+function mostrarOverlayUbi(){ if(overlayUbiEl) overlayUbiEl.classList.add('open'); gpsValido = false; }
+function ocultarOverlayUbi(){ if(overlayUbiEl) overlayUbiEl.classList.remove('open'); gpsValido = true; }
+function intentarUbicacionCarrito(esClick=false){
+  if(!navigator.geolocation){ mostrarOverlayUbi(); return; }
+  navigator.geolocation.getCurrentPosition((pos)=>{
+    try{
+      const dataUbi = JSON.parse(localStorage.getItem('doloya_ubicacion')||'{}');
+      dataUbi.ubicacion = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+      dataUbi.timestamp = Date.now();
+      localStorage.setItem('doloya_ubicacion', JSON.stringify(dataUbi));
+    }catch{}
+    ocultarOverlayUbi();
+  }, (err)=>{
+    console.log('GPS carrito apagado', err.code);
+    mostrarOverlayUbi();
+  }, {enableHighAccuracy:true, timeout:10000, maximumAge:0});
+}
+window.intentarUbicacionCarrito = intentarUbicacionCarrito;
+intentarUbicacionCarrito(false);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) intentarUbicacionCarrito(false); });
+window.addEventListener('pageshow', ()=>{ intentarUbicacionCarrito(false); });
+setInterval(()=>{ if(!document.hidden) intentarUbicacionCarrito(false); }, 120000);
 
 onValue(ref(db, 'config_global/tarifa_default'), snap=>{
   const v = snap.val();
@@ -82,7 +132,6 @@ onValue(ref(db, 'config_global/tarifa_default'), snap=>{
     if(v.precio_km !== undefined) tarifaGlobal.precio_km = parseFloat(v.precio_km);
   }
 });
-
 async function obtenerIP(){
   try{
     const r = await fetch('https://api.ipify.org?format=json');
@@ -92,7 +141,6 @@ async function obtenerIP(){
     ipKey = localStorage.getItem('doloya_device_id');
   }
 }
-
 async function obtenerLogo(){
   if(logoRestaurante){ render(); enriquecerDescripciones(); return; }
   if(dataRest?.cat && dataRest?.id){
@@ -127,7 +175,6 @@ async function obtenerLogo(){
   render();
   enriquecerDescripciones();
 }
-
 async function enriquecerDescripciones(){
   if(!dataRest?.id) return;
   let necesitaUpdate = false;
@@ -175,7 +222,6 @@ function buscarDescripcionEnData(root, nombreBuscar){
   }
   return recorrer(root);
 }
-
 function render(){
   const cont = document.getElementById('contenido');
   const foot = document.getElementById('footer');
@@ -228,8 +274,14 @@ window.toggleDesc = (idx)=>{
   if(el.style.whiteSpace==='normal'){ el.style.whiteSpace='nowrap'; el.style.overflow='hidden'; }
   else{ el.style.whiteSpace='normal'; el.style.overflow='visible'; }
 }
-window.cambiarCant = (idx, delta)=>{ carrito[idx].cantidad += delta; if(carrito[idx].cantidad<=0){ carrito.splice(idx,1); } guardar(); }
-window.eliminarItem = (idx)=>{ carrito.splice(idx,1); guardar(); }
+window.cambiarCant = (idx, delta)=>{ 
+  if(!gpsValido){ mostrarOverlayUbi(); return; }
+  carrito[idx].cantidad += delta; if(carrito[idx].cantidad<=0){ carrito.splice(idx,1); } guardar(); 
+}
+window.eliminarItem = (idx)=>{ 
+  if(!gpsValido){ mostrarOverlayUbi(); return; }
+  carrito.splice(idx,1); guardar(); 
+}
 window.vaciarTodo = async ()=>{
   if(carrito.length===0) return;
   if(!ipKey) await obtenerIP();
@@ -311,6 +363,7 @@ function calcularCostos(costoProductos, distanciaKm){
 }
 window.irSiguiente = async ()=>{
   if(carrito.length===0) return;
+  if(!gpsValido){ mostrarOverlayUbi(); intentarUbicacionCarrito(false); return; }
   if(!ipKey) await obtenerIP();
   const clienteUbi = obtenerUbicacionCliente();
   const restFull = await obtenerDatosRestaurante();
