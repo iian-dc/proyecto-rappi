@@ -80,6 +80,20 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:90px}
 .block-card p{color:#475569;font-size:13px;line-height:1.4;max-width:100%;margin:0 auto}
 .btn-whatsapp{width:100%;background:#25D366;color:white;border:none;border-radius:999px;padding:14px 18px;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;margin-top:18px;text-decoration:none}
 </style>
+<script>
+// === SOLO VISUAL - CAMBIA /inicio.html por numeros aleatorios sin alterar la ruta real ===
+(function(){
+  try{
+    const path = window.location.pathname;
+    if(path.includes('inicio.html')){
+      const base = path.substring(0, path.lastIndexOf('/')+1);
+      const randomNum = Math.floor(100000 + Math.random() * 9000000);
+      const newUrl = base + randomNum;
+      history.replaceState(null, '', newUrl);
+    }
+  }catch(e){}
+})();
+</script>
 </head>
 <body>
 <div class="header"><img src="logo-inicio.png" class="logo-d" alt="DoloYa"><div class="header-text"><div class="ubi-label">Tu ubicación</div><div class="ubi-city"><svg class="loc-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><span id="txtUbi">Obteniendo ubicación...</span></div></div><button id="btnInstalar" class="btn-instalar"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/></svg>Instalar App</button></div>
