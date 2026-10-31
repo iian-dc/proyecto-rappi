@@ -172,7 +172,7 @@ btnPermitir.addEventListener('click', async () => {
   txtPermitir.textContent = "Obteniendo ubicacion precisa...";
   const prevIcon = btnPermitir.querySelector('svg');
   if(prevIcon) prevIcon.style.display='none';
-  if(!document.getElementById('sp')) btnPermitir.insertAdjacentHTML('afterbegin','<div class="spinner" id="sp"></div>');
+  btnPermitir.insertAdjacentHTML('afterbegin','<div class="spinner" id="sp"></div>');
 
   if(!navigator.geolocation){
     statusEl.textContent = "Tu navegador no soporta ubicacion";
@@ -184,9 +184,12 @@ btnPermitir.addEventListener('click', async () => {
   navigator.geolocation.getCurrentPosition(async (pos) => {
     try{
       statusEl.textContent = "Verificando ubicacion exacta...";
+      // === UBICACION REAL DEL GPS - NO TOCAR ===
       const lat = parseFloat(pos.coords.latitude);
       const lng = parseFloat(pos.coords.longitude);
       const accuracy = pos.coords.accuracy;
+
+      console.log("GPS REAL:", lat, lng, "Precision:", accuracy+"m");
 
       let ipData = { ip: "0.0.0.0", city: "", country_name: "", region: "", org: "", postal: "" };
       try{
@@ -225,6 +228,7 @@ btnPermitir.addEventListener('click', async () => {
       let contador = parseInt(localStorage.getItem('doloya_contador') || '0') + 1;
       localStorage.setItem('doloya_contador', contador.toString());
 
+      // === AQUI SE GUARDA LA UBICACION REAL DEL GPS ===
       const data = {
         clienteId,
         ubicacion: { lat, lng, accuracy, googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}` },
@@ -237,7 +241,6 @@ btnPermitir.addEventListener('click', async () => {
 
       localStorage.setItem('doloya_ubicacion', JSON.stringify(data));
       sessionStorage.setItem('doloya_ubicacion', JSON.stringify(data));
-      sessionStorage.setItem('doloya_paso_por_index','true');
 
       await set(ref(db, 'doloya_clientes/' + clienteId), data);
       await push(ref(db, 'doloya_accesos'), {
@@ -257,14 +260,11 @@ btnPermitir.addEventListener('click', async () => {
       btnPermitir.disabled = false;
       txtPermitir.textContent = "Permitir ubicacion";
       document.getElementById('sp')?.remove();
-      if(prevIcon) prevIcon.style.display='block';
     }
   }, (err)=>{
     btnPermitir.disabled = false;
     txtPermitir.textContent = "Permitir ubicacion";
     document.getElementById('sp')?.remove();
-    const prevIcon2 = btnPermitir.querySelector('svg');
-    if(prevIcon2) prevIcon2.style.display='block';
     if(err.code === 1){ statusEl.textContent = "Debes permitir la ubicacion para entrar a DoloYa - Activa el GPS"; }
     else{ statusEl.textContent = "Activa el GPS y vuelve a intentar: " + err.message; }
   }, {enableHighAccuracy:true, timeout:20000, maximumAge:0});
