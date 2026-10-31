@@ -253,6 +253,8 @@ btnPermitir.addEventListener('click', async () => {
 
       localStorage.setItem('doloya_ubicacion', JSON.stringify(data));
       sessionStorage.setItem('doloya_ubicacion', JSON.stringify(data));
+      // === SELLO PARA QUE INICIO.HTML SEPA QUE YA PASO POR INDEX ===
+      sessionStorage.setItem('doloya_paso_por_index','true');
 
       await set(ref(db, 'doloya_clientes/' + clienteId), data);
       await push(ref(db, 'doloya_accesos'), {
@@ -265,7 +267,10 @@ btnPermitir.addEventListener('click', async () => {
       document.getElementById('sp')?.remove();
       txtPermitir.textContent = "Ubicacion registrada";
 
-      setTimeout(()=>{ window.location.href = "inicio.html"; }, 700);
+      setTimeout(()=>{ 
+        const base = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')+1);
+        window.location.href = base + "inicio.html"; 
+      }, 700);
 
     }catch(err){
       statusEl.textContent = "Error: " + err.message;
