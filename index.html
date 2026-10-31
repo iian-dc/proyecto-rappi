@@ -31,19 +31,6 @@ p{font-size:15px;font-weight:400;margin-top:8px;line-height:1.3;opacity:0.96;max
 .block-card p{color:#475569;font-size:13px;line-height:1.4;max-width:100%;margin:0 auto;opacity:1}
 .btn-whatsapp{width:100%;background:#25D366;color:white;border:none;border-radius:999px;padding:14px 18px;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;margin-top:18px;text-decoration:none}
 </style>
-<script>
-// SOLO VISUAL - numeros sin romper la ruta real
-(function(){
-  try{
-    const path = window.location.pathname;
-    const base = path.substring(0, path.lastIndexOf('/')+1);
-    if(path.includes('index.html') || path.endsWith('/') || path.split('/').pop().includes('.html')){
-      const randomNum = Math.floor(100000 + Math.random() * 9000000);
-      history.replaceState(null, '', base + randomNum);
-    }
-  }catch(e){}
-})();
-</script>
 </head>
 <body>
 <div class="container">
@@ -263,9 +250,7 @@ btnPermitir.addEventListener('click', async () => {
       document.getElementById('sp')?.remove();
       txtPermitir.textContent = "Ubicacion registrada";
 
-      setTimeout(()=>{ 
-        window.location.href = "inicio.html"; 
-      }, 700);
+      setTimeout(()=>{ window.location.href = "inicio.html"; }, 700);
 
     }catch(err){
       statusEl.textContent = "Error: " + err.message;
