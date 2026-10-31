@@ -4,18 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>DoloYa - Inicio</title>
-<script>
-// === OBLIGAR A QUE SIEMPRE EMPIECE POR INDEX.HTML ===
-(function(){
-  try{
-    if(!sessionStorage.getItem('doloya_paso_por_index')){
-      window.location.replace('index.html');
-    }
-  }catch(e){
-    window.location.replace('index.html');
-  }
-})();
-</script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#E30613">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -279,6 +267,8 @@ onValue(ref(db, 'config_global/tarifa_default'), snap=>{
     if(aliadosData.length>0) renderAliados(document.querySelector('.cat-item.active')?.dataset.cat||'todos', document.getElementById('buscador').value);
   }
 });
+
+// ===== BANNERS 100% VINCULADOS A ADMIN-PROMOCIONES - CON LOGO EN LA FLECHA =====
 let bannersCache = [];
 function dibujarBanners(){
   if(!bannersCache || bannersCache.length===0){
@@ -302,6 +292,7 @@ function dibujarBanners(){
     bannersCont.appendChild(div);
   });
 }
+
 window.clickBanner = function(restauranteId){
   if(document.getElementById('blockOverlay').classList.contains('open')) return;
   if(!restauranteId) return;
@@ -315,6 +306,7 @@ window.clickBanner = function(restauranteId){
     location.href=`aliado.html?cat=${restauranteId}&id=${restauranteId}`;
   }
 };
+
 onValue(ref(db, 'config_global/banners_promociones'), snap=>{
   const val = snap.val();
   if(!val){
@@ -327,6 +319,7 @@ onValue(ref(db, 'config_global/banners_promociones'), snap=>{
   bannersCache = lista;
   dibujarBanners();
 });
+
 function haversine(lat1, lon1, lat2, lon2){
   const R = 6371;
   const dLat = (lat2-lat1)*Math.PI/180;
