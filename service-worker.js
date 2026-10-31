@@ -4,7 +4,7 @@ self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.o
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(names=>Promise.all(names.map(n=>{ if(n!==CACHE_NAME) return caches.delete(n); })))); self.clients.claim(); });
 self.addEventListener('fetch', e => {
   const url = e.request.url;
-  if(url.includes('inicio.html') || url.includes('aliado.html') || url.includes('admin-')){
+  if(url.includes('index.html') || url.includes('aliado.html') || url.includes('admin-')){
     e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));
     return;
   }
