@@ -72,6 +72,15 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .modal-card input:focus{border-color:#111}
 .btn-finalizar{width:100%;margin-top:18px;padding:16px;background:#E30613;color:white;border:none;border-radius:999px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(227,6,19,0.3)}
 .btn-cancel{width:100%;margin-top:10px;padding:12px;background:white;color:#111;border:1.5px solid #E5E7EB;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer}
+/* OVERLAY UBICACION */
+.overlay-ubi{position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:999998;padding:20px}
+.overlay-ubi.open{display:flex;animation:fadeIn .25s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.card-ubi{background:white;border-radius:22px;padding:28px 22px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.4);animation:pop .3s}
+.icon-ubi{width:64px;height:64px;background:#FFF1F2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.card-ubi h2{color:#111;font-size:19px;font-weight:900;margin-bottom:8px}
+.card-ubi p{color:#64748b;font-size:13px;line-height:1.4}
+.btn-ubi{width:100%;background:#E30613;color:white;border:none;border-radius:999px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;margin-top:18px;display:flex;align-items:center;justify-content:center;gap:8px}
 </style>
 </head>
 <body>
@@ -81,7 +90,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 </div>
 <div class="mapa-wrap">
   <iframe id="mapaIframe" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
-  <div class="pin-center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M6 10a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1a2 2 0 0 1-1 1.73l-3 1.73a2 2 0 0 1-2 0l-3-1.73A2 2 0 0 1 8 11v-1z"/><path d="M6 11v3a2 2 0 0 0 1 1.73l3 1.73a2 2 0 0 0 2 0l3-1.73A2 2 0 0 0 16 14v-3"/></svg></div>
+  <div class="pin-center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M6 10a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1a2 2 0 0 1-1 1.73l-3 1.73a2 2 0 0 1-2 0l-3-1.73A2 2 0 0 1-1 1.73l-3 1.73a2 2 0 0 0 2 0l3-1.73A2 2 0 0 0 16 14v-3"/></svg></div>
   <button class="btn-ajustar" onclick="window.location.href='puntodeentrega.html'">Ajustar punto de entrega<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a5 5 0 0 0-5 5c0 5 5 11 5 11s5-6 5-11a5 5 0 0 0-5-5z"/><circle cx="12" cy="7" r="1.5"/></svg></button>
 </div>
 <div class="item-row no-click">
@@ -141,6 +150,21 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 </div>
 <div class="toast-resumen" id="toastResumen">Completa tu dirección y celular en Detalles</div>
 
+<div id="overlayUbicacion" class="overlay-ubi">
+  <div class="card-ubi">
+    <div class="icon-ubi">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2.2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+    </div>
+    <h2>Activa tu ubicación</h2>
+    <p>Necesitamos tu ubicación actual para finalizar tu pedido. Si apagas el GPS no puedes continuar.</p>
+    <button class="btn-ubi" onclick="window.intentarUbicacionResumen(true)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+      Permitir ubicación
+    </button>
+    <p style="margin-top:12px;font-size:11px;color:#94a3b8">Activa el GPS para poder pagar tu pedido</p>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -195,10 +219,38 @@ let { ubicacion: ubiInit, detallesFull: detInit } = leerUbicacionStorage();
 let lat = ubiInit?.lat || ubiInit?.ubicacion?.lat || 21.1576;
 let lng = ubiInit?.lng || ubiInit?.ubicacion?.lng || -100.9306;
 let direccionBase = ubiInit?.direccion || '';
-
 let tarifaGlobal = {base: 22, precio_km: 4};
 const EXTRA_RAPIDO = 14.99;
 const TARIFA_SERVICIO_PORC = 0.03;
+
+// ===== UBICACION EN TIEMPO REAL - RESUMEN =====
+const overlayUbiEl = document.getElementById('overlayUbicacion');
+let gpsValidoResumen = true;
+function mostrarOverlayUbiResumen(){ if(overlayUbiEl) overlayUbiEl.classList.add('open'); gpsValidoResumen = false; }
+function ocultarOverlayUbiResumen(){ if(overlayUbiEl) overlayUbiEl.classList.remove('open'); gpsValidoResumen = true; }
+function intentarUbicacionResumen(esClick=false){
+  if(!navigator.geolocation){ mostrarOverlayUbiResumen(); return; }
+  navigator.geolocation.getCurrentPosition((pos)=>{
+    lat = pos.coords.latitude; lng = pos.coords.longitude;
+    try{
+      const dataUbi = JSON.parse(localStorage.getItem('doloya_ubicacion')||'{}');
+      dataUbi.ubicacion = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+      dataUbi.lat = pos.coords.latitude; dataUbi.lng = pos.coords.longitude;
+      dataUbi.timestamp = Date.now();
+      localStorage.setItem('doloya_ubicacion', JSON.stringify(dataUbi));
+    }catch{}
+    ocultarOverlayUbiResumen();
+    calcularDistanciaYActualizar();
+  }, (err)=>{
+    console.log('GPS resumen apagado', err.code);
+    mostrarOverlayUbiResumen();
+  }, {enableHighAccuracy:true, timeout:10000, maximumAge:0});
+}
+window.intentarUbicacionResumen = intentarUbicacionResumen;
+intentarUbicacionResumen(false);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) intentarUbicacionResumen(false); });
+window.addEventListener('pageshow', ()=>{ intentarUbicacionResumen(false); });
+setInterval(()=>{ if(!document.hidden) intentarUbicacionResumen(false); }, 120000);
 
 try{
   const envioGuardado = JSON.parse(localStorage.getItem('doloya_envio_actual')||'null');
@@ -260,19 +312,15 @@ async function obtenerGPSReal(){
   const ubiCheck = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
   const detCheck = JSON.parse(localStorage.getItem('doloya_detalles_full')||'null');
   const puntoAjustado = localStorage.getItem('doloya_punto_ajustado') === '1';
-  
-  // SI EL CLIENTE AJUSTO PUNTO MANUALMENTE, RESPETAR ESA DIRECCION
   if(puntoAjustado && detCheck && detCheck.direccion){
     lat = detCheck.lat; lng = detCheck.lng; direccionBase = detCheck.direccion;
     document.getElementById('txtDireccion').textContent = direccionBase;
     actualizarMapaIframe(); calcularDistanciaYActualizar(); return;
   }
-  
   if(!navigator.geolocation){ cargarDireccionYDistanciaSinGPS(); return; }
   navigator.geolocation.getCurrentPosition(async (pos)=>{
     const latGPS = pos.coords.latitude; const lngGPS = pos.coords.longitude;
     lat = latGPS; lng = lngGPS;
-    // AHORA SI OBTIENE DIRECCION REAL DONDE ESTAS
     direccionBase = await obtenerDireccionPorGPS(latGPS, lngGPS);
     const nuevaUbi = { direccion: direccionBase, lat: latGPS, lng: lngGPS, ubicacion: {lat: latGPS, lng: lngGPS} };
     localStorage.setItem('doloya_ubicacion', JSON.stringify(nuevaUbi));
@@ -393,6 +441,7 @@ function mostrarErrorDetalles(mensaje){
   setTimeout(()=>{ window.location.href='detalles.html'; }, 800);
 }
 function abrirModal(){
+  if(!gpsValidoResumen){ mostrarOverlayUbiResumen(); intentarUbicacionResumen(false); return; }
   const val = validarDetallesObligatorios();
   if(!val.ok){ mostrarErrorDetalles('Completa tu ' + val.faltan.join(' y ') + ' en Detalles'); return; }
   if(!metodoSel){ window.location.href='metododepago.html'; return; }
@@ -423,6 +472,7 @@ function limpiarProductosParaFirestore(arr){
   }).filter(p=> p.nombre && p.precio>=0 && p.cantidad>0);
 }
 async function irAPagar(){
+  if(!gpsValidoResumen){ mostrarOverlayUbiResumen(); return; }
   const nombre = document.getElementById('inputNombre').value.trim();
   if(!nombre){ alert('Por favor ingresa tu nombre completo'); return; }
   const btn = document.getElementById('btnFinalizar');
