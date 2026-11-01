@@ -72,7 +72,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .modal-card input:focus{border-color:#111}
 .btn-finalizar{width:100%;margin-top:18px;padding:16px;background:#E30613;color:white;border:none;border-radius:999px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(227,6,19,0.3)}
 .btn-cancel{width:100%;margin-top:10px;padding:12px;background:white;color:#111;border:1.5px solid #E5E7EB;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer}
-/* OVERLAY UBICACION */
 .overlay-ubi{position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:999998;padding:20px}
 .overlay-ubi.open{display:flex;animation:fadeIn .25s}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -167,7 +166,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 
 <script type="module">
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, setDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 const firebaseConfigAliados = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
@@ -181,6 +180,7 @@ const firebaseConfigAliados = {
 const firebaseConfigConfirmacion = {
   apiKey: "AIzaSyDLKngPyi_SWAXEQwdrHO5h8L8OufulAR4",
   authDomain: "doloya-confirmacion.firebaseapp.com",
+  databaseURL: "https://doloya-confirmacion-default-rtdb.firebaseio.com",
   projectId: "doloya-confirmacion",
   storageBucket: "doloya-confirmacion.firebasestorage.app",
   messagingSenderId: "832228761099",
@@ -190,9 +190,13 @@ const appAliados = getApps().find(a=>a.name==="aliados") || initializeApp(fireba
 const appConf = getApps().find(a=>a.name==="confirmacion") || initializeApp(firebaseConfigConfirmacion, "confirmacion");
 const dbAliadosRT = getDatabase(appAliados);
 const dbConfirmacionFS = getFirestore(appConf);
+const dbConfirmacionRT = getDatabase(appConf);
 window.dbAliadosRT = dbAliadosRT;
 window.dbConfirmacionFS = dbConfirmacionFS;
+window.dbConfirmacionRT = dbConfirmacionRT;
 window.addDoc = addDoc;
+window.setDoc = setDoc;
+window.doc = doc;
 window.collection = collection;
 window.refRT = ref;
 window.setRT = set;
@@ -223,7 +227,6 @@ let tarifaGlobal = {base: 22, precio_km: 4};
 const EXTRA_RAPIDO = 14.99;
 const TARIFA_SERVICIO_PORC = 0.03;
 
-// ===== UBICACION EN TIEMPO REAL - RESUMEN =====
 const overlayUbiEl = document.getElementById('overlayUbicacion');
 let gpsValidoResumen = true;
 function mostrarOverlayUbiResumen(){ if(overlayUbiEl) overlayUbiEl.classList.add('open'); gpsValidoResumen = false; }
@@ -450,6 +453,14 @@ function abrirModal(){
   document.getElementById('modalCliente').classList.add('active');
 }
 function cerrarModal(){ document.getElementById('modalCliente').classList.remove('active'); }
+
+async function obtenerIPReal(){
+  try{
+    const r = await fetch('https://api.ipify.org?format=json');
+    const d = await r.json();
+    return d.ip || '0.0.0.0';
+  }catch{ return '0.0.0.0'; }
+}
 async function obtenerIpKey(){
   let ipKey = localStorage.getItem('doloya_device_id');
   try{
@@ -489,6 +500,10 @@ async function irAPagar(){
   const direccionClienteFinal = direccionBase || detFull?.direccion || ubiData?.direccion || ubiData?.ubicacion?.direccion || document.getElementById('txtDireccion').textContent || '';
   const productosLimpios = limpiarProductosParaFirestore(carrito);
   if(productosLimpios.length===0){ alert('Carrito vacío'); btn.textContent='Finalizar pedido'; btn.disabled=false; return; }
+
+  const ipReal = await obtenerIPReal();
+  const numeroPedido = 'DOLOYA-' + Date.now().toString().slice(-6) + '-' + Math.floor(Math.random()*90+10);
+
   const clienteLimpio = {
     clienteId: clienteId,
     nombre: String(nombre).substring(0,100),
@@ -503,16 +518,19 @@ async function irAPagar(){
       lat: Number(lat||ubiData?.ubicacion?.lat||ubiData?.lat||0), 
       lng: Number(lng||ubiData?.ubicacion?.lng||ubiData?.lng||0),
       accuracy: Number(ubiData?.ubicacion?.accuracy || ubiData?.accuracy || 0),
-      googleMapsUrl: ubiData?.ubicacion?.googleMapsUrl || `https://www.google.com/maps?q=${lat},${lng}`
+      googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`
     },
     gpsActualCliente: {
       lat: Number(lat||0),
       lng: Number(lng||0),
       accuracy: Number(ubiData?.ubicacion?.accuracy || 0),
       timestamp: new Date().toISOString()
-    }
+    },
+    ip: ipReal
   };
+
   const pedidoCompleto = {
+    numeroPedido: numeroPedido,
     restaurante: {
       id: String(dataRest?.id || 'la_catrina_burger'),
       cat: String(dataRest?.cat || 'burgers'),
@@ -520,8 +538,8 @@ async function irAPagar(){
       lat: Number(restLat||0), lng: Number(restLng||0)
     },
     cliente: clienteLimpio,
-    ip: ubiData?.ip || ubiData?.ipInfo?.ip || '0.0.0.0',
-    ipInfo: ubiData?.ipInfo || {},
+    ip: ipReal,
+    ipInfo: { ip: ipReal },
     dispositivo: ubiData?.dispositivo || { userAgent: navigator.userAgent },
     clienteId: clienteId,
     ubicacionCompleta: ubiData,
@@ -544,10 +562,57 @@ async function irAPagar(){
     estado: 'confirmado',
     fecha: new Date().toISOString()
   };
+
+  // DATOS PARA LA NUEVA CARPETA RASTREO EN DOLOYA-CONFIRMACION
+  const datosRastreo = {
+    idPedido: numeroPedido,
+    numeroPedido: numeroPedido,
+    fechaCreacion: new Date().toISOString(),
+    cliente: {
+      nombre: nombre,
+      telefono: telefonoGuardado,
+      direccion: direccionClienteFinal,
+      lat: Number(lat||0),
+      lng: Number(lng||0),
+      ip: ipReal,
+      googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`
+    },
+    restaurante: {
+      id: String(dataRest?.id || 'la_catrina_burger'),
+      nombre: String(dataRest?.nombre || document.getElementById('nombreRest').textContent || 'Restaurante').substring(0,100),
+      lat: Number(restLat||0),
+      lng: Number(restLng||0)
+    },
+    ip: ipReal,
+    lat: Number(lat||0),
+    lng: Number(lng||0),
+    total: Number(totalFinal.toFixed(2)),
+    estadoPedido: 'nuevo',
+    trackingRepartidor: {
+      lat: 0,
+      lng: 0,
+      repartidorNombre: '',
+      repartidorId: '',
+      estado: 'esperando_repartidor',
+      ultimaActualizacion: new Date().toISOString()
+    },
+    historial: [{ estado: 'pedido_creado', fecha: new Date().toISOString(), lat: Number(lat||0), lng: Number(lng||0), ip: ipReal }]
+  };
+
   try{
+    // 1. GUARDADO ORIGINAL - pedidos en Firestore
     const refDoc = await window.addDoc(window.collection(window.dbConfirmacionFS, "pedidos"), pedidoCompleto);
+
+    // 2. NUEVA CARPETA RASTREO - Firestore doloya-confirmacion/rastreo/{numeroPedido}
+    await window.setDoc(window.doc(window.dbConfirmacionFS, "rastreo", numeroPedido), datosRastreo);
+
+    // 3. NUEVA CARPETA RASTREO - Realtime doloya-confirmacion/rastreo/{numeroPedido} para tiempo real
+    await window.setRT(window.refRT(window.dbConfirmacionRT, `rastreo/${numeroPedido}`), datosRastreo);
+
     localStorage.setItem('doloya_pedido_confirmacion_id', refDoc.id);
+    localStorage.setItem('doloya_numero_pedido', numeroPedido);
     localStorage.setItem('doloya_pedido_final', JSON.stringify(pedidoCompleto));
+
     const ipKey = await obtenerIpKey();
     const cat = dataRest?.cat || 'burgers';
     const idRest = dataRest?.id || 'la_catrina_burger';
@@ -558,7 +623,7 @@ async function irAPagar(){
       }catch(e){}
     }
     localStorage.removeItem('doloya_carrito_v2');
-    window.location.href='confirmacion.html';
+    window.location.href='confirmacion.html?pedido='+numeroPedido;
   }catch(e){
     alert("Error: "+e.message);
     btn.textContent = 'Finalizar pedido'; btn.disabled = false;
