@@ -139,7 +139,6 @@ const dbAliados = getDatabase(appAliados);
 const pedidoFinal = JSON.parse(localStorage.getItem('doloya_pedido_final')||'null');
 const pedidoId = localStorage.getItem('doloya_pedido_confirmacion_id');
 
-// ===== NUEVO: RASTREO EN TIEMPO REAL CLIENTE EN CONFIRMACION =====
 let watchIdVivoConfirmacion = null;
 async function iniciarRastreoVivoConfirmacion(numeroPedido){
   if(!numeroPedido) return;
@@ -267,23 +266,12 @@ const estados=[
  {key:'finalizado',nombre:'Finalizado',desc:'Entregado', icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 15l5 5L20 6"/><path d="M4 5l2 2"/><path d="M8 5l2 2"/></svg>`},
 ];
 
-function getIndiceEstado(key){
-  return estados.findIndex(e=>e.key===key);
-}
-
+function getIndiceEstado(key){ return estados.findIndex(e=>e.key===key); }
 function mapearEstadoRestauranteACliente(estadoRestaurante){
   if(!estadoRestaurante) return 'confirmado';
   const e = estadoRestaurante.toLowerCase().trim();
   if(e==='cancelado') return 'cancelado';
-  const mapa = {
-    'nuevo': 'confirmado','confirmado': 'confirmado','aceptado': 'aceptado',
-    'en_preparacion': 'preparando','preparando': 'preparando','listo': 'preparando','listo_para_admin': 'preparando',
-    'enviado_a_repartidor': 'preparando',
-    'activo': 'aceptado',
-    'ir_a_recoger': 'preparando',
-    'recogido': 'en_camino','ir_a_entregar': 'en_camino','en_camino': 'en_camino',
-    'finalizado': 'finalizado','entregado': 'finalizado'
-  };
+  const mapa = { 'nuevo': 'confirmado','confirmado': 'confirmado','aceptado': 'aceptado','en_preparacion': 'preparando','preparando': 'preparando','listo': 'preparando','listo_para_admin': 'preparando','enviado_a_repartidor': 'preparando','activo': 'aceptado','ir_a_recoger': 'preparando','recogido': 'en_camino','ir_a_entregar': 'en_camino','en_camino': 'en_camino','finalizado': 'finalizado','entregado': 'finalizado' };
   return mapa[e] || 'confirmado';
 }
 function descripcionRepartidor(estadoReal){
@@ -304,7 +292,6 @@ function lanzarConfetiEsquinas(){
   confetti({particleCount:120, angle:60, spread:75, origin:{x:0, y:0.9}, colors, scalar:1.2, startVelocity:55, gravity:0.8, ticks:300});
   confetti({particleCount:120, angle:120, spread:75, origin:{x:1, y:0.9}, colors, scalar:1.2, startVelocity:55, gravity:0.8, ticks:300});
 }
-
 async function guardarCanceladoCompletoEnHistorial(dataCancelado){
   try{
     const posicion = await new Promise((resolve)=>{
@@ -328,44 +315,15 @@ async function guardarCanceladoCompletoEnHistorial(dataCancelado){
       canceladoPorNombre: dataCancelado.canceladoPorNombre || dataCancelado.repartidorNombre || 'Repartidor',
       estado: 'cancelado_por_no_recibir',
       estadoOriginal: dataCancelado.estado,
-      gps: {
-        lat: posicion?.lat || dataCancelado.cliente?.lat || dataCancelado.coordenadas?.lat || pedidoFinal?.cliente?.lat || null,
-        lng: posicion?.lng || dataCancelado.cliente?.lng || dataCancelado.coordenadas?.lng || pedidoFinal?.cliente?.lng || null,
-        accuracy: posicion?.accuracy || null,
-        timestamp: new Date().toISOString()
-      },
-      ubicacionCompleta: {
-        cliente: dataCancelado.cliente || pedidoFinal?.cliente || null,
-        coordenadasEntrega: dataCancelado.coordenadas || pedidoFinal?.coordenadas || null,
-        gpsActualCliente: posicion
-      },
-      ip: dataCancelado.ip || null,
+      gps: { lat: posicion?.lat || null, lng: posicion?.lng || null, accuracy: posicion?.accuracy || null, timestamp: new Date().toISOString() },
       userAgent: navigator.userAgent,
       fechaCancelacion: new Date().toISOString(),
-      enviadoAHistorialEn: new Date().toISOString(),
-      guardadoDesde: 'confirmacion - cancelado por no recibir',
       datosOriginalesCompletos: dataCancelado
     };
     const idDoc = pedidoId || dataCancelado.id || `cancel-${Date.now()}`;
     await setDoc(doc(dbHistorial, "pedidos_cancelados", idDoc), infoCliente);
-    const tel = infoCliente.telefono ? infoCliente.telefono.replace(/\s+/g,'') : null;
-    if(tel){
-      await setDoc(doc(dbHistorial, "clientes_reportados_no_recibe", tel), {
-        telefono: tel,
-        nombre: infoCliente.nombre,
-        direccion: infoCliente.direccionEntrega,
-        gps: infoCliente.gps,
-        motivo: infoCliente.motivoCancelacion,
-        totalPedidosNoRecibidos: 1,
-        ultimoReporte: new Date().toISOString(),
-        pedidos: [infoCliente]
-      }, {merge:true});
-    }
-  }catch(e){
-    console.error('Error guardando cancelado en historial', e);
-  }
+  }catch(e){ console.error('Error guardando cancelado', e); }
 }
-
 function mostrarCanceladoOverlay(motivo, detalle, dataFull){
   if(canceladoYaMostrado) return;
   canceladoYaMostrado = true;
@@ -373,27 +331,21 @@ function mostrarCanceladoOverlay(motivo, detalle, dataFull){
   document.getElementById('tituloPrincipal').textContent='Pedido Cancelado';
   document.getElementById('checkCircle').style.background='#111';
   document.getElementById('checkCircle').innerHTML='<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-  document.getElementById('motivoTxt').textContent = motivo || 'No recibiste el pedido / no contestaste al repartidor';
-  document.getElementById('detalleTxt').textContent = detalle || motivo || 'Repartidor reportó que no se pudo entregar';
+  document.getElementById('motivoTxt').textContent = motivo || 'No recibiste el pedido';
+  document.getElementById('detalleTxt').textContent = detalle || motivo || 'No se pudo entregar';
   document.getElementById('canceladoOverlay').classList.add('active');
   if(dataFull){ guardarCanceladoCompletoEnHistorial(dataFull); }
 }
-
 window.irAIndex = function(){
   try{
     localStorage.removeItem('doloya_pedido_final');
     localStorage.removeItem('doloya_pedido_confirmacion_id');
     localStorage.removeItem('doloya_codigo_pedido_actual');
     localStorage.removeItem('doloya_carrito_restaurante_data');
-    if(pedidoId){
-      const mapa = JSON.parse(localStorage.getItem('doloya_mapa_codigos')||'{}');
-      delete mapa[pedidoId];
-      localStorage.setItem('doloya_mapa_codigos', JSON.stringify(mapa));
-    }
+    if(pedidoId){ const mapa = JSON.parse(localStorage.getItem('doloya_mapa_codigos')||'{}'); delete mapa[pedidoId]; localStorage.setItem('doloya_mapa_codigos', JSON.stringify(mapa)); }
   }catch{}
   window.location.href='index.html';
 }
-
 function celebrarFinalizado(){
   if(redirectYaIniciado || canceladoYaMostrado) return;
   redirectYaIniciado = true;
@@ -401,161 +353,78 @@ function celebrarFinalizado(){
   document.getElementById('checkCircle').style.background = '#16a34a';
   const botonesRow = document.getElementById('botonesRow');
   if(botonesRow) botonesRow.style.display = 'none';
-  lanzarConfetiEsquinas();
-  setTimeout(lanzarConfetiEsquinas,300);
-  setTimeout(lanzarConfetiEsquinas,650);
-  const contadorEl = document.getElementById('contadorRedirect');
-  const segundosEl = document.getElementById('segundos');
-  contadorEl.classList.add('mostrar');
-  let seg = 10;
-  segundosEl.textContent = seg;
-  const intervalo = setInterval(()=>{
-    seg--;
-    segundosEl.textContent = seg;
-    if(seg <= 0){
-      clearInterval(intervalo);
-      irAIndex();
-    }
-  },1000);
+  lanzarConfetiEsquinas(); setTimeout(lanzarConfetiEsquinas,300); setTimeout(lanzarConfetiEsquinas,650);
+  const contadorEl = document.getElementById('contadorRedirect'); const segundosEl = document.getElementById('segundos');
+  contadorEl.classList.add('mostrar'); let seg = 10; segundosEl.textContent = seg;
+  const intervalo = setInterval(()=>{ seg--; segundosEl.textContent = seg; if(seg <= 0){ clearInterval(intervalo); irAIndex(); } },1000);
 }
-
 function render(){
- const cont=document.getElementById('timeline');
- const idx=estados.findIndex(e=>e.key===estadoActual);
+ const cont=document.getElementById('timeline'); const idx=estados.findIndex(e=>e.key===estadoActual);
  if(estadoActual==='cancelado'){ cont.innerHTML=''; return; }
  cont.innerHTML=estados.map((est,i)=>{
-  const done=i<idx; const isCurrent=i===idx;
-  let desc = est.desc;
-  if(isCurrent && subEstadoRepartidor){ const d = descripcionRepartidor(subEstadoRepartidor); if(d) desc = d.desc; }
+  const done=i<idx; const isCurrent=i===idx; let desc = est.desc; if(isCurrent && subEstadoRepartidor){ const d = descripcionRepartidor(subEstadoRepartidor); if(d) desc = d.desc; }
   const esFinal = estadoActual==='finalizado' && isCurrent;
   return `<div class="step"><div class="line ${i<idx || estadoActual==='finalizado' && i<4 ?'active':''}" style="${i===4?'display:none':''}"></div><div class="icon ${done || estadoActual==='finalizado' ?'active':''} ${isCurrent?'current':''} ${esFinal?'final':''}">${done || esFinal?`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>`:est.icon}</div><div class="step-text"><b>${est.nombre}</b><span>${desc}</span></div></div>`;
- }).join('');
- actualizarBotones();
- if(estadoActual==='finalizado'){ celebrarFinalizado(); }
+ }).join(''); actualizarBotones(); if(estadoActual==='finalizado'){ celebrarFinalizado(); }
 }
 render();
-
 function aplicarNuevoEstado(nuevoEstadoReal){
-  if(!nuevoEstadoReal) return;
-  if(nuevoEstadoReal.toLowerCase()==='cancelado'){
-    return;
-  }
+  if(!nuevoEstadoReal) return; if(nuevoEstadoReal.toLowerCase()==='cancelado'){ return; }
   const mapeado = mapearEstadoRestauranteACliente(nuevoEstadoReal);
-  const idxActual = getIndiceEstado(estadoActual);
-  const idxNuevo = getIndiceEstado(mapeado);
-  if(idxNuevo > idxActual){
-    subEstadoRepartidor = nuevoEstadoReal;
-    estadoActual = mapeado;
-    render();
-  } else if(idxNuevo === idxActual){
-    subEstadoRepartidor = nuevoEstadoReal;
-    render();
-  }
+  const idxActual = getIndiceEstado(estadoActual); const idxNuevo = getIndiceEstado(mapeado);
+  if(idxNuevo > idxActual){ subEstadoRepartidor = nuevoEstadoReal; estadoActual = mapeado; render(); } else if(idxNuevo === idxActual){ subEstadoRepartidor = nuevoEstadoReal; render(); }
 }
-
 if(pedidoId){ 
-  onSnapshot(doc(dbConf,"pedidos",pedidoId),(snap)=>{ 
-    if(snap.exists()){
-      const data = snap.data();
-      if(data.estado){
-        if(data.estado.toLowerCase()==='cancelado'){
-          mostrarCanceladoOverlay(data.motivoCancelacion, data.detalleCancelacion, data);
-          return;
-        }
-        aplicarNuevoEstado(data.estado);
-      }
-      if(data.codigo){ document.getElementById('txtCodigo').textContent = data.codigo; }
-      if(data.nombre){ document.getElementById('txtNombre').textContent = data.nombre; }
-    } 
-  }); 
-  onSnapshot(doc(dbConf,"pedidos_admin",pedidoId),(snap)=>{
-    if(snap.exists()){
-      const data = snap.data();
-      if(data.estado){
-        if(data.estado.toLowerCase()==='cancelado'){
-          mostrarCanceladoOverlay(data.motivoCancelacion, data.detalleCancelacion, data);
-          return;
-        }
-        aplicarNuevoEstado(data.estado);
-      }
-    }
-  });
+  onSnapshot(doc(dbConf,"pedidos",pedidoId),(snap)=>{ if(snap.exists()){ const data = snap.data(); if(data.estado){ if(data.estado.toLowerCase()==='cancelado'){ mostrarCanceladoOverlay(data.motivoCancelacion, data.detalleCancelacion, data); return; } aplicarNuevoEstado(data.estado); } if(data.codigo){ document.getElementById('txtCodigo').textContent = data.codigo; } if(data.nombre){ document.getElementById('txtNombre').textContent = data.nombre; } } }); 
+  onSnapshot(doc(dbConf,"pedidos_admin",pedidoId),(snap)=>{ if(snap.exists()){ const data = snap.data(); if(data.estado){ if(data.estado.toLowerCase()==='cancelado'){ mostrarCanceladoOverlay(data.motivoCancelacion, data.detalleCancelacion, data); return; } aplicarNuevoEstado(data.estado); } } });
 }
-
-function lanzar(){ 
-  const colors=['#16a34a','#ef4444','#f59e0b','#3b82f6','#eab308']; 
-  confetti({particleCount:80, angle:60, spread:70, origin:{x:0, y:0.9}, colors, scalar:1.1, startVelocity:45});
-  confetti({particleCount:80, angle:120, spread:70, origin:{x:1, y:0.9}, colors, scalar:1.1, startVelocity:45});
-}
+function lanzar(){ const colors=['#16a34a','#ef4444','#f59e0b','#3b82f6','#eab308']; confetti({particleCount:80, angle:60, spread:70, origin:{x:0, y:0.9}, colors, scalar:1.1, startVelocity:45}); confetti({particleCount:80, angle:120, spread:70, origin:{x:1, y:0.9}, colors, scalar:1.1, startVelocity:45}); }
 lanzar(); setTimeout(lanzar,400); setTimeout(lanzar,800);
-
-window.abrirConfirmCancelar = function(){
-  if(document.getElementById('btnCancelar').classList.contains('disabled')) return;
-  document.getElementById('modalCancelar').classList.add('active');
-}
-window.cerrarConfirmCancelar = function(){
-  document.getElementById('modalCancelar').classList.remove('active');
-}
+window.abrirConfirmCancelar = function(){ if(document.getElementById('btnCancelar').classList.contains('disabled')) return; document.getElementById('modalCancelar').classList.add('active'); }
+window.cerrarConfirmCancelar = function(){ document.getElementById('modalCancelar').classList.remove('active'); }
 window.confirmarCancelar = async function(){
-  const btn = document.getElementById('btnSiCancelar');
-  btn.textContent = 'Eliminando...';
-  btn.disabled = true;
+  const btn = document.getElementById('btnSiCancelar'); btn.textContent = 'Eliminando...'; btn.disabled = true;
   try{
-    if(pedidoId){
-      await deleteDoc(doc(dbConf, "pedidos", pedidoId));
-      try{ await deleteDoc(doc(dbConf, "pedidos_admin", pedidoId)); }catch{}
-    }
-    localStorage.removeItem('doloya_pedido_final');
-    localStorage.removeItem('doloya_pedido_confirmacion_id');
-    localStorage.removeItem('doloya_codigo_pedido_actual');
-    if(pedidoId){
-      const mapa = JSON.parse(localStorage.getItem('doloya_mapa_codigos')||'{}');
-      delete mapa[pedidoId];
-      localStorage.setItem('doloya_mapa_codigos', JSON.stringify(mapa));
-    }
+    if(pedidoId){ await deleteDoc(doc(dbConf, "pedidos", pedidoId)); try{ await deleteDoc(doc(dbConf, "pedidos_admin", pedidoId)); }catch{} }
+    localStorage.removeItem('doloya_pedido_final'); localStorage.removeItem('doloya_pedido_confirmacion_id'); localStorage.removeItem('doloya_codigo_pedido_actual');
+    if(pedidoId){ const mapa = JSON.parse(localStorage.getItem('doloya_mapa_codigos')||'{}'); delete mapa[pedidoId]; localStorage.setItem('doloya_mapa_codigos', JSON.stringify(mapa)); }
     window.location.href='inicio.html';
-  }catch(e){
-    alert('Error: '+e.message);
-    btn.textContent = 'Sí, eliminar';
-    btn.disabled = false;
-  }
+  }catch(e){ alert('Error: '+e.message); btn.textContent = 'Sí, eliminar'; btn.disabled = false; }
 }
 
-// ===== SOLO ESTA FUNCIÓN MODIFICADA - CADA RESTAURANTE INDEPENDIENTE =====
+// ===== CORREGIDO - ELIMINADO DUPLICADO DE LA FLECHA =====
+// CORRECTO ES EL DE ARRIBA: doloya_aliados/{id}/telefono = 4182371993
+// INCORRECTO EL DE ABAJO (perfil/perfil) con 4567890 YA NO SE LEE
 window.llamarRestaurante = async function(){
   try{
     const dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
-
-    // ID dinámico de cada restaurante (ej: el_caldito, tacos_don_pepe, etc)
     let idRestRaw = (pedidoFinal?.restaurante?.id || pedidoFinal?.restaurante?.nombre || dataRest?.id || dataRest?.nombre || '').toString().trim();
     if(!idRestRaw && pedidoId){
       try{
         const snapP = await getDoc(doc(dbConf, "pedidos", pedidoId));
-        if(snapP.exists()){
-          idRestRaw = snapP.data().restaurante?.id || snapP.data().restaurante?.nombre || '';
-        }
+        if(snapP.exists()){ idRestRaw = snapP.data().restaurante?.id || snapP.data().restaurante?.nombre || ''; }
       }catch{}
     }
-    
     let idRest = idRestRaw.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'_');
-    
     let telReal = '';
 
-    // 1. Buscar en ruta exacta: doloya_aliados/{id}/info/telefono
+    // 1. CORRECTO DE ARRIBA - raiz telefono (4182371993)
     if(idRest){
       try{
-        const snapInfo = await get(ref(dbAliados, `doloya_aliados/${idRest}/info/telefono`));
-        if(snapInfo.exists() && snapInfo.val()){
-          telReal = snapInfo.val();
-        } else {
-          // prueba directa sin info/
-          const snapDirect = await get(ref(dbAliados, `doloya_aliados/${idRest}/telefono`));
-          if(snapDirect.exists()) telReal = snapDirect.val();
+        const snapRoot = await get(ref(dbAliados, `doloya_aliados/${idRest}/telefono`));
+        if(snapRoot.exists() && snapRoot.val()){ 
+          const v = snapRoot.val().toString().replace(/\D/g,'');
+          if(v.length >= 10){ telReal = snapRoot.val(); }
         }
-      }catch(e){ console.log("Error leyendo info/telefono", e); }
+        // 2. Respaldo info/telefono
+        if(!telReal){
+          const snapInfo = await get(ref(dbAliados, `doloya_aliados/${idRest}/info/telefono`));
+          if(snapInfo.exists() && snapInfo.val()) telReal = snapInfo.val();
+        }
+      }catch(e){}
     }
 
-    // 2. Si no encuentra por ID exacto, busca por nombre en toda la lista (independiente por negocio)
+    // 3. Busqueda independiente por nombre, pero SOLO raiz/info, NUNCA perfil/perfil duplicado
     if(!telReal && idRestRaw){
       try{
         const snapAll = await get(ref(dbAliados, `doloya_aliados`));
@@ -564,47 +433,31 @@ window.llamarRestaurante = async function(){
           const buscar = idRestRaw.toLowerCase();
           for(const key in todos){
             const r = todos[key] || {};
-            const nomKey = (key||'').toLowerCase();
-            const nomInfo = (r.info?.nombre || r.nombre || '').toLowerCase();
-            const nomId = (r.id || '').toLowerCase();
-            if(nomKey === buscar.toLowerCase() || nomId === buscar.toLowerCase() || nomInfo === buscar.toLowerCase() || nomInfo.includes(buscar.toLowerCase()) || buscar.toLowerCase().includes(nomKey)){
-              const t = r.info?.telefono || r.telefono || r.info?.celular || r.celular || '';
-              if(t){
-                telReal = t;
-                idRest = key; // id real encontrado
-                break;
+            if((key||'').toLowerCase() === buscar || (r.info?.nombre||r.nombre||'').toLowerCase() === buscar){
+              // SOLO usa el telefono correcto de arriba
+              const t = r.telefono || r.info?.telefono || '';
+              if(t && t.toString().replace(/\D/g,'').length >= 10){
+                // Evita el 4567890 que es el duplicado de la flecha
+                if(!t.toString().includes('4567890')){
+                  telReal = t;
+                  break;
+                }
               }
             }
           }
         }
-      }catch(e){ console.log("Error buscando en lista", e); }
+      }catch{}
     }
 
-    // 3. Respaldo localStorage / pedido
-    if(!telReal){
-      telReal = dataRest?.telefono || dataRest?.tel || dataRest?.celular || pedidoFinal?.restaurante?.telefono || '';
-    }
+    if(!telReal){ telReal = dataRest?.telefono || ''; }
+    if(!telReal){ alert('No hay teléfono para ' + idRestRaw + '. Verifica doloya_aliados/' + idRest + '/telefono (correcto arriba 4182371993)'); return; }
 
-    if(!telReal){
-      alert('No hay teléfono para ' + idRestRaw + '. Verifica doloya_aliados/' + idRest + '/info/telefono');
-      return;
-    }
-
-    // LIMPIA NUMEROS RAROS: 524181879597 -> 4181879597
     let t = telReal.toString().replace(/\D/g,'');
-    if(t.startsWith('52') && t.length >= 12){
-      t = t.substring(2);
-    }
-    if(t.length > 10){
-      t = t.slice(-10);
-    }
-
-    console.log('Llamando restaurante:', idRestRaw, 'ID usado:', idRest, 'Tel original:', telReal, 'Tel limpio:', t);
+    if(t.startsWith('52') && t.length >= 12){ t = t.substring(2); }
+    if(t.length > 10){ t = t.slice(-10); }
+    console.log('LLAMANDO CORRECTO ARRIBA:', idRestRaw, 'Tel:', telReal, 'Limpio:', t);
     window.location.href = `tel:+52${t}`;
-
-  }catch(e){
-    alert('Error al obtener teléfono: '+e.message);
-  }
+  }catch(e){ alert('Error: '+e.message); }
 }
 </script>
 </body>
