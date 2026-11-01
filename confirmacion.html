@@ -98,11 +98,12 @@ h1{text-align:center;font-size:28px;font-weight:800;margin:14px 0 22px}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getFirestore, doc, onSnapshot, getDoc, setDoc, updateDoc, runTransaction, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
 
 const configConfirmacion = {
   apiKey: "AIzaSyDLKngPyi_SWAXEQwdrHO5h8L8OufulAR4",
   authDomain: "doloya-confirmacion.firebaseapp.com",
+  databaseURL: "https://doloya-confirmacion-default-rtdb.firebaseio.com",
   projectId: "doloya-confirmacion",
   storageBucket: "doloya-confirmacion.firebasestorage.app",
   messagingSenderId: "832228761099",
@@ -110,6 +111,7 @@ const configConfirmacion = {
 };
 const appConf = initializeApp(configConfirmacion, "confirmacion2");
 const dbConf = getFirestore(appConf);
+const dbConfRT = getDatabase(appConf);
 
 const configHistorial = {
   apiKey: "AIzaSyCRx4B7mO444s0yU-WTnsqMjBHDWX4IRv8",
@@ -136,6 +138,40 @@ const dbAliados = getDatabase(appAliados);
 
 const pedidoFinal = JSON.parse(localStorage.getItem('doloya_pedido_final')||'null');
 const pedidoId = localStorage.getItem('doloya_pedido_confirmacion_id');
+
+// ===== NUEVO: RASTREO EN TIEMPO REAL CLIENTE EN CONFIRMACION =====
+let watchIdVivoConfirmacion = null;
+async function iniciarRastreoVivoConfirmacion(numeroPedido){
+  if(!numeroPedido) return;
+  if(!navigator.geolocation) return;
+  if(watchIdVivoConfirmacion) navigator.geolocation.clearWatch(watchIdVivoConfirmacion);
+  watchIdVivoConfirmacion = navigator.geolocation.watchPosition(async (pos)=>{
+    const nLat = pos.coords.latitude;
+    const nLng = pos.coords.longitude;
+    try{
+      await set(ref(dbConfRT, `rastreo/${numeroPedido}/cliente/lat`), nLat);
+      await set(ref(dbConfRT, `rastreo/${numeroPedido}/cliente/lng`), nLng);
+      await set(ref(dbConfRT, `rastreo/${numeroPedido}/lat`), nLat);
+      await set(ref(dbConfRT, `rastreo/${numeroPedido}/lng`), nLng);
+      await set(ref(dbConfRT, `rastreo/${numeroPedido}/cliente/ultimaActualizacion`), new Date().toISOString());
+      await set(ref(dbConfRT, `rastreo/${numeroPedido}/cliente/googleMapsUrl`), `https://www.google.com/maps?q=${nLat},${nLng}`);
+      await updateDoc(doc(dbConf, "rastreo", numeroPedido), {
+        "cliente.lat": nLat,
+        "cliente.lng": nLng,
+        "lat": nLat,
+        "lng": nLng,
+        "cliente.ultimaActualizacion": new Date().toISOString(),
+        "cliente.googleMapsUrl": `https://www.google.com/maps?q=${nLat},${nLng}`
+      });
+    }catch(e){ console.log("tracking confirmacion error", e); }
+  }, null, {enableHighAccuracy:true, maximumAge:0, timeout:10000});
+}
+
+// Activar automaticamente con el numero de pedido guardado
+try{
+  const numeroRastreo = localStorage.getItem('doloya_rastreo_activo') || localStorage.getItem('doloya_numero_pedido') || pedidoFinal?.numeroPedido || new URLSearchParams(window.location.search).get('pedido');
+  if(numeroRastreo){ iniciarRastreoVivoConfirmacion(numeroRastreo); }
+}catch(e){}
 
 async function obtenerCodigoSecuencial(){
   if(pedidoId){
