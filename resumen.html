@@ -166,8 +166,8 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 
 <script type="module">
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, setDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getFirestore, collection, addDoc, setDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 const firebaseConfigAliados = {
   apiKey: "AIzaSyD286qlJQT8D3rqbYTSfCyuTAEg9jjRchQ",
   authDomain: "doloya-aliados.firebaseapp.com",
@@ -196,10 +196,12 @@ window.dbConfirmacionFS = dbConfirmacionFS;
 window.dbConfirmacionRT = dbConfirmacionRT;
 window.addDoc = addDoc;
 window.setDoc = setDoc;
+window.updateDoc = updateDoc;
 window.doc = doc;
 window.collection = collection;
 window.refRT = ref;
 window.setRT = set;
+window.updateRT = update;
 window.getRT = get;
 window.onValueRT = onValue;
 window.serverTimestamp = serverTimestamp;
@@ -482,6 +484,39 @@ function limpiarProductosParaFirestore(arr){
     };
   }).filter(p=> p.nombre && p.precio>=0 && p.cantidad>0);
 }
+
+// NUEVO - RASTREO EN TIEMPO REAL CLIENTE
+let watchIdVivo = null;
+async function iniciarRastreoVivo(numeroPedido){
+  if(!navigator.geolocation) return;
+  if(watchIdVivo) navigator.geolocation.clearWatch(watchIdVivo);
+  
+  watchIdVivo = navigator.geolocation.watchPosition(async (pos)=>{
+    const nLat = pos.coords.latitude;
+    const nLng = pos.coords.longitude;
+    lat = nLat; lng = nLng;
+    try{
+      // Actualizar Realtime doloya-confirmacion/rastreo/{numeroPedido}
+      await window.setRT(window.refRT(window.dbConfirmacionRT, `rastreo/${numeroPedido}/cliente/lat`), nLat);
+      await window.setRT(window.refRT(window.dbConfirmacionRT, `rastreo/${numeroPedido}/cliente/lng`), nLng);
+      await window.setRT(window.refRT(window.dbConfirmacionRT, `rastreo/${numeroPedido}/lat`), nLat);
+      await window.setRT(window.refRT(window.dbConfirmacionRT, `rastreo/${numeroPedido}/lng`), nLng);
+      await window.setRT(window.refRT(window.dbConfirmacionRT, `rastreo/${numeroPedido}/cliente/ultimaActualizacion`), new Date().toISOString());
+      await window.setRT(window.refRT(window.dbConfirmacionRT, `rastreo/${numeroPedido}/cliente/googleMapsUrl`), `https://www.google.com/maps?q=${nLat},${nLng}`);
+      
+      // Actualizar Firestore tambien
+      await window.updateDoc(window.doc(window.dbConfirmacionFS, "rastreo", numeroPedido), {
+        "cliente.lat": nLat,
+        "cliente.lng": nLng,
+        "lat": nLat,
+        "lng": nLng,
+        "cliente.ultimaActualizacion": new Date().toISOString(),
+        "cliente.googleMapsUrl": `https://www.google.com/maps?q=${nLat},${nLng}`
+      });
+    }catch(e){ console.log("tracking error", e); }
+  }, (e)=>{ console.log("watch error", e); }, {enableHighAccuracy:true, maximumAge:0, timeout:10000});
+}
+
 async function irAPagar(){
   if(!gpsValidoResumen){ mostrarOverlayUbiResumen(); return; }
   const nombre = document.getElementById('inputNombre').value.trim();
@@ -515,8 +550,8 @@ async function irAPagar(){
     nombreEdificio: String(detFull?.nombreEdificio || '').substring(0,100),
     piso: String(detFull?.piso || '').substring(0,50),
     ubicacion: { 
-      lat: Number(lat||ubiData?.ubicacion?.lat||ubiData?.lat||0), 
-      lng: Number(lng||ubiData?.ubicacion?.lng||ubiData?.lng||0),
+      lat: Number(lat||0), 
+      lng: Number(lng||0),
       accuracy: Number(ubiData?.ubicacion?.accuracy || ubiData?.accuracy || 0),
       googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`
     },
@@ -563,7 +598,6 @@ async function irAPagar(){
     fecha: new Date().toISOString()
   };
 
-  // DATOS PARA LA NUEVA CARPETA RASTREO EN DOLOYA-CONFIRMACION
   const datosRastreo = {
     idPedido: numeroPedido,
     numeroPedido: numeroPedido,
@@ -575,7 +609,8 @@ async function irAPagar(){
       lat: Number(lat||0),
       lng: Number(lng||0),
       ip: ipReal,
-      googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`
+      googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`,
+      ultimaActualizacion: new Date().toISOString()
     },
     restaurante: {
       id: String(dataRest?.id || 'la_catrina_burger'),
@@ -600,18 +635,17 @@ async function irAPagar(){
   };
 
   try{
-    // 1. GUARDADO ORIGINAL - pedidos en Firestore
     const refDoc = await window.addDoc(window.collection(window.dbConfirmacionFS, "pedidos"), pedidoCompleto);
-
-    // 2. NUEVA CARPETA RASTREO - Firestore doloya-confirmacion/rastreo/{numeroPedido}
     await window.setDoc(window.doc(window.dbConfirmacionFS, "rastreo", numeroPedido), datosRastreo);
-
-    // 3. NUEVA CARPETA RASTREO - Realtime doloya-confirmacion/rastreo/{numeroPedido} para tiempo real
     await window.setRT(window.refRT(window.dbConfirmacionRT, `rastreo/${numeroPedido}`), datosRastreo);
 
     localStorage.setItem('doloya_pedido_confirmacion_id', refDoc.id);
     localStorage.setItem('doloya_numero_pedido', numeroPedido);
     localStorage.setItem('doloya_pedido_final', JSON.stringify(pedidoCompleto));
+    localStorage.setItem('doloya_rastreo_activo', numeroPedido);
+
+    // ACTIVAR RASTREO EN TIEMPO REAL - CLIENTE SE MUEVE -> MAPA SE MUEVE
+    iniciarRastreoVivo(numeroPedido);
 
     const ipKey = await obtenerIpKey();
     const cat = dataRest?.cat || 'burgers';
@@ -623,7 +657,10 @@ async function irAPagar(){
       }catch(e){}
     }
     localStorage.removeItem('doloya_carrito_v2');
-    window.location.href='confirmacion.html?pedido='+numeroPedido;
+    
+    // Esperar 1.5s para iniciar tracking antes de ir a confirmacion
+    setTimeout(()=>{ window.location.href='confirmacion.html?pedido='+numeroPedido; }, 1200);
+
   }catch(e){
     alert("Error: "+e.message);
     btn.textContent = 'Finalizar pedido'; btn.disabled = false;
