@@ -167,7 +167,6 @@ async function iniciarRastreoVivoConfirmacion(numeroPedido){
   }, null, {enableHighAccuracy:true, maximumAge:0, timeout:10000});
 }
 
-// Activar automaticamente con el numero de pedido guardado
 try{
   const numeroRastreo = localStorage.getItem('doloya_rastreo_activo') || localStorage.getItem('doloya_numero_pedido') || pedidoFinal?.numeroPedido || new URLSearchParams(window.location.search).get('pedido');
   if(numeroRastreo){ iniciarRastreoVivoConfirmacion(numeroRastreo); }
@@ -521,41 +520,88 @@ window.confirmarCancelar = async function(){
     btn.disabled = false;
   }
 }
+
+// ===== SOLO ESTA FUNCIÓN MODIFICADA - CADA RESTAURANTE INDEPENDIENTE =====
 window.llamarRestaurante = async function(){
   try{
-    let tel = '';
     const dataRest = JSON.parse(localStorage.getItem('doloya_carrito_restaurante_data')||'null');
-    if(dataRest?.telefono) tel = dataRest.telefono;
-    else if(dataRest?.tel) tel = dataRest.tel;
-    else if(dataRest?.celular) tel = dataRest.celular;
 
-    let idRest = (pedidoFinal?.restaurante?.id || pedidoFinal?.restaurante?.nombre || dataRest?.id || '').toString().toLowerCase();
+    // ID dinámico de cada restaurante (ej: el_caldito, tacos_don_pepe, etc)
+    let idRestRaw = (pedidoFinal?.restaurante?.id || pedidoFinal?.restaurante?.nombre || dataRest?.id || dataRest?.nombre || '').toString().trim();
+    if(!idRestRaw && pedidoId){
+      try{
+        const snapP = await getDoc(doc(dbConf, "pedidos", pedidoId));
+        if(snapP.exists()){
+          idRestRaw = snapP.data().restaurante?.id || snapP.data().restaurante?.nombre || '';
+        }
+      }catch{}
+    }
+    
+    let idRest = idRestRaw.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'_');
+    
+    let telReal = '';
+
+    // 1. Buscar en ruta exacta: doloya_aliados/{id}/info/telefono
     if(idRest){
       try{
-        const snap = await get(ref(dbAliados, `doloya_aliados/${idRest}`));
-        if(snap.exists()){
-          const d = snap.val();
-          const t = d.info?.telefono || d.perfil?.telefono || d.telefono || d.contacto?.telefono || d.info?.celular || '';
-          if(t) tel = t;
+        const snapInfo = await get(ref(dbAliados, `doloya_aliados/${idRest}/info/telefono`));
+        if(snapInfo.exists() && snapInfo.val()){
+          telReal = snapInfo.val();
+        } else {
+          // prueba directa sin info/
+          const snapDirect = await get(ref(dbAliados, `doloya_aliados/${idRest}/telefono`));
+          if(snapDirect.exists()) telReal = snapDirect.val();
         }
-      }catch(e){}
+      }catch(e){ console.log("Error leyendo info/telefono", e); }
     }
-    if(!tel && pedidoId){
+
+    // 2. Si no encuentra por ID exacto, busca por nombre en toda la lista (independiente por negocio)
+    if(!telReal && idRestRaw){
       try{
-        const snapPedido = await getDoc(doc(dbConf, "pedidos", pedidoId));
-        if(snapPedido.exists()){
-          const d = snapPedido.data();
-          const t = d.restaurante?.telefono || d.restaurante?.celular || d.telefonoRestaurante || '';
-          if(t) tel = t;
+        const snapAll = await get(ref(dbAliados, `doloya_aliados`));
+        if(snapAll.exists()){
+          const todos = snapAll.val();
+          const buscar = idRestRaw.toLowerCase();
+          for(const key in todos){
+            const r = todos[key] || {};
+            const nomKey = (key||'').toLowerCase();
+            const nomInfo = (r.info?.nombre || r.nombre || '').toLowerCase();
+            const nomId = (r.id || '').toLowerCase();
+            if(nomKey === buscar.toLowerCase() || nomId === buscar.toLowerCase() || nomInfo === buscar.toLowerCase() || nomInfo.includes(buscar.toLowerCase()) || buscar.toLowerCase().includes(nomKey)){
+              const t = r.info?.telefono || r.telefono || r.info?.celular || r.celular || '';
+              if(t){
+                telReal = t;
+                idRest = key; // id real encontrado
+                break;
+              }
+            }
+          }
         }
-      }catch(e){}
+      }catch(e){ console.log("Error buscando en lista", e); }
     }
-    if(tel){
-      const limpio = tel.toString().replace(/\s+/g,'');
-      window.location.href = `tel:${limpio}`;
-    }else{
-      alert('No hay número registrado de este restaurante. Verifica en panel admin aliados.');
+
+    // 3. Respaldo localStorage / pedido
+    if(!telReal){
+      telReal = dataRest?.telefono || dataRest?.tel || dataRest?.celular || pedidoFinal?.restaurante?.telefono || '';
     }
+
+    if(!telReal){
+      alert('No hay teléfono para ' + idRestRaw + '. Verifica doloya_aliados/' + idRest + '/info/telefono');
+      return;
+    }
+
+    // LIMPIA NUMEROS RAROS: 524181879597 -> 4181879597
+    let t = telReal.toString().replace(/\D/g,'');
+    if(t.startsWith('52') && t.length >= 12){
+      t = t.substring(2);
+    }
+    if(t.length > 10){
+      t = t.slice(-10);
+    }
+
+    console.log('Llamando restaurante:', idRestRaw, 'ID usado:', idRest, 'Tel original:', telReal, 'Tel limpio:', t);
+    window.location.href = `tel:+52${t}`;
+
   }catch(e){
     alert('Error al obtener teléfono: '+e.message);
   }
