@@ -299,17 +299,15 @@ function getCostoReal(){
   let dist = distanciaKm; if(dist < 0.1) dist = 0.1;
   return tarifaGlobal.base + (dist * tarifaGlobal.precio_km);
 }
-// MAPA EN TIEMPO REAL - RUTA RESTAURANTE -> CLIENTE, ACTUALIZA CADA 3 SEGUNDOS
+// MAPA SOLO CLIENTE - COMO ESTABA ANTES, SIN RUTA, SIN DISTANCIA EN EL MAPA
 let ultimaUrlMapa = '';
 let ultimoLatMapa = 0, ultimoLngMapa = 0;
 function actualizarMapaIframe(){
-  // Si no se movio casi nada, no recargar el mapa para que no parpadee
   if(Math.abs(lat - ultimoLatMapa) < 0.00002 && Math.abs(lng - ultimoLngMapa) < 0.00002 && ultimaUrlMapa){
     return;
   }
   ultimoLatMapa = lat; ultimoLngMapa = lng;
-  // Ruta real de Google: desde restaurante (saddr) hasta cliente (daddr)
-  const nuevaUrl = `https://www.google.com/maps?saddr=${restLat},${restLng}&daddr=${lat},${lng}&output=embed`;
+  const nuevaUrl = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
   if(nuevaUrl !== ultimaUrlMapa){
     ultimaUrlMapa = nuevaUrl;
     document.getElementById('mapaIframe').src = nuevaUrl;
@@ -321,7 +319,6 @@ async function obtenerDireccionPorGPS(latGPS, lngGPS){
     const data = await resp.json();
     if(data && data.address){
       const a = data.address;
-      // Construir direccion con numero: Calle + numero + colonia + ciudad
       let calle = a.road || a.pedestrian || a.footway || a.residential || '';
       let numero = a.house_number || '';
       let colonia = a.suburb || a.neighbourhood || a.quarter || '';
@@ -341,7 +338,7 @@ async function obtenerDireccionPorGPS(latGPS, lngGPS){
   }catch(e){}
   return `Ubicación GPS ${latGPS.toFixed(5)}, ${lngGPS.toFixed(5)}`;
 }
-// ACTUALIZACION CADA 3 SEGUNDOS - GPS + MAPA + DIRECCION + RUTA
+// ACTUALIZACION INTERNA CADA 3 SEGUNDOS - GPS + DIRECCION + DISTANCIA POR DENTRO, MAPA SOLO CLIENTE
 let actualizandoGPS = false;
 let ultimoFetchDireccion = 0;
 async function actualizarUbicacionTiempoReal(){
@@ -352,7 +349,7 @@ async function actualizarUbicacionTiempoReal(){
   navigator.geolocation.getCurrentPosition(async (pos)=>{
     const nuevaLat = pos.coords.latitude;
     const nuevaLng = pos.coords.longitude;
-    const seMovio = haversine(lat, lng, nuevaLat, nuevaLng) * 1000 > 3; // mas de 3 metros
+    const seMovio = haversine(lat, lng, nuevaLat, nuevaLng) * 1000 > 3;
     lat = nuevaLat; lng = nuevaLng;
     try{
       const dataUbi = JSON.parse(localStorage.getItem('doloya_ubicacion')||'{}');
@@ -362,11 +359,11 @@ async function actualizarUbicacionTiempoReal(){
       localStorage.setItem('doloya_ubicacion', JSON.stringify(dataUbi));
     }catch{}
     ocultarOverlayUbiResumen();
-    // 1. Actualizar mapa con ruta restaurante -> cliente
+    // 1. Mapa solo cliente, sin ruta
     actualizarMapaIframe();
-    // 2. Actualizar distancia y costo cada 3 seg
+    // 2. Calculo interno de distancia / costo - no se dibuja ruta en el mapa
     await calcularDistanciaYActualizar();
-    // 3. Actualizar direccion con numero cada 3 seg (si se movio o pasaron 3 seg)
+    // 3. Direccion con numero
     const ahora = Date.now();
     if(seMovio || (ahora - ultimoFetchDireccion) > 3000){
       ultimoFetchDireccion = ahora;
@@ -388,9 +385,7 @@ async function actualizarUbicacionTiempoReal(){
     mostrarOverlayUbiResumen();
   }, {enableHighAccuracy:true, timeout:2500, maximumAge:0});
 }
-// Intervalo principal cada 3 segundos
 setInterval(()=>{ actualizarUbicacionTiempoReal(); }, 3000);
-// Tambien al volver a la pestaña
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) actualizarUbicacionTiempoReal(); });
 window.addEventListener('pageshow', ()=>{ actualizarUbicacionTiempoReal(); });
 
