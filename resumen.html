@@ -13,8 +13,8 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .header h1{font-size:17px;font-weight:800}
 .mapa-wrap{position:relative;width:100%;height:190px;background:#E5E7EB;overflow:hidden}
 .mapa-wrap iframe{width:100%;height:100%;border:0}
-.pin-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-80%);width:54px;height:54px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,0.25);z-index:2}
-.btn-ajustar{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:white;padding:8px 14px;border-radius:999px;border:none;box-shadow:0 4px 12px rgba(0,0,0,0.18);font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:6px;z-index:3;cursor:pointer}
+.pin-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-80%);width:38px;height:38px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,0.25);z-index:2}
+.btn-ajustar{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:white;padding:8px 14px;border-radius:999px;border:none;box-shadow:0 4px 12px rgba(0,0,0,0.18);font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:6px;z-index:3;cursor:default;pointer-events:none}
 .item-row{padding:18px 16px;display:flex;align-items:flex-start;gap:14px;border-bottom:1px solid #F0F0F0;cursor:pointer;transition:all 0.2s}
 .item-row.no-click{cursor:default}
 .item-row .icono{width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#F3F4F6;border-radius:50%}
@@ -89,8 +89,8 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 </div>
 <div class="mapa-wrap">
   <iframe id="mapaIframe" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
-  <div class="pin-center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M6 10a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1a2 2 0 0 1-1 1.73l-3 1.73a2 2 0 0 1-2 0l-3-1.73A2 2 0 0 1-1 1.73l-3 1.73a2 2 0 0 0 2 0l3-1.73A2 2 0 0 0 16 14v-3"/></svg></div>
-  <div class="btn-ajustar">punto de entrega</div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a5 5 0 0 0-5 5c0 5 5 11 5 11s5-6 5-11a5 5 0 0 0-5-5z"/><circle cx="12" cy="7" r="1.5"/></svg></button>
+  <div class="pin-center"><svg width="22" height="22" viewBox="0 0 24 24" fill="#E30613"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg></div>
+  <div class="btn-ajustar">Punto de entrega<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a5 5 0 0 0-5 5c0 5 5 11 5 11s5-6 5-11a5 5 0 0 0-5-5z"/><circle cx="12" cy="7" r="1.5"/></svg></div>
 </div>
 <div class="item-row no-click">
   <div class="icono"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
