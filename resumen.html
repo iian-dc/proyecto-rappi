@@ -13,7 +13,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .header h1{font-size:17px;font-weight:800}
 .mapa-wrap{position:relative;width:100%;height:190px;background:#E5E7EB;overflow:hidden}
 .mapa-wrap iframe{width:100%;height:100%;border:0}
-.tapa-ampliar{position:absolute;top:0;left:0;width:118px;height:36px;background:#E5E7EB;z-index:5;pointer-events:auto}
+.tapa-ampliar{position:absolute;top:0;left:0;width:118px;height:36px;background:transparent;z-index:5;pointer-events:auto}
 .btn-ajustar{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:white;padding:8px 14px;border-radius:999px;border:none;box-shadow:0 4px 12px rgba(0,0,0,0.18);font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:6px;z-index:3;cursor:default;pointer-events:none}
 .item-row{padding:18px 16px;display:flex;align-items:flex-start;gap:14px;border-bottom:1px solid #F0F0F0;cursor:pointer;transition:all 0.2s}
 .item-row.no-click{cursor:default}
@@ -301,7 +301,7 @@ function getCostoReal(){
   let dist = distanciaKm; if(dist < 0.1) dist = 0.1;
   return tarifaGlobal.base + (dist * tarifaGlobal.precio_km);
 }
-// MAPA SOLO PUNTO DEL CLIENTE - SIN RUTA, SIN LINEA AZUL, SIN DISTANCIA EN EL MAPA
+// MAPA SOLO PUNTO DEL CLIENTE - SIN RUTA, ESTE MAPA NO PUEDE DIBUJAR RUTA
 let ultimaUrlMapa = '';
 let ultimoLatMapa = 0, ultimoLngMapa = 0;
 function actualizarMapaIframe(){
@@ -309,7 +309,9 @@ function actualizarMapaIframe(){
     return;
   }
   ultimoLatMapa = lat; ultimoLngMapa = lng;
-  const nuevaUrl = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
+  const dLat = 0.008, dLng = 0.008;
+  const minLng = lng - dLng, minLat = lat - dLat, maxLng = lng + dLng, maxLat = lat + dLat;
+  const nuevaUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${minLng},${minLat},${maxLng},${maxLat}&layer=mapnik&marker=${lat},${lng}`;
   if(nuevaUrl !== ultimaUrlMapa){
     ultimaUrlMapa = nuevaUrl;
     document.getElementById('mapaIframe').src = nuevaUrl;
@@ -340,7 +342,6 @@ async function obtenerDireccionPorGPS(latGPS, lngGPS){
   }catch(e){}
   return `Ubicación GPS ${latGPS.toFixed(5)}, ${lngGPS.toFixed(5)}`;
 }
-// ACTUALIZACION INTERNA CADA 3 SEGUNDOS - GPS + DIRECCION + DISTANCIA POR DENTRO, MAPA SOLO CLIENTE
 let actualizandoGPS = false;
 let ultimoFetchDireccion = 0;
 async function actualizarUbicacionTiempoReal(){
