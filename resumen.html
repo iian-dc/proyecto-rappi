@@ -13,7 +13,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .header h1{font-size:17px;font-weight:800}
 .mapa-wrap{position:relative;width:100%;height:190px;background:#E5E7EB;overflow:hidden}
 .mapa-wrap iframe{width:100%;height:100%;border:0}
-.pin-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-80%);width:54px;height:54px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,0.25);z-index:2}
 .btn-ajustar{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:white;padding:8px 14px;border-radius:999px;border:none;box-shadow:0 4px 12px rgba(0,0,0,0.18);font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:6px;z-index:3;cursor:pointer}
 .item-row{padding:18px 16px;display:flex;align-items:flex-start;gap:14px;border-bottom:1px solid #F0F0F0;cursor:pointer;transition:all 0.2s}
 .item-row.no-click{cursor:default}
@@ -89,8 +88,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 </div>
 <div class="mapa-wrap">
   <iframe id="mapaIframe" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
-  <div class="pin-center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M6 10a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1a2 2 0 0 1-1 1.73l-3 1.73a2 2 0 0 1-2 0l-3-1.73A2 2 0 0 1-1 1.73l-3 1.73a2 2 0 0 0 2 0l3-1.73A2 2 0 0 0 16 14v-3"/></svg></div>
-  <button class="btn-ajustar" onclick="window.location.href='puntodeentrega.html'">Ajustar punto de entrega<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a5 5 0 0 0-5 5c0 5 5 11 5 11s5-6 5-11a5 5 0 0 0-5-5z"/><circle cx="12" cy="7" r="1.5"/></svg></button>
+  <button class="btn-ajustar" onclick="window.location.href='puntodeentrega.html'">Punto de entrega<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a5 5 0 0 0-5 5c0 5 5 11 5 11s5-6 5-11a5 5 0 0 0-5-5z"/><circle cx="12" cy="7" r="1.5"/></svg></button>
 </div>
 <div class="item-row no-click">
   <div class="icono"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
@@ -302,17 +300,86 @@ function getCostoReal(){
   let dist = distanciaKm; if(dist < 0.1) dist = 0.1;
   return tarifaGlobal.base + (dist * tarifaGlobal.precio_km);
 }
+let ultimaUrlMapa = '';
+let ultimoLatMapa = 0, ultimoLngMapa = 0;
 function actualizarMapaIframe(){
-  document.getElementById('mapaIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
+  if(Math.abs(lat - ultimoLatMapa) < 0.00002 && Math.abs(lng - ultimoLngMapa) < 0.00002 && ultimaUrlMapa){ return; }
+  ultimoLatMapa = lat; ultimoLngMapa = lng;
+  const nuevaUrl = `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
+  if(nuevaUrl !== ultimaUrlMapa){
+    ultimaUrlMapa = nuevaUrl;
+    document.getElementById('mapaIframe').src = nuevaUrl;
+  }
 }
 async function obtenerDireccionPorGPS(latGPS, lngGPS){
   try{
     const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latGPS}&lon=${lngGPS}&zoom=18&addressdetails=1`);
     const data = await resp.json();
+    if(data && data.address){
+      const a = data.address;
+      let calle = a.road || a.pedestrian || a.footway || a.residential || '';
+      let numero = a.house_number || '';
+      let colonia = a.suburb || a.neighbourhood || a.quarter || '';
+      let ciudad = a.city || a.town || a.village || 'Dolores Hidalgo';
+      let estado = a.state || 'Guanajuato';
+      let cp = a.postcode || '';
+      let direccionCompleta = '';
+      if(calle) direccionCompleta += calle;
+      if(numero) direccionCompleta += ' ' + numero;
+      if(colonia) direccionCompleta += ', ' + colonia;
+      if(ciudad) direccionCompleta += ', ' + ciudad;
+      if(cp) direccionCompleta += ', ' + cp;
+      if(estado) direccionCompleta += ', ' + estado;
+      if(direccionCompleta) return direccionCompleta;
+    }
     if(data && data.display_name) return data.display_name;
   }catch(e){}
   return `Ubicación GPS ${latGPS.toFixed(5)}, ${lngGPS.toFixed(5)}`;
 }
+let actualizandoGPS = false;
+let ultimoFetchDireccion = 0;
+async function actualizarUbicacionTiempoReal(){
+  if(actualizandoGPS) return;
+  if(!navigator.geolocation) return;
+  if(document.hidden) return;
+  actualizandoGPS = true;
+  navigator.geolocation.getCurrentPosition(async (pos)=>{
+    const nuevaLat = pos.coords.latitude;
+    const nuevaLng = pos.coords.longitude;
+    const seMovio = haversine(lat, lng, nuevaLat, nuevaLng) * 1000 > 3;
+    lat = nuevaLat; lng = nuevaLng;
+    try{
+      const dataUbi = JSON.parse(localStorage.getItem('doloya_ubicacion')||'{}');
+      dataUbi.ubicacion = {lat: nuevaLat, lng: nuevaLng};
+      dataUbi.lat = nuevaLat; dataUbi.lng = nuevaLng;
+      dataUbi.timestamp = Date.now();
+      localStorage.setItem('doloya_ubicacion', JSON.stringify(dataUbi));
+    }catch{}
+    ocultarOverlayUbiResumen();
+    actualizarMapaIframe();
+    await calcularDistanciaYActualizar();
+    const ahora = Date.now();
+    if(seMovio || (ahora - ultimoFetchDireccion) > 3000){
+      ultimoFetchDireccion = ahora;
+      const nuevaDir = await obtenerDireccionPorGPS(nuevaLat, nuevaLng);
+      if(nuevaDir){
+        direccionBase = nuevaDir;
+        document.getElementById('txtDireccion').textContent = nuevaDir;
+        try{
+          const dataUbi2 = JSON.parse(localStorage.getItem('doloya_ubicacion')||'{}');
+          dataUbi2.direccion = nuevaDir;
+          localStorage.setItem('doloya_ubicacion', JSON.stringify(dataUbi2));
+        }catch{}
+      }
+    }
+    actualizandoGPS = false;
+  }, (err)=>{
+    actualizandoGPS = false;
+    console.log('GPS resumen apagado', err.code);
+    mostrarOverlayUbiResumen();
+  }, {enableHighAccuracy:true, timeout:2500, maximumAge:0});
+}
+setInterval(()=>{ actualizarUbicacionTiempoReal(); }, 3000);
 async function obtenerGPSReal(){
   const ubiCheck = JSON.parse(localStorage.getItem('doloya_ubicacion')||'null');
   const detCheck = JSON.parse(localStorage.getItem('doloya_detalles_full')||'null');
