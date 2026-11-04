@@ -231,8 +231,17 @@ const overlayUbiEl = document.getElementById('overlayUbicacion');
 let gpsValidoResumen = true;
 function mostrarOverlayUbiResumen(){ if(overlayUbiEl) overlayUbiEl.classList.add('open'); gpsValidoResumen = false; }
 function ocultarOverlayUbiResumen(){ if(overlayUbiEl) overlayUbiEl.classList.remove('open'); gpsValidoResumen = true; }
+// SOLO MOSTRAR AVISO SI DE VERDAD ESTA APAGADO / DENEGADO - NO POR TIMEOUT
+function manejarErrorGPS(err, esClick){
+  console.log('GPS error', err && err.code);
+  if(err && err.code === 1){
+    mostrarOverlayUbiResumen();
+  } else {
+    // Timeout o falla momentanea: no mostrar nada, reintentar en silencio
+  }
+}
 function intentarUbicacionResumen(esClick=false){
-  if(!navigator.geolocation){ mostrarOverlayUbiResumen(); return; }
+  if(!navigator.geolocation){ if(esClick) mostrarOverlayUbiResumen(); return; }
   navigator.geolocation.getCurrentPosition((pos)=>{
     lat = pos.coords.latitude; lng = pos.coords.longitude;
     try{
@@ -245,8 +254,7 @@ function intentarUbicacionResumen(esClick=false){
     ocultarOverlayUbiResumen();
     calcularDistanciaYActualizar();
   }, (err)=>{
-    console.log('GPS resumen apagado', err.code);
-    mostrarOverlayUbiResumen();
+    manejarErrorGPS(err, esClick);
   }, {enableHighAccuracy:true, timeout:10000, maximumAge:0});
 }
 window.intentarUbicacionResumen = intentarUbicacionResumen;
@@ -375,9 +383,11 @@ async function actualizarUbicacionTiempoReal(){
     actualizandoGPS = false;
   }, (err)=>{
     actualizandoGPS = false;
-    console.log('GPS resumen apagado', err.code);
-    mostrarOverlayUbiResumen();
-  }, {enableHighAccuracy:true, timeout:2500, maximumAge:0});
+    // NO mostrar aviso cada 3 seg: solo si de verdad denego permiso (code 1)
+    if(err && err.code === 1){
+      mostrarOverlayUbiResumen();
+    }
+  }, {enableHighAccuracy:true, timeout:8000, maximumAge:1000});
 }
 setInterval(()=>{ actualizarUbicacionTiempoReal(); }, 3000);
 async function obtenerGPSReal(){
@@ -399,7 +409,7 @@ async function obtenerGPSReal(){
     ubicacion = nuevaUbi;
     document.getElementById('txtDireccion').textContent = direccionBase;
     actualizarMapaIframe(); calcularDistanciaYActualizar();
-  }, ()=>{ cargarDireccionYDistanciaSinGPS(); }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
+  }, (err)=>{ if(err && err.code === 1) mostrarOverlayUbiResumen(); else cargarDireccionYDistanciaSinGPS(); }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
 }
 async function calcularDistanciaYActualizar(){
   document.getElementById('txtDistancia').innerHTML = `<span style="color:#E30613;font-weight:800;display:flex;align-items:center;gap:4px">Calculando distancia...</span>`;
@@ -563,7 +573,6 @@ async function iniciarRastreoVivo(numeroPedido){
     const nLng = pos.coords.longitude;
     lat = nLat; lng = nLng;
     try{
-      // Actualizar Realtime doloya-confirmacion/rastreo/{numeroPedido}
       await window.setRT(window.refRT(window.dbConfirmacionRT, `rastreo/${numeroPedido}/cliente/lat`), nLat);
       await window.setRT(window.refRT(window.dbConfirmacionRT, `rastreo/${numeroPedido}/cliente/lng`), nLng);
       await window.setRT(window.refRT(window.dbConfirmacionRT, `rastreo/${numeroPedido}/lat`), nLat);
@@ -571,7 +580,6 @@ async function iniciarRastreoVivo(numeroPedido){
       await window.setRT(window.refRT(window.dbConfirmacionRT, `rastreo/${numeroPedido}/cliente/ultimaActualizacion`), new Date().toISOString());
       await window.setRT(window.refRT(window.dbConfirmacionRT, `rastreo/${numeroPedido}/cliente/googleMapsUrl`), `https://www.google.com/maps?q=${nLat},${nLng}`);
       
-      // Actualizar Firestore tambien
       await window.updateDoc(window.doc(window.dbConfirmacionFS, "rastreo", numeroPedido), {
         "cliente.lat": nLat,
         "cliente.lng": nLng,
@@ -711,7 +719,6 @@ async function irAPagar(){
     localStorage.setItem('doloya_pedido_final', JSON.stringify(pedidoCompleto));
     localStorage.setItem('doloya_rastreo_activo', numeroPedido);
 
-    // ACTIVAR RASTREO EN TIEMPO REAL - CLIENTE SE MUEVE -> MAPA SE MUEVE
     iniciarRastreoVivo(numeroPedido);
 
     const ipKey = await obtenerIpKey();
@@ -725,7 +732,6 @@ async function irAPagar(){
     }
     localStorage.removeItem('doloya_carrito_v2');
     
-    // Esperar 1.5s para iniciar tracking antes de ir a confirmacion
     setTimeout(()=>{ window.location.href='confirmacion.html?pedido='+numeroPedido; }, 1200);
 
   }catch(e){
