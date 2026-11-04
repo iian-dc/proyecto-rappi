@@ -13,6 +13,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .header h1{font-size:17px;font-weight:800}
 .mapa-wrap{position:relative;width:100%;height:190px;background:#E5E7EB;overflow:hidden}
 .mapa-wrap iframe{width:100%;height:100%;border:0}
+.tapa-ampliar{position:absolute;top:0;left:0;width:118px;height:36px;background:#E5E7EB;z-index:5;pointer-events:auto}
 .btn-ajustar{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:white;padding:8px 14px;border-radius:999px;border:none;box-shadow:0 4px 12px rgba(0,0,0,0.18);font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:6px;z-index:3;cursor:default;pointer-events:none}
 .item-row{padding:18px 16px;display:flex;align-items:flex-start;gap:14px;border-bottom:1px solid #F0F0F0;cursor:pointer;transition:all 0.2s}
 .item-row.no-click{cursor:default}
@@ -88,6 +89,7 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 </div>
 <div class="mapa-wrap">
   <iframe id="mapaIframe" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+  <div class="tapa-ampliar"></div>
   <div class="btn-ajustar">Punto de entrega<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M12 2a5 5 0 0 0-5 5c0 5 5 11 5 11s5-6 5-11a5 5 0 0 0-5-5z"/><circle cx="12" cy="7" r="1.5"/></svg></div>
 </div>
 <div class="item-row no-click">
@@ -299,7 +301,7 @@ function getCostoReal(){
   let dist = distanciaKm; if(dist < 0.1) dist = 0.1;
   return tarifaGlobal.base + (dist * tarifaGlobal.precio_km);
 }
-// MAPA SOLO CLIENTE - COMO ESTABA ANTES, SIN RUTA, SIN DISTANCIA EN EL MAPA
+// MAPA SOLO PUNTO DEL CLIENTE - SIN RUTA, SIN LINEA AZUL, SIN DISTANCIA EN EL MAPA
 let ultimaUrlMapa = '';
 let ultimoLatMapa = 0, ultimoLngMapa = 0;
 function actualizarMapaIframe(){
@@ -359,11 +361,8 @@ async function actualizarUbicacionTiempoReal(){
       localStorage.setItem('doloya_ubicacion', JSON.stringify(dataUbi));
     }catch{}
     ocultarOverlayUbiResumen();
-    // 1. Mapa solo cliente, sin ruta
     actualizarMapaIframe();
-    // 2. Calculo interno de distancia / costo - no se dibuja ruta en el mapa
     await calcularDistanciaYActualizar();
-    // 3. Direccion con numero
     const ahora = Date.now();
     if(seMovio || (ahora - ultimoFetchDireccion) > 3000){
       ultimoFetchDireccion = ahora;
