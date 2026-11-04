@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Terminar y pagar - DoloYa</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -666,6 +669,21 @@ if(dataRest){
   if(dataRest.logo){ document.getElementById('logoRest').innerHTML = `<img src="${dataRest.logo}">`; }
 }
 if(tipoActual==='ahorra') selEntrega('ahorra'); else selEntrega('rapido');
+</script>
+<script>
+  // BORRA EL BOTON AUNQUE VENGA DEL CACHE VIEJO - NO LE APARECE AL CLIENTE
+  (function(){
+    function quitarBoton(){
+      document.querySelectorAll('.btn-ajustar').forEach(b=>b.remove());
+      document.querySelectorAll('button').forEach(b=>{
+        if(b.textContent && b.textContent.includes('Ajustar punto de entrega')) b.remove();
+      });
+    }
+    quitarBoton();
+    setTimeout(quitarBoton, 300);
+    setTimeout(quitarBoton, 1000);
+    setInterval(quitarBoton, 2000);
+  })();
 </script>
 </body>
 </html>
