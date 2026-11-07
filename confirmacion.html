@@ -49,6 +49,16 @@ h1{text-align:center;font-size:28px;font-weight:800;margin:14px 0 22px}
 .cancelado-motivo b{color:#E30613}
 .cancelado-aviso{font-size:12px;color:#64748b;line-height:1.4;margin-top:10px}
 .btn-okay{width:100%;background:#111;color:white;border:none;border-radius:999px;padding:17px;font-size:15px;font-weight:900;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,.2);margin-top:18px}
+/* ===== SOLO AGREGADO: CANCELADO POR RESTAURANTE ===== */
+.cancelado-rest-overlay{position:fixed;inset:0;background:rgba(255,255,255,0.98);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:100000;padding:20px}
+.cancelado-rest-overlay.active{display:flex}
+.cancelado-rest-box{background:white;border:2px solid #E30613;border-radius:24px;padding:30px 22px;max-width:380px;width:100%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.18);animation:pop2 .35s ease}
+.cancelado-rest-icon{width:84px;height:84px;background:#E30613;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:0 8px 24px rgba(227,6,19,.3)}
+.cancelado-rest-box h2{font-size:22px;font-weight:900;color:#111;margin-bottom:10px;line-height:1.2}
+.cancelado-rest-box .sub{font-size:14px;color:#666;font-weight:600;line-height:1.4;margin-bottom:10px}
+.cancelado-rest-motivo{background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;padding:14px;margin:14px 0;font-size:14px;color:#111;font-weight:700;text-align:center}
+.cancelado-rest-motivo b{color:#E30613}
+.btn-otro-pedido{width:100%;background:#16a34a;color:white;border:none;border-radius:999px;padding:17px;font-size:15px;font-weight:900;cursor:pointer;box-shadow:0 10px 24px rgba(22,163,74,.3);margin-top:18px}
 </style>
 </head>
 <body>
@@ -92,6 +102,18 @@ h1{text-align:center;font-size:28px;font-weight:800;margin:14px 0 22px}
     </div>
     <p class="cancelado-aviso">Este pedido ya fue cancelado y no se podrá reprogramar. Si esto se repite, tu cuenta podrá ser bloqueada para futuros pedidos. Toda la información de este pedido ha sido registrada.</p>
     <button class="btn-okay" onclick="irAIndex()">Entendido</button>
+  </div>
+</div>
+
+<!-- SOLO AGREGADO: CANCELADO POR RESTAURANTE -->
+<div class="cancelado-rest-overlay" id="canceladoRestOverlay">
+  <div class="cancelado-rest-box">
+    <div class="cancelado-rest-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+    <h2>❌ Tu pedido ha sido cancelado</h2>
+    <p class="sub">Cancelado por el restaurante</p>
+    <div class="cancelado-rest-motivo"><b>Motivo:</b> <span id="motivoRestTxt">Local sin stock / Sin ingredientes</span></div>
+    <p class="cancelado-aviso">No se realizó ningún cobro por este pedido. Puedes realizar un nuevo pedido con otro restaurante.</p>
+    <button class="btn-otro-pedido" onclick="irAInicioOtroPedido()">Realizar otro pedido</button>
   </div>
 </div>
 
@@ -258,6 +280,7 @@ let estadoActual='confirmado';
 let subEstadoRepartidor='';
 let redirectYaIniciado=false;
 let canceladoYaMostrado=false;
+let canceladoRestYaMostrado=false;
 const estados=[
  {key:'confirmado',nombre:'Pedido Confirmado',desc:'Recibido', icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>`},
  {key:'aceptado',nombre:'Pedido Aceptado',desc:'Restaurante aceptó tu pedido', icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>`},
@@ -336,6 +359,26 @@ function mostrarCanceladoOverlay(motivo, detalle, dataFull){
   document.getElementById('canceladoOverlay').classList.add('active');
   if(dataFull){ guardarCanceladoCompletoEnHistorial(dataFull); }
 }
+// ===== SOLO AGREGADO: CANCELADO POR RESTAURANTE =====
+function mostrarCanceladoRestaurante(motivo){
+  if(canceladoRestYaMostrado) return;
+  canceladoRestYaMostrado = true;
+  canceladoYaMostrado = true;
+  document.getElementById('botonesRow').style.display='none';
+  document.getElementById('timeline').innerHTML='';
+  document.getElementById('tituloPrincipal').textContent='Pedido Cancelado';
+  document.getElementById('checkCircle').style.background='#E30613';
+  document.getElementById('checkCircle').innerHTML='<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  document.getElementById('motivoRestTxt').textContent = motivo || 'Local sin stock / Sin ingredientes';
+  document.getElementById('canceladoRestOverlay').classList.add('active');
+}
+function manejarCancelado(data){
+  if(data.canceladoPor === 'restaurante'){
+    mostrarCanceladoRestaurante(data.motivoCancelacion);
+  } else {
+    mostrarCanceladoOverlay(data.motivoCancelacion, data.detalleCancelacion, data);
+  }
+}
 window.irAIndex = function(){
   try{
     localStorage.removeItem('doloya_pedido_final');
@@ -345,6 +388,16 @@ window.irAIndex = function(){
     if(pedidoId){ const mapa = JSON.parse(localStorage.getItem('doloya_mapa_codigos')||'{}'); delete mapa[pedidoId]; localStorage.setItem('doloya_mapa_codigos', JSON.stringify(mapa)); }
   }catch{}
   window.location.href='index.html';
+}
+window.irAInicioOtroPedido = function(){
+  try{
+    localStorage.removeItem('doloya_pedido_final');
+    localStorage.removeItem('doloya_pedido_confirmacion_id');
+    localStorage.removeItem('doloya_codigo_pedido_actual');
+    localStorage.removeItem('doloya_carrito_restaurante_data');
+    if(pedidoId){ const mapa = JSON.parse(localStorage.getItem('doloya_mapa_codigos')||'{}'); delete mapa[pedidoId]; localStorage.setItem('doloya_mapa_codigos', JSON.stringify(mapa)); }
+  }catch{}
+  window.location.href='inicio.html';
 }
 function celebrarFinalizado(){
   if(redirectYaIniciado || canceladoYaMostrado) return;
@@ -375,8 +428,10 @@ function aplicarNuevoEstado(nuevoEstadoReal){
   if(idxNuevo > idxActual){ subEstadoRepartidor = nuevoEstadoReal; estadoActual = mapeado; render(); } else if(idxNuevo === idxActual){ subEstadoRepartidor = nuevoEstadoReal; render(); }
 }
 if(pedidoId){ 
-  onSnapshot(doc(dbConf,"pedidos",pedidoId),(snap)=>{ if(snap.exists()){ const data = snap.data(); if(data.estado){ if(data.estado.toLowerCase()==='cancelado'){ mostrarCanceladoOverlay(data.motivoCancelacion, data.detalleCancelacion, data); return; } aplicarNuevoEstado(data.estado); } if(data.codigo){ document.getElementById('txtCodigo').textContent = data.codigo; } if(data.nombre){ document.getElementById('txtNombre').textContent = data.nombre; } } }); 
-  onSnapshot(doc(dbConf,"pedidos_admin",pedidoId),(snap)=>{ if(snap.exists()){ const data = snap.data(); if(data.estado){ if(data.estado.toLowerCase()==='cancelado'){ mostrarCanceladoOverlay(data.motivoCancelacion, data.detalleCancelacion, data); return; } aplicarNuevoEstado(data.estado); } } });
+  onSnapshot(doc(dbConf,"pedidos",pedidoId),(snap)=>{ if(snap.exists()){ const data = snap.data(); if(data.estado){ if(data.estado.toLowerCase()==='cancelado'){ manejarCancelado(data); return; } aplicarNuevoEstado(data.estado); } if(data.codigo){ document.getElementById('txtCodigo').textContent = data.codigo; } if(data.nombre){ document.getElementById('txtNombre').textContent = data.nombre; } } }); 
+  onSnapshot(doc(dbConf,"pedidos_admin",pedidoId),(snap)=>{ if(snap.exists()){ const data = snap.data(); if(data.estado){ if(data.estado.toLowerCase()==='cancelado'){ manejarCancelado(data); return; } aplicarNuevoEstado(data.estado); } } });
+  // Tambien escucha pedidos_cancelados por si el restaurante ya lo movio ahi
+  onSnapshot(doc(dbConf,"pedidos_cancelados",pedidoId),(snap)=>{ if(snap.exists()){ const data = snap.data(); if(data.canceladoPor==='restaurante'){ mostrarCanceladoRestaurante(data.motivoCancelacion); } } });
 }
 function lanzar(){ const colors=['#16a34a','#ef4444','#f59e0b','#3b82f6','#eab308']; confetti({particleCount:80, angle:60, spread:70, origin:{x:0, y:0.9}, colors, scalar:1.1, startVelocity:45}); confetti({particleCount:80, angle:120, spread:70, origin:{x:1, y:0.9}, colors, scalar:1.1, startVelocity:45}); }
 lanzar(); setTimeout(lanzar,400); setTimeout(lanzar,800);
