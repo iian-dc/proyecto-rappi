@@ -33,6 +33,11 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .entrega-right{font-size:13px;font-weight:800;text-align:right}
 .verde{color:#16A34A;font-weight:900}
 .rojo{color:#E30613;font-weight:900}
+/* UNICO CUADRO GRATIS - CENTRADO */
+.entrega-unico{border:2px solid #111;border-radius:16px;padding:16px;display:none;align-items:center;justify-content:center;gap:10px;text-align:center;margin-bottom:10px;background:#fff}
+.entrega-unico.show{display:flex}
+.entrega-unico b{font-size:14px;font-weight:800}
+.entrega-unico .precio-unico{font-size:14px;font-weight:900;color:#16A34A}
 .metodo-box{padding:16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #F0F0F0;cursor:pointer}
 .metodo-icon{width:44px;height:44px;background:#F3F4F6;border-radius:50%;display:flex;align-items:center;justify-content:center}
 .metodo-info{flex:1}
@@ -101,6 +106,12 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 </div>
 <div class="section">
   <h3><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Entrega estimada</h3>
+  <!-- CUADRO UNICO CUANDO ES GRATIS - SOLO 1, CENTRADO, SIN TIEMPO, SOLO DICE ENVIO -->
+  <div class="entrega-unico" id="opUnicoGratis">
+    <div class="circle active"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg></div>
+    <b>Envío</b>
+    <span class="precio-unico">GRATIS</span>
+  </div>
   <div class="entrega-op active" id="opRapido" onclick="selEntrega('rapido')">
     <div class="entrega-left"><div class="circle active" id="cRapido"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg></div><div><b style="display:flex;align-items:center;gap:4px"><span style="color:#E30613"><svg width="14" height="14" viewBox="0 0 24 24" fill="#E30613"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg></span><span style="color:#E30613">Más rápido</span></b><span>34 - 49 min</span></div></div>
     <div class="entrega-right verde" id="txtRapido">$0.00 MXN</div>
@@ -223,7 +234,6 @@ let { ubicacion: ubiInit, detallesFull: detInit } = leerUbicacionStorage();
 let lat = ubiInit?.lat || ubiInit?.ubicacion?.lat || 21.1576;
 let lng = ubiInit?.lng || ubiInit?.ubicacion?.lng || -100.9306;
 let direccionBase = ubiInit?.direccion || '';
-// CORREGIDO: ahora incluye envio_gratis y respeta el 0
 let tarifaGlobal = {base: 22, precio_km: 4, envio_gratis: false};
 const EXTRA_RAPIDO = 14.99;
 const TARIFA_SERVICIO_PORC = 0.03;
@@ -264,11 +274,9 @@ setInterval(()=>{ if(!document.hidden) intentarUbicacionResumen(false); }, 12000
 try{
   const envioGuardado = JSON.parse(localStorage.getItem('doloya_envio_actual')||'null');
   if(envioGuardado){
-    // CORREGIDO: usar !== undefined, NO usar if(base) porque if(0) es falso y borra el 0
     if(envioGuardado.base !== undefined && envioGuardado.base !== null) tarifaGlobal.base = parseFloat(envioGuardado.base);
     if(envioGuardado.precio_km !== undefined && envioGuardado.precio_km !== null) tarifaGlobal.precio_km = parseFloat(envioGuardado.precio_km);
     if(envioGuardado.envio_gratis !== undefined) tarifaGlobal.envio_gratis = envioGuardado.envio_gratis === true;
-    // Si base y precio son 0, es gratis aunque no venga la bandera
     if(tarifaGlobal.base === 0 && tarifaGlobal.precio_km === 0) tarifaGlobal.envio_gratis = true;
   }
 }catch(e){}
@@ -276,11 +284,9 @@ if(window.onValueRT){
   window.onValueRT(window.refRT(window.dbAliadosRT, 'config_global/tarifa_default'), snap=>{
     const v = snap.val();
     if(v){
-      // CORREGIDO: respetar el 0 con ?? y !== undefined
       if(v.base !== undefined && v.base !== null) tarifaGlobal.base = parseFloat(v.base);
       if(v.precio_km !== undefined && v.precio_km !== null) tarifaGlobal.precio_km = parseFloat(v.precio_km);
       if(v.envio_gratis !== undefined) tarifaGlobal.envio_gratis = v.envio_gratis === true;
-      // Respaldo: si los dos son 0, es gratis
       if(tarifaGlobal.base === 0 && tarifaGlobal.precio_km === 0) tarifaGlobal.envio_gratis = true;
       else if(v.envio_gratis !== true && !(tarifaGlobal.base === 0 && tarifaGlobal.precio_km === 0)) tarifaGlobal.envio_gratis = false;
       actualizarResumen();
@@ -312,7 +318,6 @@ async function obtenerDistanciaRealGoogle(oLat, oLng, dLat, dLng){
 let tipoActual = localStorage.getItem('doloya_tipo_entrega') || 'ahorra';
 let costoProductos = carrito.reduce((s,i)=>s+(i.precio||0)*(i.cantidad||0),0);
 function getCostoReal(){
-  // CORREGIDO: si es envio gratis, SIEMPRE 0 sin importar distancia
   if(tarifaGlobal.envio_gratis === true) return 0;
   if(tarifaGlobal.base === 0 && tarifaGlobal.precio_km === 0) return 0;
   let dist = distanciaKm; if(dist < 0.1) dist = 0.1;
@@ -474,7 +479,21 @@ if(metodoSel){
 function actualizarResumen(){
   const costoReal = getCostoReal();
   const esGratis = tarifaGlobal.envio_gratis === true || costoReal === 0;
-  // CORREGIDO: si es gratis, rapido tambien es 0, no se suma EXTRA_RAPIDO
+  // NUEVO: si es gratis, mostrar SOLO 1 cuadro centrado y ocultar los 2 normales
+  const opUnico = document.getElementById('opUnicoGratis');
+  const opRapidoEl = document.getElementById('opRapido');
+  const opAhorraEl = document.getElementById('opAhorra');
+  if(esGratis){
+    if(opUnico) opUnico.classList.add('show');
+    if(opRapidoEl) opRapidoEl.style.display = 'none';
+    if(opAhorraEl) opAhorraEl.style.display = 'none';
+    // Se selecciona automaticamente, no necesita picarle el cliente
+    tipoActual = 'ahorra';
+  } else {
+    if(opUnico) opUnico.classList.remove('show');
+    if(opRapidoEl) opRapidoEl.style.display = 'flex';
+    if(opAhorraEl) opAhorraEl.style.display = 'flex';
+  }
   const envioAhorra = esGratis ? 0 : costoReal;
   const envioRapido = esGratis ? 0 : costoReal + EXTRA_RAPIDO;
   document.getElementById('txtAhorra').textContent = esGratis ? 'GRATIS' : `$${envioAhorra.toFixed(2)} MXN`;
@@ -482,6 +501,8 @@ function actualizarResumen(){
   document.getElementById('txtRapido').textContent = esGratis ? 'GRATIS' : `$${envioRapido.toFixed(2)} MXN`;
   document.getElementById('txtRapido').style.color = esGratis ? '#16A34A' : '';
   let envioSeleccionado = tipoActual==='rapido' ? envioRapido : envioAhorra;
+  // Si es gratis, siempre 0 aunque tipoActual sea rapido
+  if(esGratis) envioSeleccionado = 0;
   let tarifaServicio = costoProductos * TARIFA_SERVICIO_PORC;
   document.getElementById('costoProd').textContent = `$${costoProductos.toFixed(2)}`;
   document.getElementById('costoEnvio').textContent = esGratis ? 'GRATIS' : `$${envioSeleccionado.toFixed(2)}`;
@@ -498,6 +519,8 @@ function actualizarResumen(){
   localStorage.setItem('doloya_total', total.toFixed(2));
 }
 function selEntrega(tipo){
+  // Si es gratis, no dejar cambiar, siempre queda en el unico cuadro
+  if(tarifaGlobal.envio_gratis === true) return;
   tipoActual = tipo;
   document.querySelectorAll('.entrega-op').forEach(e=>e.classList.remove('active'));
   document.querySelectorAll('.circle').forEach(c=>{c.classList.remove('active'); c.innerHTML='';});
@@ -614,7 +637,6 @@ async function irAPagar(){
   const clienteId = localStorage.getItem('doloya_clienteId') || 'cli_'+Date.now();
   const costoReal = getCostoReal();
   const esGratis = tarifaGlobal.envio_gratis === true || costoReal === 0;
-  // CORREGIDO: si es gratis, envio final es 0, no se suma EXTRA_RAPIDO
   let envioFinal = esGratis ? 0 : (tipoActual==='rapido' ? costoReal + EXTRA_RAPIDO : costoReal);
   let tarifaServicio = costoProductos * TARIFA_SERVICIO_PORC;
   let totalFinal = costoProductos + envioFinal + tarifaServicio;
