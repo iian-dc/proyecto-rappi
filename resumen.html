@@ -223,7 +223,8 @@ let { ubicacion: ubiInit, detallesFull: detInit } = leerUbicacionStorage();
 let lat = ubiInit?.lat || ubiInit?.ubicacion?.lat || 21.1576;
 let lng = ubiInit?.lng || ubiInit?.ubicacion?.lng || -100.9306;
 let direccionBase = ubiInit?.direccion || '';
-let tarifaGlobal = {base: 22, precio_km: 4};
+// CORREGIDO: ahora incluye envio_gratis y respeta el 0
+let tarifaGlobal = {base: 22, precio_km: 4, envio_gratis: false};
 const EXTRA_RAPIDO = 14.99;
 const TARIFA_SERVICIO_PORC = 0.03;
 
@@ -231,13 +232,10 @@ const overlayUbiEl = document.getElementById('overlayUbicacion');
 let gpsValidoResumen = true;
 function mostrarOverlayUbiResumen(){ if(overlayUbiEl) overlayUbiEl.classList.add('open'); gpsValidoResumen = false; }
 function ocultarOverlayUbiResumen(){ if(overlayUbiEl) overlayUbiEl.classList.remove('open'); gpsValidoResumen = true; }
-// SOLO MOSTRAR AVISO SI DE VERDAD ESTA APAGADO / DENEGADO - NO POR TIMEOUT
 function manejarErrorGPS(err, esClick){
   console.log('GPS error', err && err.code);
   if(err && err.code === 1){
     mostrarOverlayUbiResumen();
-  } else {
-    // Timeout o falla momentanea: no mostrar nada, reintentar en silencio
   }
 }
 function intentarUbicacionResumen(esClick=false){
@@ -266,16 +264,25 @@ setInterval(()=>{ if(!document.hidden) intentarUbicacionResumen(false); }, 12000
 try{
   const envioGuardado = JSON.parse(localStorage.getItem('doloya_envio_actual')||'null');
   if(envioGuardado){
-    if(envioGuardado.base) tarifaGlobal.base = parseFloat(envioGuardado.base);
-    if(envioGuardado.precio_km) tarifaGlobal.precio_km = parseFloat(envioGuardado.precio_km);
+    // CORREGIDO: usar !== undefined, NO usar if(base) porque if(0) es falso y borra el 0
+    if(envioGuardado.base !== undefined && envioGuardado.base !== null) tarifaGlobal.base = parseFloat(envioGuardado.base);
+    if(envioGuardado.precio_km !== undefined && envioGuardado.precio_km !== null) tarifaGlobal.precio_km = parseFloat(envioGuardado.precio_km);
+    if(envioGuardado.envio_gratis !== undefined) tarifaGlobal.envio_gratis = envioGuardado.envio_gratis === true;
+    // Si base y precio son 0, es gratis aunque no venga la bandera
+    if(tarifaGlobal.base === 0 && tarifaGlobal.precio_km === 0) tarifaGlobal.envio_gratis = true;
   }
 }catch(e){}
 if(window.onValueRT){
   window.onValueRT(window.refRT(window.dbAliadosRT, 'config_global/tarifa_default'), snap=>{
     const v = snap.val();
     if(v){
-      if(v.base !== undefined) tarifaGlobal.base = parseFloat(v.base);
-      if(v.precio_km !== undefined) tarifaGlobal.precio_km = parseFloat(v.precio_km);
+      // CORREGIDO: respetar el 0 con ?? y !== undefined
+      if(v.base !== undefined && v.base !== null) tarifaGlobal.base = parseFloat(v.base);
+      if(v.precio_km !== undefined && v.precio_km !== null) tarifaGlobal.precio_km = parseFloat(v.precio_km);
+      if(v.envio_gratis !== undefined) tarifaGlobal.envio_gratis = v.envio_gratis === true;
+      // Respaldo: si los dos son 0, es gratis
+      if(tarifaGlobal.base === 0 && tarifaGlobal.precio_km === 0) tarifaGlobal.envio_gratis = true;
+      else if(v.envio_gratis !== true && !(tarifaGlobal.base === 0 && tarifaGlobal.precio_km === 0)) tarifaGlobal.envio_gratis = false;
       actualizarResumen();
     }
   });
@@ -305,6 +312,9 @@ async function obtenerDistanciaRealGoogle(oLat, oLng, dLat, dLng){
 let tipoActual = localStorage.getItem('doloya_tipo_entrega') || 'ahorra';
 let costoProductos = carrito.reduce((s,i)=>s+(i.precio||0)*(i.cantidad||0),0);
 function getCostoReal(){
+  // CORREGIDO: si es envio gratis, SIEMPRE 0 sin importar distancia
+  if(tarifaGlobal.envio_gratis === true) return 0;
+  if(tarifaGlobal.base === 0 && tarifaGlobal.precio_km === 0) return 0;
   let dist = distanciaKm; if(dist < 0.1) dist = 0.1;
   return tarifaGlobal.base + (dist * tarifaGlobal.precio_km);
 }
@@ -383,7 +393,6 @@ async function actualizarUbicacionTiempoReal(){
     actualizandoGPS = false;
   }, (err)=>{
     actualizandoGPS = false;
-    // NO mostrar aviso cada 3 seg: solo si de verdad denego permiso (code 1)
     if(err && err.code === 1){
       mostrarOverlayUbiResumen();
     }
@@ -464,14 +473,19 @@ if(metodoSel){
 }
 function actualizarResumen(){
   const costoReal = getCostoReal();
-  const envioAhorra = costoReal;
-  const envioRapido = costoReal + EXTRA_RAPIDO;
-  document.getElementById('txtAhorra').textContent = `$${envioAhorra.toFixed(2)} MXN`;
-  document.getElementById('txtRapido').textContent = `$${envioRapido.toFixed(2)} MXN`;
+  const esGratis = tarifaGlobal.envio_gratis === true || costoReal === 0;
+  // CORREGIDO: si es gratis, rapido tambien es 0, no se suma EXTRA_RAPIDO
+  const envioAhorra = esGratis ? 0 : costoReal;
+  const envioRapido = esGratis ? 0 : costoReal + EXTRA_RAPIDO;
+  document.getElementById('txtAhorra').textContent = esGratis ? 'GRATIS' : `$${envioAhorra.toFixed(2)} MXN`;
+  document.getElementById('txtAhorra').style.color = esGratis ? '#16A34A' : '';
+  document.getElementById('txtRapido').textContent = esGratis ? 'GRATIS' : `$${envioRapido.toFixed(2)} MXN`;
+  document.getElementById('txtRapido').style.color = esGratis ? '#16A34A' : '';
   let envioSeleccionado = tipoActual==='rapido' ? envioRapido : envioAhorra;
   let tarifaServicio = costoProductos * TARIFA_SERVICIO_PORC;
   document.getElementById('costoProd').textContent = `$${costoProductos.toFixed(2)}`;
-  document.getElementById('costoEnvio').textContent = `$${envioSeleccionado.toFixed(2)}`;
+  document.getElementById('costoEnvio').textContent = esGratis ? 'GRATIS' : `$${envioSeleccionado.toFixed(2)}`;
+  document.getElementById('costoEnvio').style.color = esGratis ? '#16A34A' : '';
   document.getElementById('costoTarifa').textContent = `$${tarifaServicio.toFixed(2)}`;
   let total = costoProductos + envioSeleccionado + tarifaServicio;
   document.getElementById('totalPagar').textContent = `$${total.toFixed(2)}`;
@@ -480,7 +494,7 @@ function actualizarResumen(){
   localStorage.setItem('doloya_costo_entrega', envioSeleccionado.toFixed(2));
   localStorage.setItem('doloya_distancia_km', distanciaKm.toFixed(2));
   localStorage.setItem('doloya_tarifa_servicio', tarifaServicio.toFixed(2));
-  localStorage.setItem('doloya_envio_actual', JSON.stringify({distanciaKm: distanciaKm, costo: envioSeleccionado, costoReal: costoReal, base: tarifaGlobal.base, precio_km: tarifaGlobal.precio_km}));
+  localStorage.setItem('doloya_envio_actual', JSON.stringify({distanciaKm: distanciaKm, costo: envioSeleccionado, costoReal: costoReal, base: tarifaGlobal.base, precio_km: tarifaGlobal.precio_km, envio_gratis: tarifaGlobal.envio_gratis}));
   localStorage.setItem('doloya_total', total.toFixed(2));
 }
 function selEntrega(tipo){
@@ -562,12 +576,10 @@ function limpiarProductosParaFirestore(arr){
   }).filter(p=> p.nombre && p.precio>=0 && p.cantidad>0);
 }
 
-// NUEVO - RASTREO EN TIEMPO REAL CLIENTE
 let watchIdVivo = null;
 async function iniciarRastreoVivo(numeroPedido){
   if(!navigator.geolocation) return;
   if(watchIdVivo) navigator.geolocation.clearWatch(watchIdVivo);
-  
   watchIdVivo = navigator.geolocation.watchPosition(async (pos)=>{
     const nLat = pos.coords.latitude;
     const nLng = pos.coords.longitude;
@@ -579,7 +591,6 @@ async function iniciarRastreoVivo(numeroPedido){
       await window.setRT(window.refRT(window.dbConfirmacionRT, `rastreo/${numeroPedido}/lng`), nLng);
       await window.setRT(window.refRT(window.dbConfirmacionRT, `rastreo/${numeroPedido}/cliente/ultimaActualizacion`), new Date().toISOString());
       await window.setRT(window.refRT(window.dbConfirmacionRT, `rastreo/${numeroPedido}/cliente/googleMapsUrl`), `https://www.google.com/maps?q=${nLat},${nLng}`);
-      
       await window.updateDoc(window.doc(window.dbConfirmacionFS, "rastreo", numeroPedido), {
         "cliente.lat": nLat,
         "cliente.lng": nLng,
@@ -602,7 +613,9 @@ async function irAPagar(){
   const detFull = JSON.parse(localStorage.getItem('doloya_detalles_full')||'{}');
   const clienteId = localStorage.getItem('doloya_clienteId') || 'cli_'+Date.now();
   const costoReal = getCostoReal();
-  let envioFinal = tipoActual==='rapido' ? costoReal + EXTRA_RAPIDO : costoReal;
+  const esGratis = tarifaGlobal.envio_gratis === true || costoReal === 0;
+  // CORREGIDO: si es gratis, envio final es 0, no se suma EXTRA_RAPIDO
+  let envioFinal = esGratis ? 0 : (tipoActual==='rapido' ? costoReal + EXTRA_RAPIDO : costoReal);
   let tarifaServicio = costoProductos * TARIFA_SERVICIO_PORC;
   let totalFinal = costoProductos + envioFinal + tarifaServicio;
   localStorage.setItem('doloya_cliente_nombre', nombre);
@@ -664,9 +677,10 @@ async function irAPagar(){
       costoEnvio: Number(envioFinal),
       costoReal: Number(costoReal.toFixed(2)),
       tarifaServicio: Number(tarifaServicio.toFixed(2)),
-      extraRapido: tipoActual==='rapido' ? EXTRA_RAPIDO : 0,
+      extraRapido: esGratis ? 0 : (tipoActual==='rapido' ? EXTRA_RAPIDO : 0),
       tipoEntrega: String(tipoActual), 
-      total: Number(totalFinal.toFixed(2)) 
+      total: Number(totalFinal.toFixed(2)),
+      envio_gratis: esGratis
     },
     metodoPago: typeof metodoSel === 'string' ? { tipo: metodoSel } : { tipo: String(metodoSel?.tipo || metodoSel?.nombre || 'efectivo').substring(0,50) },
     estado: 'confirmado',
