@@ -219,7 +219,6 @@ window.addEventListener('appinstalled', () => {
   btnInstalar.style.display = 'none';
   deferredPrompt = null;
 });
-// POPUP GRATIS - X SOLO CIERRA ESTA VEZ, PEDIR AHORA YA NO VUELVE A SALIR
 function cerrarPopupGratis(){
   const el = document.getElementById('overlayGratis');
   if(el) el.classList.remove('open');
@@ -466,7 +465,18 @@ onValue(ref(db, 'config_global/tarifa_default'), snap=>{
   }
 });
 let bannersCache = [];
+let bannersRaw = [];
+// SOLO NUEVO - PROMO VIGENTE POR HORARIO 24H
+function promoVigente(b){
+  if(!b || b.activo===false) return false;
+  const ahora = Date.now();
+  if(b.fechaInicio && ahora < b.fechaInicio) return false;
+  if(b.fechaFin && ahora > b.fechaFin) return false;
+  return true;
+}
 function dibujarBanners(){
+  // filtrar solo vigentes en este momento
+  bannersCache = bannersRaw.filter(b=>promoVigente(b));
   if(!bannersCache || bannersCache.length===0){
     bannersCont.innerHTML = '';
     return;
@@ -505,15 +515,18 @@ window.clickBanner = function(restauranteId){
 onValue(ref(db, 'config_global/banners_promociones'), snap=>{
   const val = snap.val();
   if(!val){
+    bannersRaw = [];
     bannersCache = [];
     dibujarBanners();
     return;
   }
-  const lista = Object.values(val).filter(b=>b.activo!==false);
+  const lista = Object.values(val);
   lista.sort((a,b)=>(b.fecha||0)-(a.fecha||0));
-  bannersCache = lista;
+  bannersRaw = lista;
   dibujarBanners();
 });
+// SOLO NUEVO - REVISAR CADA 30 SEGUNDOS PARA QUE SE QUITE SOLA AL VENCER
+setInterval(()=>{ if(!document.hidden) dibujarBanners(); }, 30000);
 function extraerUbicacionReal(root){
   if(!root || typeof root !== 'object') return null;
   if(root.info && root.info.ubicacion && root.info.ubicacion.lat) return root.info.ubicacion;
