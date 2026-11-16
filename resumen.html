@@ -33,7 +33,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 .entrega-right{font-size:13px;font-weight:800;text-align:right}
 .verde{color:#16A34A;font-weight:900}
 .rojo{color:#E30613;font-weight:900}
-/* UNICO CUADRO GRATIS - CENTRADO */
 .entrega-unico{border:2px solid #111;border-radius:16px;padding:16px;display:none;align-items:center;justify-content:center;gap:10px;text-align:center;margin-bottom:10px;background:#fff}
 .entrega-unico.show{display:flex}
 .entrega-unico b{font-size:14px;font-weight:800}
@@ -106,7 +105,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:120px}
 </div>
 <div class="section">
   <h3><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Entrega estimada</h3>
-  <!-- CUADRO UNICO CUANDO ES GRATIS - SOLO 1, CENTRADO, SIN TIEMPO, SOLO DICE ENVIO -->
   <div class="entrega-unico" id="opUnicoGratis">
     <div class="circle active"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg></div>
     <b>Envío</b>
@@ -479,7 +477,6 @@ if(metodoSel){
 function actualizarResumen(){
   const costoReal = getCostoReal();
   const esGratis = tarifaGlobal.envio_gratis === true || costoReal === 0;
-  // NUEVO: si es gratis, mostrar SOLO 1 cuadro centrado y ocultar los 2 normales
   const opUnico = document.getElementById('opUnicoGratis');
   const opRapidoEl = document.getElementById('opRapido');
   const opAhorraEl = document.getElementById('opAhorra');
@@ -487,7 +484,6 @@ function actualizarResumen(){
     if(opUnico) opUnico.classList.add('show');
     if(opRapidoEl) opRapidoEl.style.display = 'none';
     if(opAhorraEl) opAhorraEl.style.display = 'none';
-    // Se selecciona automaticamente, no necesita picarle el cliente
     tipoActual = 'ahorra';
   } else {
     if(opUnico) opUnico.classList.remove('show');
@@ -501,7 +497,6 @@ function actualizarResumen(){
   document.getElementById('txtRapido').textContent = esGratis ? 'GRATIS' : `$${envioRapido.toFixed(2)} MXN`;
   document.getElementById('txtRapido').style.color = esGratis ? '#16A34A' : '';
   let envioSeleccionado = tipoActual==='rapido' ? envioRapido : envioAhorra;
-  // Si es gratis, siempre 0 aunque tipoActual sea rapido
   if(esGratis) envioSeleccionado = 0;
   let tarifaServicio = costoProductos * TARIFA_SERVICIO_PORC;
   document.getElementById('costoProd').textContent = `$${costoProductos.toFixed(2)}`;
@@ -519,7 +514,6 @@ function actualizarResumen(){
   localStorage.setItem('doloya_total', total.toFixed(2));
 }
 function selEntrega(tipo){
-  // Si es gratis, no dejar cambiar, siempre queda en el unico cuadro
   if(tarifaGlobal.envio_gratis === true) return;
   tipoActual = tipo;
   document.querySelectorAll('.entrega-op').forEach(e=>e.classList.remove('active'));
@@ -599,6 +593,43 @@ function limpiarProductosParaFirestore(arr){
   }).filter(p=> p.nombre && p.precio>=0 && p.cantidad>0);
 }
 
+// SOLO NUEVO - BUSCA LA COMISION DE ESTE RESTAURANTE EN EL PANEL DE ALIADOS
+function extraerComision(nodo){
+  if(!nodo || typeof nodo !== 'object') return 0;
+  const v = nodo.comision ?? nodo.comisionPorcentaje ?? nodo.info?.comision ?? nodo.info?.comisionPorcentaje ?? 0;
+  const n = parseFloat(v);
+  return isNaN(n) ? 0 : n;
+}
+async function obtenerComisionRestaurante(idRest, catRest){
+  try{
+    // 1. Intenta directo: doloya_aliados/{cat}/{id}
+    if(catRest && idRest){
+      const s1 = await window.getRT(window.refRT(window.dbAliadosRT, `doloya_aliados/${catRest}/${idRest}`));
+      if(s1.exists()) return extraerComision(s1.val());
+    }
+    // 2. Intenta directo: doloya_aliados/{id}
+    if(idRest){
+      const s2 = await window.getRT(window.refRT(window.dbAliadosRT, `doloya_aliados/${idRest}`));
+      if(s2.exists()) return extraerComision(s2.val());
+    }
+    // 3. Busca en todos: doloya_aliados/cualquierCategoria/{id}
+    const sAll = await window.getRT(window.refRT(window.dbAliadosRT, 'doloya_aliados'));
+    if(sAll.exists()){
+      const todos = sAll.val();
+      const buscar = String(idRest||'').toLowerCase().trim();
+      for(const k1 of Object.keys(todos)){
+        const n1 = todos[k1];
+        if(!n1 || typeof n1 !== 'object') continue;
+        if(String(k1).toLowerCase() === buscar) return extraerComision(n1);
+        for(const k2 of Object.keys(n1)){
+          if(String(k2).toLowerCase() === buscar) return extraerComision(n1[k2]);
+        }
+      }
+    }
+  }catch(e){ console.log('comision error', e); }
+  return 0;
+}
+
 let watchIdVivo = null;
 async function iniciarRastreoVivo(numeroPedido){
   if(!navigator.geolocation) return;
@@ -645,6 +676,13 @@ async function irAPagar(){
   const direccionClienteFinal = direccionBase || detFull?.direccion || ubiData?.direccion || ubiData?.ubicacion?.direccion || document.getElementById('txtDireccion').textContent || '';
   const productosLimpios = limpiarProductosParaFirestore(carrito);
   if(productosLimpios.length===0){ alert('Carrito vacío'); btn.textContent='Finalizar pedido'; btn.disabled=false; return; }
+
+  // SOLO NUEVO - CALCULA COMISION CON EL % QUE TIENE EL RESTAURANTE EN ESTE MOMENTO
+  const idRestActual = String(dataRest?.id || 'la_catrina_burger');
+  const catRestActual = String(dataRest?.cat || 'burgers');
+  const comisionPorcentaje = await obtenerComisionRestaurante(idRestActual, catRestActual);
+  const comisionMonto = Number((costoProductos * comisionPorcentaje / 100).toFixed(2));
+  const gananciaAliado = Number((costoProductos - comisionMonto).toFixed(2));
 
   const ipReal = await obtenerIPReal();
   const numeroPedido = 'DOLOYA-' + Date.now().toString().slice(-6) + '-' + Math.floor(Math.random()*90+10);
@@ -702,8 +740,14 @@ async function irAPagar(){
       extraRapido: esGratis ? 0 : (tipoActual==='rapido' ? EXTRA_RAPIDO : 0),
       tipoEntrega: String(tipoActual), 
       total: Number(totalFinal.toFixed(2)),
-      envio_gratis: esGratis
+      envio_gratis: esGratis,
+      // SOLO NUEVO - COMISION CONGELADA EN ESTE PEDIDO
+      comisionPorcentaje: comisionPorcentaje,
+      comisionMonto: comisionMonto,
+      gananciaAliado: gananciaAliado
     },
+    // SOLO NUEVO - MISMO DATO EN RAIZ PARA QUE HISTORIAL Y FACTURAS LO LEAN FACIL
+    comision: { porcentaje: comisionPorcentaje, monto: comisionMonto, gananciaAliado: gananciaAliado, base: Number(costoProductos.toFixed(2)) },
     metodoPago: typeof metodoSel === 'string' ? { tipo: metodoSel } : { tipo: String(metodoSel?.tipo || metodoSel?.nombre || 'efectivo').substring(0,50) },
     estado: 'confirmado',
     fecha: new Date().toISOString()
