@@ -30,6 +30,9 @@ p{font-size:15px;font-weight:400;margin-top:8px;line-height:1.3;opacity:0.96;max
 .block-card h2{color:#D5000F;font-size:20px;font-weight:900;margin-bottom:10px;letter-spacing:-0.3px}
 .block-card p{color:#475569;font-size:13px;line-height:1.4;max-width:100%;margin:0 auto;opacity:1}
 .btn-whatsapp{width:100%;background:#25D366;color:white;border:none;border-radius:999px;padding:14px 18px;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;margin-top:18px;text-decoration:none}
+/* SOLO NUEVO - ESPACIO PARA IMAGEN PIN, IGUAL QUE EL LOGO DE ARRIBA */
+.pin-wrap{width:190px;display:flex;flex-direction:column;align-items:center;background:transparent;margin:20px 0 28px 0}
+.pin-wrap img{width:150px;height:auto;background:transparent;display:block}
 </style>
 </head>
 <body>
@@ -39,7 +42,10 @@ p{font-size:15px;font-weight:400;margin-top:8px;line-height:1.3;opacity:0.96;max
 </div>
 <h1>Permite tu ubicación</h1>
 <p>Para poder mostrarte los restaurantes<br>y comercios más cercanos a ti.</p>
-<svg class="icon-map" viewBox="0 0 200 165" fill="none"><path d="M15 125 L60 105 L60 132 L15 150 Z" fill="white"/><path d="M64 103 L113 90 L118 132 L62 135 Z" fill="white"/><path d="M118 88 L180 80 L188 120 L120 130 Z" fill="white"/><ellipse cx="105" cy="115" rx="32" ry="19" fill="#B0000C"/><path d="M105 8 C66 8 42 33 42 60 C42 98 105 155 105 155 C105 155 168 98 168 60 C168 33 144 8 105 8 Z" fill="white"/><circle cx="105" cy="62" r="22" fill="#D5000F"/><path d="M60 108 Q85 112 110 108" stroke="#FF9CA5" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/><path d="M135 88 L148 122" stroke="#FF9CA5" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/></svg>
+<!-- SOLO NUEVO - ANTES ERA EL SVG DEL PIN, AHORA ES IMAGEN pin.png -->
+<div class="pin-wrap">
+<img src="pin.png" alt="Ubicación">
+</div>
 <button id="btnPermitir" class="btn btn-white"><svg width="20" height="20" viewBox="0 0 24 24" fill="#D5000F"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><span id="txtPermitir">Permitir ubicacion</span></button>
 <button id="btnCancelar" class="btn btn-outline">Cancelar</button>
 <div id="status" class="status"></div>
