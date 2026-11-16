@@ -197,7 +197,6 @@ function intentarUbicacionAliado(esClick=false){
   navigator.geolocation.getCurrentPosition((pos)=>{
     ubicacionGPS.lat = pos.coords.latitude;
     ubicacionGPS.lng = pos.coords.longitude;
-    // actualizar storage principal
     try{
       const dataUbi = JSON.parse(localStorage.getItem('doloya_ubicacion')||'{}');
       dataUbi.ubicacion = {lat: pos.coords.latitude, lng: pos.coords.longitude};
@@ -212,7 +211,6 @@ function intentarUbicacionAliado(esClick=false){
   }, {enableHighAccuracy:true, timeout:10000, maximumAge:0});
 }
 window.intentarUbicacionAliado = intentarUbicacionAliado;
-// checar al entrar y en tiempo real
 intentarUbicacionAliado(false);
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) intentarUbicacionAliado(false); });
 window.addEventListener('pageshow', ()=>{ intentarUbicacionAliado(false); });
@@ -268,6 +266,25 @@ let mapaCategorias = {};
 const TIEMPO_EXPIRACION = 3 * 60 * 60 * 1000;
 let restauranteCerrado = false;
 let overlayCerradoMostrado = false;
+// SOLO NUEVO - HORARIO POR CATEGORIA
+let ultimaData = null;
+const DIAS_SEMANA = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'];
+function categoriaEnHorario(catObj){
+  if(!catObj || !catObj.horarios || Object.keys(catObj.horarios).length===0) return true;
+  const hoy = DIAS_SEMANA[new Date().getDay()];
+  const h = catObj.horarios[hoy];
+  if(!h || !h.inicio || !h.fin) return true;
+  const ahora = new Date();
+  const hh = String(ahora.getHours()).padStart(2,'0') + ':' + String(ahora.getMinutes()).padStart(2,'0');
+  return hh >= h.inicio && hh <= h.fin;
+}
+function categoriaVisible(nombreLower){
+  if(!nombreLower) return true;
+  const c = mapaCategorias[nombreLower];
+  if(!c) return true;
+  if(c.activa===false) return false;
+  return categoriaEnHorario(c);
+}
 function mostrarTarjetaCerrado(){
   if(overlayCerradoMostrado) return;
   overlayCerradoMostrado = true;
@@ -547,9 +564,9 @@ function filtrarProductos(catFiltro){
     else t.classList.remove('active');
   });
   if(categoriaSeleccionada==='todos'){
-    renderProductos(productosGlobal);
+    renderProductos(productosGlobal.filter(p=>categoriaVisible(p.categoria)));
   }else{
-    const fil=productosGlobal.filter(p=>p.categoria===categoriaSeleccionada);
+    const fil=productosGlobal.filter(p=>p.categoria===categoriaSeleccionada && categoriaVisible(p.categoria));
     renderProductos(fil);
   }
 }
@@ -644,10 +661,11 @@ else {
           nombre: catNombre,
           nombreLower: catLower,
           activa: catObj.activa!==false,
-          orden: catObj.orden ?? 99
+          orden: catObj.orden ?? 99,
+          horarios: catObj.horarios || {}
         });
         Object.keys(catObj).forEach(prodKey=>{
-          if(['activa','fecha','key','nombre','nombreLower','orden','info','perfil','subcategorias','disponibilidad','categoria','categoriaNombre','santillos'].includes(prodKey)) return;
+          if(['activa','fecha','key','nombre','nombreLower','orden','info','perfil','subcategorias','disponibilidad','categoria','categoriaNombre','santillos','horarios'].includes(prodKey)) return;
           let prod = catObj[prodKey];
           if(!prod || typeof prod !== 'object') return;
           if(prod.nombre && (prod.precio!==undefined || prod.imagen || prod.descripcion)){
@@ -701,6 +719,7 @@ else {
   }
   function cargarDesdeData(data){
     if(!data) return;
+    ultimaData = data;
     let parsed = parsearProductos(data);
     if(parsed.productos.length===0 && productosGlobal.length>0 && !data.perfil) return;
     document.getElementById('loading').style.display='none';
@@ -755,7 +774,8 @@ else {
         nombre:o.nombre||o.key||'',
         nombreLower:(o.nombreLower||o.key||'').toLowerCase(),
         activa:o.activa!==false,
-        orden:o.orden??99
+        orden:o.orden??99,
+        horarios:o.horarios||{}
       }));
     }else{
       categoriasConfig = Object.values(rawCats).filter(v=>v && typeof v==='object' && (v.nombre||v.key) && v.key!=='info' && v.key!=='perfil' && v.key!=='disponibilidad' && v.key!=='santillos').map(o=>({
@@ -763,7 +783,8 @@ else {
         nombre:o.nombre||o.key||'',
         nombreLower:(o.nombreLower||o.key||'').toLowerCase(),
         activa:o.activa!==false,
-        orden:o.orden??99
+        orden:o.orden??99,
+        horarios:o.horarios||{}
       }));
     }
     categoriasConfig.sort((a,b)=>a.orden-b.orden);
@@ -774,9 +795,9 @@ else {
     }
     let tabsList = [];
     if(categoriasConfig.length>0){
-      tabsList = ['todos', ...categoriasConfig.filter(c=>c.activa!==false).map(c=>c.nombreLower)];
+      tabsList = ['todos', ...categoriasConfig.filter(c=>c.activa!==false && categoriaEnHorario(c)).map(c=>c.nombreLower)];
     }else{
-      const categoriasConProductos = [...new Set(productosGlobal.map(m=>m.categoria))].filter(Boolean);
+      const categoriasConProductos = [...new Set(productosGlobal.filter(p=>categoriaVisible(p.categoria)).map(m=>m.categoria))].filter(Boolean);
       tabsList = ['todos', ...categoriasConProductos];
     }
     const tabsEl=document.getElementById('tabs');
@@ -791,13 +812,15 @@ else {
       tabsEl.appendChild(btn);
     });
     if(categoriaSeleccionada==='todos'){
-      renderProductos(productosGlobal);
+      renderProductos(productosGlobal.filter(p=>categoriaVisible(p.categoria)));
     }else{
-      const fil=productosGlobal.filter(p=>p.categoria===categoriaSeleccionada);
-      renderProductos(fil.length>0?fil:productosGlobal);
+      const fil=productosGlobal.filter(p=>p.categoria===categoriaSeleccionada && categoriaVisible(p.categoria));
+      renderProductos(fil.length>0?fil:productosGlobal.filter(p=>categoriaVisible(p.categoria)));
     }
     renderBarraCarritoSolo();
   }
+  // SOLO NUEVO - REVISAR HORARIO CADA 30 SEGUNDOS EN TIEMPO REAL
+  setInterval(()=>{ if(ultimaData && !document.hidden) cargarDesdeData(ultimaData); }, 30000);
   onValue(ref(db, `doloya_aliados/${id}`), snap=>{
     let data = snap.val();
     if(data){
