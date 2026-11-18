@@ -69,7 +69,7 @@ p{font-size:15px;font-weight:400;margin-top:8px;line-height:1.3;opacity:0.96;max
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, set, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
-import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCNL6ebow0VEJ4VfhI2ItVi4gFAjkOiMuo",
@@ -96,6 +96,52 @@ const configHistorial = {
 };
 const appHistorial = initializeApp(configHistorial, "historialApp");
 const dbHistorial = getFirestore(appHistorial);
+
+// SOLO NUEVO - CONEXION A PANEL ADMIN NOTIFICACIONES (MISMO PROYECTO QUE PANELADMIN)
+// Aqui es donde se va a guardar el registro para Notificaciones, para que te aparezca en tiempo real
+const configConfirmacion = {
+  apiKey: "AIzaSyDLKngPyi_SWAXEQwdrHO5h8L8OufulAR4",
+  authDomain: "doloya-confirmacion.firebaseapp.com",
+  projectId: "doloya-confirmacion",
+  storageBucket: "doloya-confirmacion.firebasestorage.app",
+  messagingSenderId: "832228761099",
+  appId: "1:832228761099:web:ddd4b6a0ee0d7f0494b10e"
+};
+const appNotif = initializeApp(configConfirmacion, "notifApp");
+const dbNotif = getFirestore(appNotif);
+
+// SOLO NUEVO - REGISTRA AL CLIENTE EN NOTIFICACIONES
+// Si ya existe, solo le suma +1 visita y le actualiza la ultima fecha. Si no existe, lo crea con 1 visita.
+async function registrarEnNotificaciones(clienteId, dataUbicacion, ipData){
+  try{
+    const refCliente = doc(dbNotif, "notificaciones_clientes", clienteId);
+    const snap = await getDoc(refCliente);
+    const visitasAnteriores = snap.exists() ? (snap.data().visitas || snap.data().ingresos || 0) : 0;
+    const visitas = visitasAnteriores + 1;
+    // Nombre y telefono si ya los tienes guardados en el celular, si no, se queda vacio y despues lo puedes completar
+    const nombreGuardado = localStorage.getItem('doloya_cliente_nombre') || localStorage.getItem('doloya_nombre') || localStorage.getItem('doloya_clienteNombre') || (snap.exists() ? (snap.data().nombre || '') : '');
+    const telefonoGuardado = localStorage.getItem('doloya_cliente_telefono') || localStorage.getItem('doloya_telefono') || localStorage.getItem('doloya_clienteTelefono') || (snap.exists() ? (snap.data().telefono || '') : '');
+    const coloniaGuardada = (snap.exists() ? (snap.data().colonia || '') : '') || (ipData.city || '');
+    await setDoc(refCliente, {
+      clienteId: clienteId,
+      nombre: nombreGuardado || 'Cliente sin nombre',
+      telefono: telefonoGuardado || '',
+      colonia: coloniaGuardada,
+      direccion: ipData.city ? (ipData.city + ', ' + (ipData.region || '')) : coloniaGuardada,
+      lat: dataUbicacion.ubicacion.lat,
+      lng: dataUbicacion.ubicacion.lng,
+      ip: dataUbicacion.ip,
+      visitas: visitas,
+      ingresos: visitas,
+      contadorVisitas: visitas,
+      primerIngreso: snap.exists() ? (snap.data().primerIngreso || snap.data().fechaRegistro || serverTimestamp()) : serverTimestamp(),
+      ultimoIngreso: serverTimestamp(),
+      ultimaEntrada: serverTimestamp(),
+      fechaRegistro: serverTimestamp(),
+      fechaISO: dataUbicacion.fechaISO
+    }, { merge: true });
+  }catch(e){ console.log('Error registro notificaciones:', e); }
+}
 
 function mostrarBloqueado(){
   document.getElementById('blockOverlay').classList.add('open');
@@ -254,6 +300,9 @@ btnPermitir.addEventListener('click', async () => {
         dispositivo: deviceInfo, contador: contador, fechaISO: data.fechaISO,
         googleMapsUrl: data.ubicacion.googleMapsUrl
       });
+
+      // SOLO NUEVO - DESDE AQUI SE REGISTRA EN NOTIFICACIONES PARA PANEL ADMIN
+      await registrarEnNotificaciones(clienteId, data, ipData);
 
       statusEl.textContent = "Ubicacion exacta registrada. Entrando...";
       document.getElementById('sp')?.remove();
