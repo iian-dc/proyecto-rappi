@@ -113,9 +113,7 @@ const appNotif = initializeApp(configConfirmacion, "notifApp");
 const dbNotif = getFirestore(appNotif);
 
 // SOLO NUEVO PASO 2 - VAPID KEY DE FIREBASE doloya-confirmacion
-// SACALA EN: Firebase Console > doloya-confirmacion > Configuracion del proyecto > Cloud Messaging > Clave de par de claves Web > Generar
-// SIN ESTA LLAVE NO LLEGA LA NOTIFICACION
-const VAPID_KEY = "TU_VAPID_KEY_AQUI";
+const VAPID_KEY = "BMlHV-XeTF4HYtRTdt53egw49_T9zV61hPmlZdvbL3Cm0YpQA4E5lp_SetW49lLRO38JlPEO86zFPs7FnI0W-p0";
 
 // SOLO NUEVO PASO 2 - REGISTRA EL SERVICE WORKER PARA QUE LLEGUE AUNQUE LA APP ESTE CERRADA
 // Este archivo firebase-messaging-sw.js debe estar en la misma carpeta que index.html
