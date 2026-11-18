@@ -581,6 +581,7 @@ async function obtenerIpKey(){
   }catch(e){}
   return ipKey;
 }
+// SOLO CORREGIDO - ANTES BORRABA LAS OBSERVACIONES, AHORA SI LAS PASA
 function limpiarProductosParaFirestore(arr){
   if(!Array.isArray(arr)) return [];
   return arr.map(p=>{
@@ -588,7 +589,9 @@ function limpiarProductosParaFirestore(arr){
       nombre: String(p.nombre || p.name || 'Producto').substring(0,100),
       precio: Number(p.precio || p.price || 0),
       cantidad: Number(p.cantidad || p.qty || 1),
-      imagen: String(p.imagen || p.img || p.imagenFinal || '').substring(0,500)
+      imagen: String(p.imagen || p.img || p.imagenFinal || '').substring(0,500),
+      observaciones: String(p.observaciones || p.observacion || '').substring(0,300),
+      observacion: String(p.observaciones || p.observacion || '').substring(0,300)
     };
   }).filter(p=> p.nombre && p.precio>=0 && p.cantidad>0);
 }
