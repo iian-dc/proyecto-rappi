@@ -32,12 +32,17 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:140px}
 .ctrl-btn{width:28px;height:28px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;font-weight:800}
 .ctrl-num{font-size:14px;font-weight:800;min-width:20px;text-align:center}
 .btn-desc-toggle{position:absolute;right:0;bottom:-2px;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
-/* SOLO NUEVO - CUADRO OBSERVACIONES POR PRODUCTO */
+/* SOLO MODIFICADO - CUADRO OBSERVACIONES CON ICONO Y X TRANSPARENTE */
 .obs-wrap{margin-top:8px}
-.obs-label{font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:4px}
-.obs-input{width:100%;border:1.5px solid #E5E7EB;background:#F8FAFC;border-radius:10px;padding:9px 10px;font-size:12.5px;font-weight:500;outline:none;color:#111}
+.obs-label{font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.3px;display:flex;align-items:center;gap:5px;margin-bottom:4px}
+.obs-label svg{width:13px;height:13px;flex-shrink:0}
+.obs-box{position:relative}
+.obs-input{width:100%;border:1.5px solid #E5E7EB;background:#F8FAFC;border-radius:10px;padding:9px 34px 9px 10px;font-size:12.5px;font-weight:500;outline:none;color:#111}
 .obs-input:focus{border-color:#E30613;background:#fff}
 .obs-input::placeholder{color:#9AA0A6}
+.obs-clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:24px;height:24px;background:transparent;border:none;display:none;align-items:center;justify-content:center;cursor:pointer;color:#94a3b8}
+.obs-clear.show{display:flex}
+.obs-clear:active{transform:translateY(-50%) scale(.9)}
 .footer{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #EEE;padding:14px 16px;display:flex;gap:12px;z-index:999}
 .btn-vaciar-canasta{flex:1;padding:16px;border-radius:999px;border:1.5px solid #E5E7EB;background:white;font-size:15px;font-weight:800;cursor:pointer}
 .btn-siguiente{flex:1;padding:16px;border-radius:999px;border:none;background:#E30613;color:white;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(227,6,19,0.25)}
@@ -228,14 +233,27 @@ function buscarDescripcionEnData(root, nombreBuscar){
   }
   return recorrer(root);
 }
-// SOLO NUEVO - PARA QUE LA OBSERVACION NO ROMPA EL HTML SI TIENE COMILLAS
 function escAttr(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-// SOLO NUEVO - GUARDA LA OBSERVACION EN ESE PRODUCTO SIN BORRAR EL FOCO AL ESCRIBIR
+// SOLO MODIFICADO - GUARDA OBSERVACION Y MUESTRA / OCULTA LA X
 window.actualizarObservacion = (idx, valor)=>{
   if(!carrito[idx]) return;
   carrito[idx].observaciones = valor;
   carrito[idx].observacion = valor;
   localStorage.setItem('doloya_carrito_v2', JSON.stringify(carrito));
+  const btnX = document.getElementById('obs-clear-'+idx);
+  if(btnX) btnX.classList.toggle('show', valor.trim() !== '');
+};
+// SOLO NUEVO - X TRANSPARENTE BORRA LO QUE ESCRIBIERON
+window.limpiarObservacion = (idx)=>{
+  if(!carrito[idx]) return;
+  carrito[idx].observaciones = '';
+  carrito[idx].observacion = '';
+  localStorage.setItem('doloya_carrito_v2', JSON.stringify(carrito));
+  const input = document.getElementById('obs-input-'+idx);
+  if(input){ input.value = ''; input.focus(); }
+  const btnX = document.getElementById('obs-clear-'+idx);
+  if(btnX) btnX.classList.remove('show');
+  guardar();
 };
 function render(){
   const cont = document.getElementById('contenido');
@@ -264,6 +282,7 @@ function render(){
       ${carrito.map((p,idx)=>{
         let textoDesc = p.descripcion || '';
         if(textoDesc.toLowerCase() === p.nombre.toLowerCase()) textoDesc = '';
+        const obsVal = p.observaciones || p.observacion || '';
         return `
         <div class="prod-item">
           <img class="prod-img" src="${p.imagen}">
@@ -271,10 +290,13 @@ function render(){
             <div class="prod-nombre">${p.nombre}</div>
             <div class="prod-precio">$${(p.precio * p.cantidad).toFixed(2)}</div>
             <div class="prod-desc" id="desc-${idx}">${textoDesc}</div>
-            <!-- SOLO NUEVO - CUADRO OBSERVACIONES POR PRODUCTO -->
+            <!-- SOLO MODIFICADO - ICONO EN VEZ DE EMOJI + X TRANSPARENTE DERECHA -->
             <div class="obs-wrap">
-              <label class="obs-label">✏️ Observaciones</label>
-              <input class="obs-input" type="text" placeholder="Ej: Sin cebolla, sin picante, sin crema..." value="${escAttr(p.observaciones || p.observacion || '')}" oninput="actualizarObservacion(${idx}, this.value)" onchange="guardar()">
+              <label class="obs-label"><svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Observaciones</label>
+              <div class="obs-box">
+                <input class="obs-input" id="obs-input-${idx}" type="text" placeholder="Ej: Sin cebolla, sin picante, sin crema..." value="${escAttr(obsVal)}" oninput="actualizarObservacion(${idx}, this.value)" onchange="guardar()">
+                <button class="obs-clear ${obsVal.trim() !== '' ? 'show' : ''}" id="obs-clear-${idx}" onclick="limpiarObservacion(${idx})" aria-label="Borrar observación"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>
+              </div>
             </div>
           </div>
           <div class="prod-controls">
