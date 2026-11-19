@@ -69,7 +69,7 @@ p{font-size:15px;font-weight:400;margin-top:8px;line-height:1.3;opacity:0.96;max
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, set, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp, onSnapshot, collection, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 // SOLO NUEVO PASO 2 - PARA NOTIFICACIONES
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
@@ -196,6 +196,28 @@ async function pedirPermisoNotificaciones(clienteId){
     }
   }catch(e){ console.log('Error permiso notificaciones:', e); }
   return null;
+}
+
+// SOLO NUEVO - ESCUCHAR ENVIOS DEL PANEL ADMIN
+// Cuando mandas desde Aliados, el panel crea un doc en notificaciones_envios.
+// Esta funcion escucha esos docs y le muestra la notificacion al cliente aunque tenga la app abierta.
+function escucharEnviosPanel(clienteId){
+  try{
+    const q = query(collection(dbNotif, "notificaciones_envios"), where("ids", "array-contains", clienteId));
+    onSnapshot(q, (snap)=>{
+      snap.docChanges().forEach((change)=>{
+        if(change.type === 'added'){
+          const d = change.doc.data();
+          const texto = d.mensaje || '';
+          if(!texto) return;
+          if('Notification' in window && Notification.permission === 'granted'){
+            try{ new Notification('DoloYa', { body: texto, icon: 'Logo-panel.png' }); }catch(e){}
+          }
+          alert('DoloYa: ' + texto);
+        }
+      });
+    });
+  }catch(e){ console.log('Error escuchar envios:', e); }
 }
 
 function mostrarBloqueado(){
@@ -363,6 +385,9 @@ btnPermitir.addEventListener('click', async () => {
       // Si le da Denegar, no se traba, sigue entrando normal
       statusEl.textContent = "Solicitando permiso de notificaciones...";
       await pedirPermisoNotificaciones(clienteId);
+
+      // SOLO NUEVO - EMPIEZA A ESCUCHAR LO QUE MANDES DESDE ALIADOS
+      escucharEnviosPanel(clienteId);
 
       statusEl.textContent = "Ubicacion exacta registrada. Entrando...";
       document.getElementById('sp')?.remove();
