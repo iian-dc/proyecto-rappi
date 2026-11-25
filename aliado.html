@@ -81,7 +81,6 @@ body{background:#fff;color:#111;min-height:100vh;padding-bottom:110px}
 @keyframes popCerrado{from{transform:scale(0.85);opacity:0}to{transform:scale(1);opacity:1}}
 body.bloqueado{overflow:hidden}
 body.bloqueado .btn-add, body.bloqueado .qty-btn{pointer-events:none !important;opacity:0.4}
-/* OVERLAY UBICACION TIEMPO REAL */
 .overlay-ubi{position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:999998;padding:20px}
 .overlay-ubi.open{display:flex;animation:fadeIn .25s}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -135,8 +134,6 @@ body.bloqueado .btn-add, body.bloqueado .qty-btn{pointer-events:none !important;
     <div class="count">Regresando al inicio en <span id="countNum">5</span>s...</div>
   </div>
 </div>
-
-<!-- OVERLAY UBICACION -->
 <div id="overlayUbicacion" class="overlay-ubi">
   <div class="card-ubi">
     <div class="icon-ubi">
@@ -186,8 +183,6 @@ let tarifaGlobal = {base: 22, precio_km: 4};
 let distanciaKmActual = 0;
 let costoEnvioActual = 22;
 let ubicacionRestauranteActual = null;
-
-// ===== UBICACION TIEMPO REAL - NUEVO =====
 const overlayUbiEl = document.getElementById('overlayUbicacion');
 let gpsValido = true;
 function mostrarOverlayUbiAliado(){ if(overlayUbiEl) overlayUbiEl.classList.add('open'); gpsValido = false; }
@@ -215,7 +210,6 @@ intentarUbicacionAliado(false);
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) intentarUbicacionAliado(false); });
 window.addEventListener('pageshow', ()=>{ intentarUbicacionAliado(false); });
 setInterval(()=>{ if(!document.hidden) intentarUbicacionAliado(false); }, 120000);
-
 onValue(ref(db, 'config_global/tarifa_default'), snap=>{
   const v = snap.val();
   if(v){
@@ -266,7 +260,6 @@ let mapaCategorias = {};
 const TIEMPO_EXPIRACION = 3 * 60 * 60 * 1000;
 let restauranteCerrado = false;
 let overlayCerradoMostrado = false;
-// SOLO NUEVO - HORARIO POR CATEGORIA
 let ultimaData = null;
 const DIAS_SEMANA = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'];
 function categoriaEnHorario(catObj){
@@ -463,29 +456,37 @@ function verificarCambioRestaurante(){
   }
   return false;
 }
-function addProducto(nombre, precio, imagen, descripcion){
+// CORREGIDO - AHORA BUSCA POR ID UNICO, NO SOLO POR NOMBRE
+function buscarEnCarrito(prodId, nombre){
+  if(prodId) {
+    const porId = carrito.find(p=>p.idProducto===prodId);
+    if(porId) return porId;
+  }
+  return carrito.find(p=>p.nombre===nombre);
+}
+function addProducto(prodId, nombre, precio, imagen, descripcion){
   if(restauranteCerrado){ mostrarTarjetaCerrado(); return; }
   if(!gpsValido){ mostrarOverlayUbiAliado(); intentarUbicacionAliado(false); return; }
   if(verificarCambioRestaurante()){
-    productoPendiente = {nombre, precio, imagen, descripcion};
+    productoPendiente = {idProducto: prodId, nombre, precio, imagen, descripcion};
     return;
   }
-  const existe = carrito.find(p=>p.nombre===nombre);
-  if(existe){ existe.cantidad++; if(descripcion) existe.descripcion = descripcion; }
-  else{ carrito.push({nombre, precio, imagen, descripcion: descripcion||'', cantidad:1}); }
+  const existe = buscarEnCarrito(prodId, nombre);
+  if(existe){ existe.cantidad++; if(descripcion) existe.descripcion = descripcion; if(prodId && !existe.idProducto) existe.idProducto = prodId; }
+  else{ carrito.push({idProducto: prodId, nombre, precio, imagen, descripcion: descripcion||'', cantidad:1}); }
   guardarCarrito();
 }
-function restarProducto(nombre){
+function restarProducto(prodId, nombre){
   if(restauranteCerrado){ mostrarTarjetaCerrado(); return; }
   if(!gpsValido){ mostrarOverlayUbiAliado(); return; }
-  const idx = carrito.findIndex(p=>p.nombre===nombre);
+  const idx = carrito.findIndex(p=> (prodId && p.idProducto===prodId) || p.nombre===nombre);
   if(idx===-1) return;
   carrito[idx].cantidad--;
   if(carrito[idx].cantidad<=0){ carrito.splice(idx,1); }
   guardarCarrito();
 }
-function getCantidad(nombre){
-  const existe = carrito.find(p=>p.nombre===nombre);
+function getCantidad(prodId, nombre){
+  const existe = buscarEnCarrito(prodId, nombre);
   return existe?existe.cantidad:0;
 }
 function renderBarraCarritoSolo(){
@@ -506,9 +507,10 @@ function renderBarraCarritoSolo(){
   if(txt) txt.textContent = totalProductos===1?`1 producto`:`${totalProductos} productos`;
   if(prc) prc.textContent = `$${fmtPrecio(totalPrecio)}`;
   document.querySelectorAll('.prod-card').forEach(card=>{
+    const prodId = card.getAttribute('data-id');
     const nombre = card.getAttribute('data-nombre');
-    if(!nombre) return;
-    const cant = getCantidad(nombre);
+    if(!nombre && !prodId) return;
+    const cant = getCantidad(prodId, nombre);
     const addBtn = card.querySelector('.btn-add');
     const qtyDiv = card.querySelector('.qty-controls');
     const numSpan = card.querySelector('.qty-num');
@@ -522,6 +524,10 @@ function renderBarraCarritoSolo(){
     }
   });
 }
+// CORREGIDO - SIN onclick CON COMILLAS, USA data-id Y DELEGACION, CADA PRODUCTO TIENE ID UNICO
+function escaparAttr(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 function renderProductos(lista){
   const cont=document.getElementById('listaProductos');
   cont.innerHTML='';
@@ -529,8 +535,9 @@ function renderProductos(lista){
     cont.innerHTML='<p style="text-align:center;color:#999;padding:20px">No hay productos en esta categoría</p>';
     return;
   }
-  lista.forEach(p=>{
-    const cant = getCantidad(p.nombre);
+  lista.forEach((p, idx)=>{
+    const prodId = p.idProducto || ((p.categoria||'general') + '|' + p.nombre + '|' + idx);
+    const cant = getCantidad(prodId, p.nombre);
     let htmlPrecio = '';
     if(p.tienePromo && p.precioOriginal){
       htmlPrecio = `<div class="price-line"><span class="prod-price-old">$${fmtPrecio(p.precioOriginal)}</span><span class="prod-price-disc">-${fmtPrecio(p.porcentaje)}%</span><span class="prod-price-new">$${fmtPrecio(p.precio)}</span></div>`;
@@ -538,25 +545,48 @@ function renderProductos(lista){
       htmlPrecio = `$${fmtPrecio(p.precio)}`;
     }
     const badgePromo = p.promo ? `<div class="badge-promo-prod">${p.promo}</div>` : '';
-    const descSafe = (p.descripcion||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
     cont.innerHTML+=`
-    <div class="prod-card" data-nombre="${p.nombre.replace(/"/g,'&quot;')}">
+    <div class="prod-card" data-id="${escaparAttr(prodId)}" data-nombre="${escaparAttr(p.nombre)}">
       ${badgePromo}
-      <img class="prod-img" src="${p.imagenFinal}">
+      <img class="prod-img" src="${escaparAttr(p.imagenFinal)}">
       <div class="prod-info">
         <div class="prod-name">${p.nombre}</div>
         ${p.descripcion?`<div class="prod-desc">${p.descripcion}</div>`:''}
         <div class="prod-price">${htmlPrecio}</div>
       </div>
-      <button class="btn-add" style="${cant>0?'display:none':'display:flex'}" onclick="handleAdd('${p.nombre.replace(/'/g,"\\'")}', ${p.precio}, '${p.imagenFinal}', '${descSafe}')">+</button>
+      <button class="btn-add" data-action="add" data-id="${escaparAttr(prodId)}" style="${cant>0?'display:none':'display:flex'}">+</button>
       <div class="qty-controls" style="${cant>0?'display:flex':'display:none'}">
-        <button class="qty-btn" onclick="handleRestar('${p.nombre.replace(/'/g,"\\'")}')">−</button>
+        <button class="qty-btn" data-action="restar" data-id="${escaparAttr(prodId)}">−</button>
         <span class="qty-num">${cant}</span>
-        <button class="qty-btn mas" onclick="handleAdd('${p.nombre.replace(/'/g,"\\'")}', ${p.precio}, '${p.imagenFinal}', '${descSafe}')">+</button>
+        <button class="qty-btn mas" data-action="add" data-id="${escaparAttr(prodId)}">+</button>
       </div>
     </div>`;
   });
 }
+// CORREGIDO - UN SOLO CLICK PARA TODOS LOS PRODUCTOS, BUSCA POR ID UNICO
+document.getElementById('listaProductos').addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  const prodId = btn.getAttribute('data-id');
+  const card = btn.closest('.prod-card');
+  const p = productosGlobal.find(x=> (x.idProducto||'') === prodId) || productosGlobal.find(x=> ((x.categoria||'general')+'|'+x.nombre) === prodId.split('|').slice(0,2).join('|') && true);
+  // Busca el producto real por id en la lista que se esta mostrando
+  let prodReal = null;
+  const listaMostrada = categoriaSeleccionada==='todos' ? productosGlobal.filter(pp=>categoriaVisible(pp.categoria)) : productosGlobal.filter(pp=>pp.categoria===categoriaSeleccionada);
+  prodReal = listaMostrada.find(x=> (x.idProducto||'') === prodId);
+  if(!prodReal){
+    // Si el id trae indice, usa el card para encontrarlo por nombre exacto dentro de esa categoria
+    const nombreCard = card ? card.getAttribute('data-nombre') : null;
+    prodReal = listaMostrada.find(x=>x.nombre===nombreCard) || p;
+  }
+  if(!prodReal) return;
+  const idFinal = prodReal.idProducto || prodId;
+  if(btn.getAttribute('data-action')==='add'){
+    addProducto(idFinal, prodReal.nombre, prodReal.precio, prodReal.imagenFinal, prodReal.descripcion);
+  } else {
+    restarProducto(idFinal, prodReal.nombre);
+  }
+});
 function filtrarProductos(catFiltro){
   categoriaSeleccionada = catFiltro.toLowerCase();
   document.querySelectorAll('.tab').forEach(t=>{
@@ -691,12 +721,19 @@ else {
         });
       });
     }
+    // CORREGIDO - ANTES BORRABA DUPLICADOS SOLO POR NOMBRE, AHORA EL ID ES CATEGORIA+NOMBRE
     let unicos = {};
-    productos.forEach(p=>{
-      if(!unicos[p.nombre]) unicos[p.nombre]=p;
+    productos.forEach((p, idx)=>{
+      p.idProducto = (p.categoria||'general') + '|' + p.nombre + '|' + idx;
+      const clave = (p.categoria||'') + '|' + p.nombre;
+      if(!unicos[clave]) unicos[clave]=p;
     });
     productos = Object.values(unicos).filter(p=>p.activo!==false);
+    // Reasigna id unico despues de dedup para que el click no falle
+    productos.forEach((p, idx)=>{ p.idProducto = (p.categoria||'general') + '|' + p.nombre + '|' + idx; });
     productos.sort((a,b)=> (a.ordenCategoria||99) - (b.ordenCategoria||99));
+    // Despues de ordenar, vuelve a dejar id estable por categoria+nombre
+    productos.forEach((p)=>{ p.idProducto = (p.categoria||'general') + '|' + p.nombre; });
     return {productos, cats};
   }
   function estaAbiertoDesdeDisponibilidad(data){
@@ -819,7 +856,6 @@ else {
     }
     renderBarraCarritoSolo();
   }
-  // SOLO NUEVO - REVISAR HORARIO CADA 30 SEGUNDOS EN TIEMPO REAL
   setInterval(()=>{ if(ultimaData && !document.hidden) cargarDesdeData(ultimaData); }, 30000);
   onValue(ref(db, `doloya_aliados/${id}`), snap=>{
     let data = snap.val();
@@ -872,8 +908,12 @@ else {
     }
   });
 }
-window.handleAdd=(nombre, precio, imagen, descripcion)=>{ addProducto(nombre, precio, imagen, descripcion); }
-window.handleRestar=(nombre)=>{ restarProducto(nombre); }
+window.handleAdd=(prodId, nombre, precio, imagen, descripcion)=>{
+  // Compatibilidad: si viene nombre viejo sin id, lo trata como id
+  if(typeof prodId === 'string' && nombre === undefined){ addProducto(prodId, prodId, 0, '', ''); return; }
+  addProducto(prodId, nombre, precio, imagen, descripcion);
+}
+window.handleRestar=(prodId, nombre)=>{ restarProducto(prodId, nombre); }
 document.getElementById('btnVerCarrito').onclick = async ()=>{
   if(restauranteCerrado){ mostrarTarjetaCerrado(); return; }
   if(!gpsValido){ mostrarOverlayUbiAliado(); intentarUbicacionAliado(false); return; }
@@ -912,7 +952,7 @@ document.getElementById('btnEliminar').onclick=async ()=>{
   renderBarraCarritoSolo();
   if(productoPendiente){
     setTimeout(()=>{
-      addProducto(productoPendiente.nombre, productoPendiente.precio, productoPendiente.imagen, productoPendiente.descripcion);
+      addProducto(productoPendiente.idProducto, productoPendiente.nombre, productoPendiente.precio, productoPendiente.imagen, productoPendiente.descripcion);
       productoPendiente = null;
       btn.textContent = 'Sí, eliminar';
     }, 300);
